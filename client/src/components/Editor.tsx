@@ -155,37 +155,114 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                   <div className="flex justify-between items-center mb-2">
                     <FormLabel>Conversation Flow</FormLabel>
                     <div className="text-xs text-neutral-dark/60">
-                      Use → to indicate flow direction
+                      Format with Customer/Agent labels and → arrows
                     </div>
                   </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Formatting Instructions:
+                    </h4>
+                    <ul className="text-xs text-blue-700 space-y-1 ml-5 list-disc">
+                      <li><strong>Start each speaker with a label</strong>: "Customer:" or "Agent:"</li>
+                      <li><strong>Keep labels on separate lines</strong> from their messages for best results</li>
+                      <li><strong>Use → (arrow symbol) on its own line</strong> to indicate a new conversation step</li>
+                      <li>Each conversation step should contain both Customer and Agent messages</li>
+                    </ul>
+                    <div className="bg-white p-2 rounded mt-2 text-xs border border-blue-100">
+                      <code className="block whitespace-pre text-blue-800">
+{`Customer:
+I'm looking for a new laptop.
+
+Agent:
+I'd be happy to help you find a laptop! What will you be using it for?
+
+→
+
+Customer:
+I need it for work and gaming.
+
+Agent:
+Great! I'll recommend our high-performance models.`}
+                      </code>
+                    </div>
+                  </div>
+                  
                   <div className="border border-neutral-medium rounded-md overflow-hidden">
-                    <div className="bg-neutral-light px-3 py-2 border-b border-neutral-medium flex">
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 mr-2 text-neutral-dark/70 hover:text-neutral-dark">
-                        <span className="text-sm font-bold">B</span>
-                      </Button>
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 mr-2 text-neutral-dark/70 hover:text-neutral-dark">
-                        <span className="text-sm italic">I</span>
-                      </Button>
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 mr-4 text-neutral-dark/70 hover:text-neutral-dark">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <div className="bg-neutral-light px-3 py-2 border-b border-neutral-medium flex items-center">
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        size="sm"
+                        className="mr-2 text-neutral-dark/90 hover:text-neutral-dark"
+                        onClick={() => {
+                          const textArea = document.querySelector('textarea');
+                          if (textArea) {
+                            const start = textArea.selectionStart;
+                            const value = field.value;
+                            const newValue = value.substring(0, start) + '\n→\n' + value.substring(start);
+                            field.onChange(newValue);
+                          }
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                         </svg>
+                        Insert step arrow
                       </Button>
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 mr-2 text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        size="sm"
+                        className="mr-2 text-amber-600 hover:text-amber-700"
+                        onClick={() => {
+                          const textArea = document.querySelector('textarea');
+                          if (textArea) {
+                            const start = textArea.selectionStart;
+                            const value = field.value;
+                            const newValue = value.substring(0, start) + '\nCustomer:\n' + value.substring(start);
+                            field.onChange(newValue);
+                          }
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
                         </svg>
+                        Add Customer
                       </Button>
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-neutral-dark/70 hover:text-neutral-dark">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        size="sm"
+                        className="text-indigo-600 hover:text-indigo-700"
+                        onClick={() => {
+                          const textArea = document.querySelector('textarea');
+                          if (textArea) {
+                            const start = textArea.selectionStart;
+                            const value = field.value;
+                            const newValue = value.substring(0, start) + '\nAgent:\n' + value.substring(start);
+                            field.onChange(newValue);
+                          }
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <path d="M12 16v-4"></path>
+                          <path d="M12 8h.01"></path>
                         </svg>
+                        Add Agent
                       </Button>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-96 resize-none"
-                        placeholder={`Customer: I'm looking for a new laptop.\nAgent: I'd be happy to help you find a laptop! What will you be using it for?\n→\nCustomer: I need it for work and gaming.\n...`}
+                        className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-96 resize-none font-mono text-sm"
+                        placeholder={`Customer:\nI'm looking for a new laptop.\n\nAgent:\nI'd be happy to help you find a laptop! What will you be using it for?\n\n→\n\nCustomer:\nI need it for work and gaming.\n\nAgent:\nGreat! I'll recommend our high-performance models.`}
                         {...field}
                       />
                     </FormControl>

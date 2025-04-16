@@ -25,16 +25,50 @@ export function parseConversationFlow(text: string): ParsedFlow {
     // Iterate through each line to find customer and agent messages
     let currentRole = '';
     
-    for (const line of lines) {
-      if (line.toLowerCase().startsWith('customer:')) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.toLowerCase() === 'customer:') {
+        // Found a customer label on its own line
         currentRole = 'customer';
-        customerText += line.substring(9).trim() + ' ';
-      } else if (line.toLowerCase().startsWith('agent:')) {
+        // Collect all subsequent lines until we hit the next label or end
+        let j = i + 1;
+        while (j < lines.length && 
+               !lines[j].toLowerCase().startsWith('customer:') && 
+               !lines[j].toLowerCase().startsWith('agent:') &&
+               lines[j].trim() !== '') {
+          customerText += lines[j].trim() + ' ';
+          j++;
+        }
+        // Skip the lines we've just processed
+        i = j - 1;
+      } else if (line.toLowerCase() === 'agent:') {
+        // Found an agent label on its own line
         currentRole = 'agent';
-        agentText += line.substring(6).trim() + ' ';
-      } else if (currentRole === 'customer') {
+        // Collect all subsequent lines until we hit the next label or end
+        let j = i + 1;
+        while (j < lines.length && 
+               !lines[j].toLowerCase().startsWith('customer:') && 
+               !lines[j].toLowerCase().startsWith('agent:') &&
+               lines[j].trim() !== '') {
+          agentText += lines[j].trim() + ' ';
+          j++;
+        }
+        // Skip the lines we've just processed
+        i = j - 1;
+      } else if (line.toLowerCase().startsWith('customer:')) {
+        // Legacy format with text on same line as label
+        currentRole = 'customer';
+        customerText += line.substring(line.indexOf(':') + 1).trim() + ' ';
+      } else if (line.toLowerCase().startsWith('agent:')) {
+        // Legacy format with text on same line as label
+        currentRole = 'agent';
+        agentText += line.substring(line.indexOf(':') + 1).trim() + ' ';
+      } else if (line.trim() !== '' && currentRole === 'customer') {
+        // Continuation of customer text
         customerText += line.trim() + ' ';
-      } else if (currentRole === 'agent') {
+      } else if (line.trim() !== '' && currentRole === 'agent') {
+        // Continuation of agent text
         agentText += line.trim() + ' ';
       }
     }
