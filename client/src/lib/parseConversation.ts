@@ -17,21 +17,38 @@ export function parseConversationFlow(text: string): ParsedFlow {
   const steps = text.split('→').map(step => step.trim()).filter(Boolean);
   
   const pairs: ConversationPair[] = steps.map(step => {
-    const customerMatch = step.match(/Customer:(.*?)(?=Agent:|$)/s);
-    const agentMatch = step.match(/Agent:(.*?)(?=Customer:|$)/s);
+    // This is a simpler approach that works in all ES versions
+    const lines = step.split('\n');
+    let customerText = '';
+    let agentText = '';
     
-    const customerText = customerMatch ? customerMatch[1].trim() : '';
-    const agentText = agentMatch ? agentMatch[1].trim() : '';
+    // Iterate through each line to find customer and agent messages
+    let currentRole = '';
+    
+    for (const line of lines) {
+      if (line.toLowerCase().startsWith('customer:')) {
+        currentRole = 'customer';
+        customerText += line.substring(9).trim() + ' ';
+      } else if (line.toLowerCase().startsWith('agent:')) {
+        currentRole = 'agent';
+        agentText += line.substring(6).trim() + ' ';
+      } else if (currentRole === 'customer') {
+        customerText += line.trim() + ' ';
+      } else if (currentRole === 'agent') {
+        agentText += line.trim() + ' ';
+      }
+    }
     
     return {
-      customer: customerText,
-      agent: agentText,
+      customer: customerText.trim() || "(No customer message)",
+      agent: agentText.trim() || "(No agent response)",
     };
   });
   
-  // Filter out pairs that don't have both customer and agent text
+  // Include all valid conversation steps - only filter out completely empty pairs
   return {
-    pairs: pairs.filter(pair => pair.customer && pair.agent)
+    pairs: pairs.filter(pair => (pair.customer && pair.customer !== "(No customer message)") || 
+                              (pair.agent && pair.agent !== "(No agent response)"))
   };
 }
 
