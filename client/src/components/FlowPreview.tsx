@@ -14,6 +14,9 @@ import { UseCase, ParsedFlow, Message } from "@shared/schema";
 import { Expand, Download, WandSparkles, Edit, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import FlowNode from "./FlowNode";
 import { toPng } from 'html-to-image';
 
@@ -22,7 +25,7 @@ interface FlowPreviewProps {
   parsedFlow: ParsedFlow;
 }
 
-// Define node types
+// Define node types (outside component to avoid React Flow warning)
 const nodeTypes = {
   flowNode: FlowNode,
 };
@@ -36,6 +39,8 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
   const [savedPositions, setSavedPositions] = useState<Record<string, XYPosition>>({});
   // State to store and manage the actual nodes
   const [flowNodes, setFlowNodes] = useState<Node[]>([]);
+  // Track if positions have been modified
+  const [positionsModified, setPositionsModified] = useState(false);
   
   // Initialize or update nodes from the parsed flow data
   useEffect(() => {
@@ -69,6 +74,50 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     setFlowNodes(newNodes);
   }, [parsedFlow.steps, savedPositions]);
   
+  // Load saved positions from the useCase nodePositions
+  useEffect(() => {
+    if (useCase.nodePositions) {
+      try {
+        const positions = JSON.parse(useCase.nodePositions);
+        setSavedPositions(positions);
+      } catch (err) {
+        console.error('Error parsing saved node positions:', err);
+      }
+    }
+  }, [useCase.nodePositions]);
+
+  // Mutation to save node positions to the database
+  const updateNodePositionsMutation = useMutation({
+    mutationFn: async (positions: Record<string, XYPosition>) => {
+      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, {
+        nodePositions: JSON.stringify(positions)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/use-cases', useCase.id.toString()] });
+      toast({
+        title: "Positions saved",
+        description: "Node positions have been saved successfully.",
+      });
+      setPositionsModified(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving positions",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Save node positions to the database
+  const saveNodePositions = useCallback(() => {
+    if (Object.keys(savedPositions).length > 0) {
+      updateNodePositionsMutation.mutate(savedPositions);
+    }
+  }, [savedPositions, updateNodePositionsMutation]);
+
   // Handler for node changes (dragging)
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     // Apply changes to the nodes
@@ -81,6 +130,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
           ...prev,
           [change.id]: change.position as XYPosition
         }));
+        setPositionsModified(true);
       }
     });
   }, []);
@@ -220,13 +270,25 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
           <Button
             variant="outline"
             size="sm"
+            className="mr-2"
             disabled={parsedFlow.steps.length === 0}
           >
             <Edit className="mr-2 h-4 w-4" /> Edit Nodes
           </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={saveNodePositions}
+            disabled={!positionsModified || parsedFlow.steps.length === 0}
+          >
+            <Save className="mr-2 h-4 w-4" /> Save Positions
+          </Button>
         </div>
         <div className="text-sm text-neutral-dark/60">
           <span className="font-medium">{parsedFlow.steps.length}</span> steps in flow
+          {positionsModified && (
+            <span className="ml-2 text-amber-600">(Unsaved changes)</span>
+          )}
         </div>
       </div>
     </div>
