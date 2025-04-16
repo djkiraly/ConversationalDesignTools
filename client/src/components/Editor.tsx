@@ -139,7 +139,11 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                     <Textarea 
                       placeholder="Briefly describe this conversation flow"
                       className="h-20"
-                      {...field} 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormMessage />
@@ -263,7 +267,11 @@ Great! I'll recommend our high-performance models.`}
                       <Textarea
                         className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-96 resize-none font-mono text-sm"
                         placeholder={`Customer:\nI'm looking for a new laptop.\n\nAgent:\nI'd be happy to help you find a laptop! What will you be using it for?\n\n→\n\nCustomer:\nI need it for work and gaming.\n\nAgent:\nGreat! I'll recommend our high-performance models.`}
-                        {...field}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                   </div>

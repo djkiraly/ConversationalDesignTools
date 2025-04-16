@@ -149,10 +149,12 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
+            fitViewOptions={{ padding: 0.3 }}
             minZoom={0.1}
             maxZoom={1.5}
             nodesDraggable={true}
             attributionPosition="bottom-right"
+            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
             proOptions={{ hideAttribution: true }}
           >
             <Background color="#e0e0e0" gap={16} />

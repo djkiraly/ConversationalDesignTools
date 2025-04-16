@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { UseCase } from "@shared/schema";
-import { parseConversationFlow } from "@/lib/parseConversation";
+import { parseConversationFlow, parseConversationFlowWithTypes } from "@/lib/parseConversation";
 
 import Sidebar from "@/components/Sidebar";
 import Editor from "@/components/Editor";
@@ -46,8 +46,8 @@ export default function Home() {
     }
   }, [params?.id, useCases, isLoadingUseCases, setLocation]);
 
-  // Parse conversation flow for visualization
-  const parsedFlow = activeUseCase ? parseConversationFlow(activeUseCase.conversationFlow) : { pairs: [] };
+  // Parse conversation flow for visualization with step type detection
+  const parsedFlow = activeUseCase ? parseConversationFlowWithTypes(activeUseCase.conversationFlow) : { pairs: [] };
 
   // Mutations
   const createUseCaseMutation = useMutation({
