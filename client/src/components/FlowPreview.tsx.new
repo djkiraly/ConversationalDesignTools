@@ -156,7 +156,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     const endIdx = startIdx + NODES_PER_PAGE;
     
     // Include edges for current page plus connector edge to next page
-    const filteredEdges = allEdges.filter(edge => {
+    const filteredEdges = allEdges.filter((edge) => {
       const sourceIndex = parseInt(edge.source.split('-')[1]);
       return sourceIndex >= startIdx && sourceIndex < endIdx;
     });
@@ -192,7 +192,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
       title: "Arranging Flow",
       description: "Flow nodes have been reset to their default positions",
     });
-  }, [flowNodes, toast, setSavedPositions]);
+  }, [flowNodes, toast]);
 
   // Export flow as PNG
   const handleExportImage = useCallback(() => {
