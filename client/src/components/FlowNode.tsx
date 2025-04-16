@@ -1,12 +1,12 @@
 import { memo } from 'react';
 import { Handle, Position } from 'reactflow';
-import { ConversationPair } from '@shared/schema';
+import { ConversationStep, Message } from '@shared/schema';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 
 interface FlowNodeProps {
   data: {
-    pair: ConversationPair;
+    step: ConversationStep;
     stepNumber: number;
     stepType: string;
   };
@@ -93,8 +93,8 @@ function getStepTypeStyles(stepType: string): { bg: string, text: string, icon: 
 }
 
 function FlowNode({ data }: FlowNodeProps) {
-  const { pair, stepNumber, stepType } = data;
-  const stepTypeStyles = getStepTypeStyles(stepType);
+  const { step, stepNumber, stepType } = data;
+  const stepTypeStyles = getStepTypeStyles(stepType || step.stepType || 'Conversation Step');
   
   return (
     <div className="flow-node bg-white p-4 shadow-md border border-neutral-medium max-w-md">
@@ -106,40 +106,47 @@ function FlowNode({ data }: FlowNodeProps) {
         </Badge>
         <Badge className={`${stepTypeStyles.bg} border-0 ${stepTypeStyles.text} flex items-center gap-1`}>
           <span className="flex items-center">{stepTypeStyles.icon}</span>
-          <span>{stepType}</span>
+          <span>{stepType || step.stepType || 'Conversation Step'}</span>
         </Badge>
       </div>
       
-      <Card className="mb-3 overflow-hidden">
-        <div className="bg-amber-50 p-2 border-b border-amber-200 flex items-center">
-          <div className="bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div className="font-medium text-amber-800">Customer</div>
-        </div>
-        <div className="p-3 bg-white text-neutral-dark">
-          {pair.customer}
-        </div>
-      </Card>
-      
-      <Card className="overflow-hidden">
-        <div className="bg-indigo-50 p-2 border-b border-indigo-200 flex items-center">
-          <div className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M21.6 12.5c.4.2.4.8 0 1l-9 5c-.3.2-.6.2-.9 0l-9-5c-.4-.2-.4-.8 0-1l9-5c.3-.2.6-.2.9 0l9 5z"></path>
-              <path d="M21.6 16.5c.4.2.4.8 0 1l-9 5c-.3.2-.6.2-.9 0l-9-5c-.4-.2-.4-.8 0-1l9-5c.3-.2.6-.2.9 0l9 5z"></path>
-              <path d="M21.6 8.5c.4.2.4.8 0 1l-9 5c-.3.2-.6.2-.9 0l-9-5c-.4-.2-.4-.8 0-1l9-5c.3-.2.6-.2.9 0l9 5z"></path>
-            </svg>
-          </div>
-          <div className="font-medium text-indigo-800">Agent</div>
-        </div>
-        <div className="p-3 bg-white text-neutral-dark">
-          {pair.agent}
-        </div>
-      </Card>
+      {/* Display messages in their original order */}
+      {step.messages.map((message, idx) => (
+        <Card key={idx} className={`${idx < step.messages.length - 1 ? "mb-3" : ""} overflow-hidden`}>
+          {message.role === 'customer' ? (
+            <>
+              <div className="bg-amber-50 p-2 border-b border-amber-200 flex items-center">
+                <div className="bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div className="font-medium text-amber-800">Customer</div>
+              </div>
+              <div className="p-3 bg-white text-neutral-dark">
+                {message.text}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-indigo-50 p-2 border-b border-indigo-200 flex items-center">
+                <div className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                    <path d="M21.6 12.5c.4.2.4.8 0 1l-9 5c-.3.2-.6.2-.9 0l-9-5c-.4-.2-.4-.8 0-1l9-5c.3-.2.6-.2.9 0l9 5z"></path>
+                    <path d="M21.6 16.5c.4.2.4.8 0 1l-9 5c-.3.2-.6.2-.9 0l-9-5c-.4-.2-.4-.8 0-1l9-5c.3-.2.6-.2.9 0l9 5z"></path>
+                    <path d="M21.6 8.5c.4.2.4.8 0 1l-9 5c-.3.2-.6.2-.9 0l-9-5c-.4-.2-.4-.8 0-1l9-5c.3-.2.6-.2.9 0l9 5z"></path>
+                  </svg>
+                </div>
+                <div className="font-medium text-indigo-800">Agent</div>
+              </div>
+              <div className="p-3 bg-white text-neutral-dark">
+                {message.text}
+              </div>
+            </>
+          )}
+        </Card>
+      ))}
       
       <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-primary" />
     </div>

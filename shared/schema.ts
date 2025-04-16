@@ -68,12 +68,17 @@ export type InsertFlowNode = z.infer<typeof insertFlowNodeSchema>;
 export type FlowNode = typeof flowNodes.$inferSelect;
 
 // Flow and conversation types
-export interface ConversationPair {
-  customer: string;
-  agent: string;
+export interface Message {
+  role: string;  // "customer" or "agent"
+  text: string;
+}
+
+export interface ConversationStep {
+  messages: Message[];
   stepType?: string;
+  stepNumber: number;
 }
 
 export interface ParsedFlow {
-  pairs: ConversationPair[];
+  steps: ConversationStep[];
 }

@@ -30,7 +30,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
   // Create nodes from parsed flow data with a zigzag pattern for visual interest
   const nodes = useMemo(() => {
     const horizontalOffset = 80; // Offset for zigzag pattern
-    return parsedFlow.pairs.map((pair, index) => ({
+    return parsedFlow.steps.map((step, index) => ({
       id: `node-${index}`,
       type: 'flowNode',
       // Alternate nodes left and right for a zigzag path
@@ -39,17 +39,17 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
         y: index * 350 // Increased vertical spacing for better readability
       },
       data: { 
-        pair, 
+        step, 
         stepNumber: index + 1,
-        // Auto-detect step type based on content patterns
-        stepType: pair.stepType || detectStepType(pair.customer, pair.agent, index, parsedFlow.pairs.length)
+        // Use step type from the data or default
+        stepType: step.stepType
       },
     }));
-  }, [parsedFlow.pairs]);
+  }, [parsedFlow.steps]);
 
   // Create edges to connect the nodes
   const edges = useMemo(() => {
-    return parsedFlow.pairs.slice(0, -1).map((_, index) => ({
+    return parsedFlow.steps.slice(0, -1).map((_, index) => ({
       id: `edge-${index}`,
       source: `node-${index}`,
       target: `node-${index + 1}`,
@@ -57,7 +57,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
       animated: true,
       style: { stroke: '#3f51b5', strokeWidth: 2 },
     }));
-  }, [parsedFlow.pairs]);
+  }, [parsedFlow.steps]);
 
   // Auto-arrange nodes in a better layout
   const autoArrangeNodes = useCallback(() => {
@@ -132,7 +132,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
       </div>
       
       <div className="flex-1 overflow-hidden bg-neutral-light/50" ref={flowRef}>
-        {parsedFlow.pairs.length === 0 ? (
+        {parsedFlow.steps.length === 0 ? (
           <div className="h-full flex items-center justify-center text-neutral-dark/60">
             <div className="text-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-neutral-dark/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -161,7 +161,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
             <MiniMap nodeColor="#3f51b5" maskColor="rgba(0, 0, 0, 0.05)" />
             <Panel position="top-right" className="bg-white/70 p-2 rounded-md shadow-sm">
               <p className="text-xs text-neutral-dark/70">
-                <span className="font-medium">{parsedFlow.pairs.length}</span> steps in flow
+                <span className="font-medium">{parsedFlow.steps.length}</span> steps in flow
               </p>
             </Panel>
           </ReactFlow>
@@ -175,30 +175,29 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
             size="sm"
             className="mr-2"
             onClick={autoArrangeNodes}
-            disabled={parsedFlow.pairs.length === 0}
+            disabled={parsedFlow.steps.length === 0}
           >
             <WandSparkles className="mr-2 h-4 w-4" /> Auto-Arrange
           </Button>
           <Button
             variant="outline"
             size="sm"
-            disabled={parsedFlow.pairs.length === 0}
+            disabled={parsedFlow.steps.length === 0}
           >
             <Edit className="mr-2 h-4 w-4" /> Edit Nodes
           </Button>
         </div>
         <div className="text-sm text-neutral-dark/60">
-          <span className="font-medium">{parsedFlow.pairs.length}</span> steps in flow
+          <span className="font-medium">{parsedFlow.steps.length}</span> steps in flow
         </div>
       </div>
     </div>
   );
 }
 
-// Helper function to detect step type based on content
+// Helper function to detect step type based on message content
 function detectStepType(
-  customerText: string, 
-  agentText: string, 
+  messages: Message[], 
   index: number, 
   totalSteps: number
 ): string {
@@ -208,33 +207,33 @@ function detectStepType(
   // Last step is usually completion or checkout
   if (index === totalSteps - 1) return "Completion";
   
+  // Combine all message text for analysis
+  const allText = messages.map(msg => msg.text).join(' ').toLowerCase();
+  
   // Check for pricing questions
   if (
-    customerText.toLowerCase().includes("price") || 
-    customerText.toLowerCase().includes("cost") ||
-    agentText.toLowerCase().includes("price") ||
-    agentText.toLowerCase().includes("cost") ||
-    agentText.toLowerCase().includes("$")
+    allText.includes("price") || 
+    allText.includes("cost") ||
+    allText.includes("$")
   ) {
     return "Price Inquiry";
   }
   
   // Check for purchase intent
   if (
-    customerText.toLowerCase().includes("buy") || 
-    customerText.toLowerCase().includes("purchase") ||
-    customerText.toLowerCase().includes("get it") ||
-    agentText.toLowerCase().includes("purchase") ||
-    agentText.toLowerCase().includes("buy")
+    allText.includes("buy") || 
+    allText.includes("purchase") ||
+    allText.includes("get it")
   ) {
     return "Purchase Decision";
   }
   
   // Check for specification gathering
   if (
-    customerText.toLowerCase().includes("need") || 
-    agentText.toLowerCase().includes("requirement") ||
-    agentText.toLowerCase().includes("prefer")
+    allText.includes("need") || 
+    allText.includes("want") ||
+    allText.includes("requirement") ||
+    allText.includes("prefer")
   ) {
     return "Requirement Gathering";
   }

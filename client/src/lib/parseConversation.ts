@@ -1,4 +1,4 @@
-import { ParsedFlow, ConversationPair } from '@shared/schema';
+import { ParsedFlow, Message, ConversationStep } from '@shared/schema';
 
 /**
  * Parse a conversation flow text into structured data
@@ -8,10 +8,6 @@ import { ParsedFlow, ConversationPair } from '@shared/schema';
  * - Agent: [text]
  * - → (arrow) indicates a new flow step
  */
-interface RawConversationSegment {
-  role: string;
-  text: string;
-}
 
 /**
  * Parses a conversation flow text into structured data,
@@ -20,17 +16,17 @@ interface RawConversationSegment {
  */
 export function parseConversationFlow(text: string): ParsedFlow {
   if (!text || text.trim() === '') {
-    return { pairs: [] };
+    return { steps: [] };
   }
 
   // Split the text by arrow symbols to get conversation steps
-  const steps = text.split('→').map(step => step.trim()).filter(Boolean);
+  const rawSteps = text.split('→').map(step => step.trim()).filter(Boolean);
   
-  // Create a more accurate conversation pair from each step
-  const pairs: ConversationPair[] = steps.map((step, stepIndex) => {
-    // First, extract all segments with their roles in order
-    const segments: RawConversationSegment[] = [];
-    const lines = step.split('\n');
+  // Parse each step maintaining the order of messages
+  const steps: ConversationStep[] = rawSteps.map((stepText, stepIndex) => {
+    // Extract all messages in the exact order they appear
+    const messages: Message[] = [];
+    const lines = stepText.split('\n');
     let currentRole = '';
     let currentText = '';
     
@@ -38,11 +34,11 @@ export function parseConversationFlow(text: string): ParsedFlow {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
-      // Check for role labels (exact match or starting with)
+      // Check for role labels (exact match)
       if (line.toLowerCase() === 'customer:') {
         // If we were collecting text for a previous role, save it
         if (currentRole && currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         
         // Start collecting for the new role
@@ -61,7 +57,7 @@ export function parseConversationFlow(text: string): ParsedFlow {
         }
         // Save what we collected and skip processed lines
         if (currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         i = j - 1;
         currentText = '';
@@ -69,7 +65,7 @@ export function parseConversationFlow(text: string): ParsedFlow {
       else if (line.toLowerCase() === 'agent:') {
         // If we were collecting text for a previous role, save it
         if (currentRole && currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         
         // Start collecting for the new role
@@ -88,18 +84,19 @@ export function parseConversationFlow(text: string): ParsedFlow {
         }
         // Save what we collected and skip processed lines
         if (currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         i = j - 1;
         currentText = '';
       }
+      // Check for role labels with text on same line
       else if (line.toLowerCase().startsWith('customer:')) {
         // If we were collecting text for a previous role, save it
         if (currentRole && currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         
-        // Legacy format with text on same line
+        // Format with text on same line
         currentRole = 'customer';
         currentText = line.substring(line.indexOf(':') + 1).trim() + ' ';
         
@@ -115,7 +112,7 @@ export function parseConversationFlow(text: string): ParsedFlow {
         }
         // Save what we collected and skip processed lines
         if (currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         i = j - 1;
         currentText = '';
@@ -123,10 +120,10 @@ export function parseConversationFlow(text: string): ParsedFlow {
       else if (line.toLowerCase().startsWith('agent:')) {
         // If we were collecting text for a previous role, save it
         if (currentRole && currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         
-        // Legacy format with text on same line
+        // Format with text on same line
         currentRole = 'agent';
         currentText = line.substring(line.indexOf(':') + 1).trim() + ' ';
         
@@ -142,7 +139,7 @@ export function parseConversationFlow(text: string): ParsedFlow {
         }
         // Save what we collected and skip processed lines
         if (currentText) {
-          segments.push({ role: currentRole, text: currentText.trim() });
+          messages.push({ role: currentRole, text: currentText.trim() });
         }
         i = j - 1;
         currentText = '';
@@ -151,44 +148,28 @@ export function parseConversationFlow(text: string): ParsedFlow {
     
     // If there's any remaining text, add it
     if (currentRole && currentText) {
-      segments.push({ role: currentRole, text: currentText.trim() });
-    }
-    
-    // Now organize segments into customer and agent messages
-    // We'll use the last segment of each role if there are multiples
-    let customerText = "(No customer message)";
-    let agentText = "(No agent response)";
-    
-    // Find the last segment for each role
-    for (const segment of segments) {
-      if (segment.role === 'customer' && segment.text) {
-        customerText = segment.text;
-      } else if (segment.role === 'agent' && segment.text) {
-        agentText = segment.text;
-      }
+      messages.push({ role: currentRole, text: currentText.trim() });
     }
     
     // Create a standardized step type based on position and content
     let stepType = "Conversation Step";
     if (stepIndex === 0) {
       stepType = "Customer Inquiry";
-    } else if (stepIndex === steps.length - 1) {
+    } else if (stepIndex === rawSteps.length - 1) {
       stepType = "Completion";
     }
     
+    // Return the step with messages in their original order
     return {
-      customer: customerText,
-      agent: agentText,
-      stepType
+      messages,
+      stepType,
+      stepNumber: stepIndex + 1
     };
   });
   
-  // Only include pairs with at least one valid message
+  // Only include steps with at least one valid message
   return {
-    pairs: pairs.filter(pair => 
-      (pair.customer && pair.customer !== "(No customer message)") || 
-      (pair.agent && pair.agent !== "(No agent response)")
-    )
+    steps: steps.filter(step => step.messages.length > 0)
   };
 }
 
@@ -200,42 +181,39 @@ export function parseConversationFlowWithTypes(text: string): ParsedFlow {
   const basicParsed = parseConversationFlow(text);
   
   // Enhance with step type detection
-  const enhancedPairs = basicParsed.pairs.map((pair, index, allPairs) => {
+  const enhancedSteps = basicParsed.steps.map((step, index, allSteps) => {
+    // Extract text for all messages to analyze content
+    const allText = step.messages.map(msg => msg.text).join(' ').toLowerCase();
+    
     // First step is usually an inquiry
     if (index === 0) {
-      return { ...pair, stepType: "Customer Inquiry" };
+      return { ...step, stepType: "Customer Inquiry" };
     }
     
     // Last step is usually completion or checkout
-    if (index === allPairs.length - 1) {
-      return { ...pair, stepType: "Completion" };
+    if (index === allSteps.length - 1) {
+      return { ...step, stepType: "Completion" };
     }
     
     // Detect step type based on content
-    const customerLower = pair.customer.toLowerCase();
-    const agentLower = pair.agent.toLowerCase();
-    
-    if (customerLower.includes("price") || customerLower.includes("cost") || 
-        agentLower.includes("price") || agentLower.includes("cost") || 
-        agentLower.includes("$")) {
-      return { ...pair, stepType: "Price Inquiry" };
+    if (allText.includes("price") || allText.includes("cost") || allText.includes("$")) {
+      return { ...step, stepType: "Price Inquiry" };
     }
     
-    if (customerLower.includes("buy") || customerLower.includes("purchase") || 
-        agentLower.includes("buy") || agentLower.includes("purchase")) {
-      return { ...pair, stepType: "Purchase Decision" };
+    if (allText.includes("buy") || allText.includes("purchase")) {
+      return { ...step, stepType: "Purchase Decision" };
     }
     
-    if (customerLower.includes("need") || customerLower.includes("want") || 
-        agentLower.includes("recommend") || agentLower.includes("suggest")) {
-      return { ...pair, stepType: "Requirement Gathering" };
+    if (allText.includes("need") || allText.includes("want") || 
+        allText.includes("recommend") || allText.includes("suggest")) {
+      return { ...step, stepType: "Requirement Gathering" };
     }
     
     // Default
-    return { ...pair, stepType: "Conversation Step" };
+    return { ...step, stepType: "Conversation Step" };
   });
   
   return {
-    pairs: enhancedPairs
+    steps: enhancedSteps
   };
 }
