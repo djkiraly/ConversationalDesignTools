@@ -9,6 +9,7 @@ interface FlowNodeProps {
     step: ConversationStep;
     stepNumber: number;
     stepType: string;
+    isConnector?: boolean; // Indicates if this is a connector node between pages
   };
 }
 
@@ -93,11 +94,16 @@ function getStepTypeStyles(stepType: string): { bg: string, text: string, icon: 
 }
 
 function FlowNode({ data }: FlowNodeProps) {
-  const { step, stepNumber, stepType } = data;
+  const { step, stepNumber, stepType, isConnector } = data;
   const stepTypeStyles = getStepTypeStyles(stepType || step.stepType || 'Conversation Step');
   
+  // Add special styling for connector nodes (nodes that connect across page boundaries)
+  const connectorClass = isConnector 
+    ? "border-dashed border-2 border-indigo-300 bg-white/95" 
+    : "bg-white border border-neutral-medium";
+  
   return (
-    <div className="flow-node bg-white p-4 shadow-md border border-neutral-medium max-w-md">
+    <div className={`flow-node p-4 shadow-md max-w-md ${connectorClass}`}>
       <Handle type="target" position={Position.Top} className="w-3 h-3 bg-primary" />
       
       <div className="flex items-center mb-3">
@@ -108,6 +114,11 @@ function FlowNode({ data }: FlowNodeProps) {
           <span className="flex items-center">{stepTypeStyles.icon}</span>
           <span>{stepType || step.stepType || 'Conversation Step'}</span>
         </Badge>
+        {isConnector && (
+          <Badge variant="secondary" className="ml-2 text-xs">
+            Continues on next page
+          </Badge>
+        )}
       </div>
       
       {/* Display messages in their original order */}
