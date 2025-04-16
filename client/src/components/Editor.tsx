@@ -203,12 +203,20 @@ Great! I'll recommend our high-performance models.`}
                         size="sm"
                         className="mr-2 text-neutral-dark/90 hover:text-neutral-dark"
                         onClick={() => {
-                          const textArea = document.querySelector('textarea');
+                          // Get the specific conversation flow textarea using the name attribute
+                          const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
                           if (textArea) {
                             const start = textArea.selectionStart;
                             const value = field.value;
                             const newValue = value.substring(0, start) + '\n→\n' + value.substring(start);
                             field.onChange(newValue);
+                            
+                            // Set focus back to the textarea and restore cursor position after the inserted arrow
+                            setTimeout(() => {
+                              textArea.focus();
+                              const newPosition = start + 3; // Length of \n→\n
+                              textArea.setSelectionRange(newPosition, newPosition);
+                            }, 0);
                           }
                         }}
                       >
@@ -224,12 +232,20 @@ Great! I'll recommend our high-performance models.`}
                         size="sm"
                         className="mr-2 text-amber-600 hover:text-amber-700"
                         onClick={() => {
-                          const textArea = document.querySelector('textarea');
+                          // Get the specific conversation flow textarea
+                          const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
                           if (textArea) {
                             const start = textArea.selectionStart;
                             const value = field.value;
                             const newValue = value.substring(0, start) + '\nCustomer:\n' + value.substring(start);
                             field.onChange(newValue);
+                            
+                            // Set focus back to the textarea and move cursor after inserted text
+                            setTimeout(() => {
+                              textArea.focus();
+                              const newPosition = start + 11; // Length of \nCustomer:\n
+                              textArea.setSelectionRange(newPosition, newPosition);
+                            }, 0);
                           }
                         }}
                       >
@@ -246,12 +262,20 @@ Great! I'll recommend our high-performance models.`}
                         size="sm"
                         className="text-indigo-600 hover:text-indigo-700"
                         onClick={() => {
-                          const textArea = document.querySelector('textarea');
+                          // Get the specific conversation flow textarea
+                          const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
                           if (textArea) {
                             const start = textArea.selectionStart;
                             const value = field.value;
                             const newValue = value.substring(0, start) + '\nAgent:\n' + value.substring(start);
                             field.onChange(newValue);
+                            
+                            // Set focus back to the textarea and move cursor after inserted text
+                            setTimeout(() => {
+                              textArea.focus();
+                              const newPosition = start + 8; // Length of \nAgent:\n
+                              textArea.setSelectionRange(newPosition, newPosition);
+                            }, 0);
                           }
                         }}
                       >
