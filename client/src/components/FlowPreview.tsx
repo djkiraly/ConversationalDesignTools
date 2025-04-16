@@ -30,7 +30,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     return parsedFlow.pairs.map((pair, index) => ({
       id: `node-${index}`,
       type: 'conversationNode',
-      position: { x: 0, y: index * 200 }, // Stacked vertically
+      position: { x: 0, y: index * 300 }, // Increased vertical spacing
       data: { 
         pair, 
         stepNumber: index + 1,
@@ -64,13 +64,14 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
       ...node,
       position: { 
         x: centerX, 
-        y: index * 220 // Add more vertical spacing
+        y: index * 350 // Match the increased vertical spacing
       }
     }));
 
     // We can't directly modify the nodes array
     // This is just a visual indication that something happened
     // since ReactFlow handles the actual positions
+    // TODO: Implement proper node arrangement with ReactFlow instance methods
     alert("Nodes have been auto-arranged");
   }, [nodes]);
 
