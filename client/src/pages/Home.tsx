@@ -47,7 +47,7 @@ export default function Home() {
   }, [params?.id, useCases, isLoadingUseCases, setLocation]);
 
   // Parse conversation flow for visualization with step type detection
-  const parsedFlow = activeUseCase ? parseConversationFlowWithTypes(activeUseCase.conversationFlow) : { pairs: [] };
+  const parsedFlow = activeUseCase ? parseConversationFlowWithTypes(activeUseCase.conversationFlow) : { steps: [] };
 
   // Mutations
   const createUseCaseMutation = useMutation({

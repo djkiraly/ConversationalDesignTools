@@ -6,7 +6,7 @@ import ReactFlow, {
   Panel
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { UseCase, ParsedFlow } from "@shared/schema";
+import { UseCase, ParsedFlow, Message } from "@shared/schema";
 import { Expand, Download, WandSparkles, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
