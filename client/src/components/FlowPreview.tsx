@@ -47,9 +47,15 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
   // Mutation to save node positions to the database
   const updateNodePositionsMutation = useMutation({
     mutationFn: async (positions: Record<string, XYPosition>) => {
-      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, {
+      // Need to include all the required fields from the existing useCase
+      const updateData = {
+        title: useCase.title,
+        description: useCase.description,
+        conversationFlow: useCase.conversationFlow,
         nodePositions: JSON.stringify(positions)
-      });
+      };
+      
+      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, updateData);
       return response.json();
     },
     onSuccess: () => {
