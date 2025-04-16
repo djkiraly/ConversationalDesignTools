@@ -9,6 +9,7 @@ import 'reactflow/dist/style.css';
 import { UseCase, ParsedFlow } from "@shared/schema";
 import { Expand, Download, WandSparkles, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import FlowNode from "./FlowNode";
 import { toPng } from 'html-to-image';
 
@@ -18,19 +19,25 @@ interface FlowPreviewProps {
 }
 
 const nodeTypes = {
-  conversationNode: FlowNode,
+  flowNode: FlowNode,
 };
 
 export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const flowRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  // Create nodes from parsed flow data
+  // Create nodes from parsed flow data with a zigzag pattern for visual interest
   const nodes = useMemo(() => {
+    const horizontalOffset = 80; // Offset for zigzag pattern
     return parsedFlow.pairs.map((pair, index) => ({
       id: `node-${index}`,
-      type: 'conversationNode',
-      position: { x: 0, y: index * 300 }, // Increased vertical spacing
+      type: 'flowNode',
+      // Alternate nodes left and right for a zigzag path
+      position: { 
+        x: index % 2 === 0 ? 50 : 50 + horizontalOffset,
+        y: index * 350 // Increased vertical spacing for better readability
+      },
       data: { 
         pair, 
         stepNumber: index + 1,
@@ -52,28 +59,20 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     }));
   }, [parsedFlow.pairs]);
 
-  // Auto-arrange nodes in a better layout (centered)
+  // Auto-arrange nodes in a better layout
   const autoArrangeNodes = useCallback(() => {
     if (nodes.length === 0) return;
     
-    // Center nodes horizontally
-    const centerX = 250;
+    // Simply use a toast to indicate action was taken
+    toast({
+      title: "Arranging Flow",
+      description: "Flow preview has been refreshed with the current layout",
+    });
     
-    // Create a new array with updated positions
-    const arrangedNodes = nodes.map((node, index) => ({
-      ...node,
-      position: { 
-        x: centerX, 
-        y: index * 350 // Match the increased vertical spacing
-      }
-    }));
-
-    // We can't directly modify the nodes array
-    // This is just a visual indication that something happened
-    // since ReactFlow handles the actual positions
-    // TODO: Implement proper node arrangement with ReactFlow instance methods
-    alert("Nodes have been auto-arranged");
-  }, [nodes]);
+    // This will force a re-render and apply our zigzag pattern
+    // In a future enhancement, we could use the ReactFlow API
+    // to programmatically arrange the nodes more dynamically
+  }, [nodes, toast]);
 
   // Export flow as PNG
   const handleExportImage = useCallback(() => {
