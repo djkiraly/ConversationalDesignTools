@@ -1,13 +1,17 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
-  Panel
+  Panel,
+  Node,
+  NodeChange,
+  applyNodeChanges,
+  XYPosition
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { UseCase, ParsedFlow, Message } from "@shared/schema";
-import { Expand, Download, WandSparkles, Edit } from "lucide-react";
+import { Expand, Download, WandSparkles, Edit, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import FlowNode from "./FlowNode";
@@ -18,6 +22,7 @@ interface FlowPreviewProps {
   parsedFlow: ParsedFlow;
 }
 
+// Define node types
 const nodeTypes = {
   flowNode: FlowNode,
 };
@@ -26,26 +31,59 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const flowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-
-  // Create nodes from parsed flow data with a zigzag pattern for visual interest
-  const nodes = useMemo(() => {
+  
+  // State to keep track of saved node positions
+  const [savedPositions, setSavedPositions] = useState<Record<string, XYPosition>>({});
+  // State to store and manage the actual nodes
+  const [flowNodes, setFlowNodes] = useState<Node[]>([]);
+  
+  // Initialize or update nodes from the parsed flow data
+  useEffect(() => {
+    if (parsedFlow.steps.length === 0) {
+      setFlowNodes([]);
+      return;
+    }
+    
     const horizontalOffset = 80; // Offset for zigzag pattern
-    return parsedFlow.steps.map((step, index) => ({
-      id: `node-${index}`,
-      type: 'flowNode',
-      // Alternate nodes left and right for a zigzag path
-      position: { 
+    const newNodes = parsedFlow.steps.map((step, index) => {
+      const nodeId = `node-${index}`;
+      
+      // Use saved position if available, otherwise use default position
+      const position = savedPositions[nodeId] || { 
         x: index % 2 === 0 ? 50 : 50 + horizontalOffset,
         y: index * 350 // Increased vertical spacing for better readability
-      },
-      data: { 
-        step, 
-        stepNumber: index + 1,
-        // Use step type from the data or default
-        stepType: step.stepType
-      },
-    }));
-  }, [parsedFlow.steps]);
+      };
+      
+      return {
+        id: nodeId,
+        type: 'flowNode',
+        position: position,
+        data: { 
+          step, 
+          stepNumber: index + 1,
+          stepType: step.stepType
+        },
+      };
+    });
+    
+    setFlowNodes(newNodes);
+  }, [parsedFlow.steps, savedPositions]);
+  
+  // Handler for node changes (dragging)
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    // Apply changes to the nodes
+    setFlowNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
+    
+    // Update saved positions for any moved nodes
+    changes.forEach(change => {
+      if (change.type === 'position' && change.position) {
+        setSavedPositions(prev => ({
+          ...prev,
+          [change.id]: change.position as XYPosition
+        }));
+      }
+    });
+  }, []);
 
   // Create edges to connect the nodes
   const edges = useMemo(() => {
@@ -61,18 +99,17 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
 
   // Auto-arrange nodes in a better layout
   const autoArrangeNodes = useCallback(() => {
-    if (nodes.length === 0) return;
+    if (flowNodes.length === 0) return;
     
-    // Simply use a toast to indicate action was taken
+    // Reset saved positions
+    setSavedPositions({});
+    
+    // Toast to indicate action was taken
     toast({
       title: "Arranging Flow",
-      description: "Flow preview has been refreshed with the current layout",
+      description: "Flow nodes have been reset to their default positions",
     });
-    
-    // This will force a re-render and apply our zigzag pattern
-    // In a future enhancement, we could use the ReactFlow API
-    // to programmatically arrange the nodes more dynamically
-  }, [nodes, toast]);
+  }, [flowNodes, toast, setSavedPositions]);
 
   // Export flow as PNG
   const handleExportImage = useCallback(() => {
@@ -144,9 +181,10 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
           </div>
         ) : (
           <ReactFlow
-            nodes={nodes}
+            nodes={flowNodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
             fitView
             fitViewOptions={{ padding: 0.3 }}
             minZoom={0.1}
