@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -20,6 +20,7 @@ export const useCases = pgTable("use_cases", {
   title: text("title").notNull(),
   description: text("description"),
   conversationFlow: text("conversation_flow").notNull(),
+  nodePositions: text("node_positions"),  // Store node positions as JSON string
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -28,12 +29,14 @@ export const insertUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
   conversationFlow: true,
+  nodePositions: true,
 });
 
 export const updateUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
   conversationFlow: true,
+  nodePositions: true,
 });
 
 // Flow Node model (for storing parsed conversation nodes)
@@ -45,6 +48,8 @@ export const flowNodes = pgTable("flow_nodes", {
   customerText: text("customer_text").notNull(),
   agentText: text("agent_text").notNull(),
   nextNodeId: integer("next_node_id"),
+  positionX: real("position_x"),  // X coordinate in the flow diagram
+  positionY: real("position_y"),  // Y coordinate in the flow diagram
 });
 
 export const insertFlowNodeSchema = createInsertSchema(flowNodes).pick({
@@ -54,6 +59,8 @@ export const insertFlowNodeSchema = createInsertSchema(flowNodes).pick({
   customerText: true,
   agentText: true,
   nextNodeId: true,
+  positionX: true,
+  positionY: true,
 });
 
 // Types
@@ -77,6 +84,7 @@ export interface ConversationStep {
   messages: Message[];
   stepType?: string;
   stepNumber: number;
+  position?: { x: number; y: number };
 }
 
 export interface ParsedFlow {

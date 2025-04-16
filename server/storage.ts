@@ -228,4 +228,23 @@ Agent: Excellent choice! I'll guide you through the two-factor authentication se
   }
 }
 
-export const storage = new MemStorage();
+// Export storage interface for implementation
+// Note: The actual implementation is set in a separate file to avoid circular imports
+export let storage: IStorage;
+
+// Function to set the storage implementation (called from index.ts)
+export function setStorage(impl: IStorage) {
+  storage = impl;
+}
+
+// Seed initial data into the database
+export async function seedInitialData() {
+  if (!storage) {
+    throw new Error('Storage not initialized');
+  }
+  
+  if ('seedInitialData' in storage) {
+    // If the storage has a seedInitialData method, call it
+    await (storage as any).seedInitialData();
+  }
+}

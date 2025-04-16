@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initDatabase } from "./db";
+import { seedInitialData } from "./storage";
+import { initializeStorage } from "./storage-setup";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +40,26 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    // Initialize database before registering routes
+    log('Initializing database...', 'server');
+    await initDatabase();
+    log('Database initialized successfully', 'server');
+    
+    // Initialize storage implementation
+    log('Initializing storage...', 'server');
+    initializeStorage();
+    log('Storage initialized successfully', 'server');
+    
+    // Seed initial data if database is empty
+    log('Seeding initial data...', 'server');
+    await seedInitialData();
+    log('Data seeding completed', 'server');
+  } catch (error) {
+    log(`Initialization failed: ${(error as Error).message}`, 'server');
+    process.exit(1);
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

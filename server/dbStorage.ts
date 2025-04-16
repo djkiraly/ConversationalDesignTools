@@ -47,6 +47,7 @@ export class DbStorage implements IStorage {
     const result = await db.insert(useCases).values({
       ...insertUseCase,
       description: insertUseCase.description ?? null,
+      nodePositions: insertUseCase.nodePositions ?? null,
       createdAt: now,
       updatedAt: now
     }).returning();
@@ -92,7 +93,9 @@ export class DbStorage implements IStorage {
     const result = await db.insert(flowNodes).values({
       ...insertFlowNode,
       stepType: insertFlowNode.stepType ?? null,
-      nextNodeId: insertFlowNode.nextNodeId ?? null
+      nextNodeId: insertFlowNode.nextNodeId ?? null,
+      positionX: insertFlowNode.positionX ?? null,
+      positionY: insertFlowNode.positionY ?? null
     }).returning();
     
     return result[0];
@@ -132,6 +135,13 @@ export class DbStorage implements IStorage {
     await this.createUseCase({
       title: "Customer Order Inquiry",
       description: "Agent helps customer track their order status",
+      nodePositions: JSON.stringify({
+        '0': { x: 100, y: 100 },
+        '1': { x: 350, y: 100 },
+        '2': { x: 600, y: 100 },
+        '3': { x: 350, y: 300 },
+        '4': { x: 600, y: 300 }
+      }),
       conversationFlow: `Customer: I placed an order last week and haven't received a shipping confirmation yet.
 Agent: I'd be happy to help you with that. Could you please provide your order number?
 →
@@ -152,6 +162,14 @@ Agent: You'll receive an email with the tracking information as soon as your ord
     await this.createUseCase({
       title: "Product Recommendation",
       description: "Agent helps customer find the right product based on customer needs",
+      nodePositions: JSON.stringify({
+        '0': { x: 150, y: 100 },
+        '1': { x: 400, y: 100 },
+        '2': { x: 650, y: 100 },
+        '3': { x: 150, y: 300 },
+        '4': { x: 400, y: 300 },
+        '5': { x: 650, y: 300 }
+      }),
       conversationFlow: `Customer: I'm looking for a new laptop for work.
 Agent: I'd be happy to help you find a laptop for work! Could you tell me what kind of work you'll be using it for?
 →
@@ -175,6 +193,13 @@ Agent: Perfect! I'll guide you through our quick checkout process. Would you pre
     await this.createUseCase({
       title: "Account Setup",
       description: "Agent guides new customer through account creation and setup",
+      nodePositions: JSON.stringify({
+        '0': { x: 200, y: 100 },
+        '1': { x: 200, y: 250 },
+        '2': { x: 450, y: 100 },
+        '3': { x: 450, y: 250 },
+        '4': { x: 700, y: 175 }
+      }),
       conversationFlow: `Customer: I'd like to set up a new account for your service.
 Agent: Welcome! I'd be happy to help you set up a new account. To get started, could you please provide your email address?
 →
