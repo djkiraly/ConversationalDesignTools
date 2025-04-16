@@ -41,6 +41,40 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
   const [flowNodes, setFlowNodes] = useState<Node[]>([]);
   // Track if positions have been modified
   const [positionsModified, setPositionsModified] = useState(false);
+  // Flag to debounce auto-saving
+  const [shouldSave, setShouldSave] = useState(false);
+  
+  // Mutation to save node positions to the database
+  const updateNodePositionsMutation = useMutation({
+    mutationFn: async (positions: Record<string, XYPosition>) => {
+      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, {
+        nodePositions: JSON.stringify(positions)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/use-cases', useCase.id.toString()] });
+      
+      // Only show a toast if this was a manual save (not auto-save)
+      if (!shouldSave) {
+        toast({
+          title: "Positions saved",
+          description: "Node positions have been saved successfully.",
+        });
+      }
+      
+      setPositionsModified(false);
+      setShouldSave(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving positions",
+        description: error.message,
+        variant: "destructive",
+      });
+      setShouldSave(false);
+    }
+  });
   
   // Initialize or update nodes from the parsed flow data
   useEffect(() => {
@@ -85,31 +119,26 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
       }
     }
   }, [useCase.nodePositions]);
-
-  // Mutation to save node positions to the database
-  const updateNodePositionsMutation = useMutation({
-    mutationFn: async (positions: Record<string, XYPosition>) => {
-      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, {
-        nodePositions: JSON.stringify(positions)
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/use-cases', useCase.id.toString()] });
-      toast({
-        title: "Positions saved",
-        description: "Node positions have been saved successfully.",
-      });
-      setPositionsModified(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error saving positions",
-        description: error.message,
-        variant: "destructive",
-      });
+  
+  // Set up a debounced save when positions are modified
+  useEffect(() => {
+    if (!positionsModified || Object.keys(savedPositions).length === 0) {
+      return;
     }
-  });
+    
+    const timer = setTimeout(() => {
+      setShouldSave(true);
+    }, 1500); // 1.5 seconds delay
+    
+    return () => clearTimeout(timer);
+  }, [savedPositions, positionsModified]);
+
+  // Perform the actual save when shouldSave changes to true
+  useEffect(() => {
+    if (shouldSave && Object.keys(savedPositions).length > 0) {
+      updateNodePositionsMutation.mutate(savedPositions);
+    }
+  }, [shouldSave, savedPositions, updateNodePositionsMutation]);
 
   // Save node positions to the database
   const saveNodePositions = useCallback(() => {
@@ -124,15 +153,19 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     setFlowNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
     
     // Update saved positions for any moved nodes
+    let positionsChanged = false;
     changes.forEach(change => {
       if (change.type === 'position' && change.position) {
         setSavedPositions(prev => ({
           ...prev,
           [change.id]: change.position as XYPosition
         }));
+        positionsChanged = true;
         setPositionsModified(true);
       }
     });
+
+    // Auto-save: We'll use a debounced save operation in another effect
   }, []);
 
   // Create edges to connect the nodes
@@ -276,18 +309,18 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
             <Edit className="mr-2 h-4 w-4" /> Edit Nodes
           </Button>
           <Button
-            variant="primary"
+            variant="default"
             size="sm"
             onClick={saveNodePositions}
             disabled={!positionsModified || parsedFlow.steps.length === 0}
           >
-            <Save className="mr-2 h-4 w-4" /> Save Positions
+            <Save className="mr-2 h-4 w-4" /> Save Now
           </Button>
         </div>
         <div className="text-sm text-neutral-dark/60">
           <span className="font-medium">{parsedFlow.steps.length}</span> steps in flow
           {positionsModified && (
-            <span className="ml-2 text-amber-600">(Unsaved changes)</span>
+            <span className="ml-2 text-amber-600">{shouldSave ? '(Auto-saving...)' : '(Waiting to save...)'}</span>
           )}
         </div>
       </div>
