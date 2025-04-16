@@ -165,19 +165,19 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                   
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
                     <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Formatting Instructions:
+                      <span className="truncate">Formatting Instructions:</span>
                     </h4>
                     <ul className="text-xs text-blue-700 space-y-1 ml-5 list-disc">
-                      <li><strong>Start each speaker with a label</strong>: "Customer:" or "Agent:"</li>
-                      <li><strong>Keep labels on separate lines</strong> from their messages for best results</li>
-                      <li><strong>Use → (arrow symbol) on its own line</strong> to indicate a new conversation step</li>
-                      <li>Each conversation step should contain both Customer and Agent messages</li>
+                      <li className="line-clamp-2"><strong>Start each speaker with a label</strong>: "Customer:" or "Agent:"</li>
+                      <li className="line-clamp-2"><strong>Keep labels on separate lines</strong> from their messages for best results</li>
+                      <li className="line-clamp-2"><strong>Use → (arrow symbol) on its own line</strong> to indicate a new conversation step</li>
+                      <li className="line-clamp-2">Each conversation step should contain both Customer and Agent messages</li>
                     </ul>
-                    <div className="bg-white p-2 rounded mt-2 text-xs border border-blue-100">
-                      <code className="block whitespace-pre text-blue-800">
+                    <div className="bg-white p-2 rounded mt-2 text-xs border border-blue-100 overflow-auto max-h-48">
+                      <code className="block whitespace-pre-wrap text-blue-800 break-words overflow-x-auto">
 {`Customer:
 I'm looking for a new laptop.
 
