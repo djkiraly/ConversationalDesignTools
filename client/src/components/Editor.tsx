@@ -553,10 +553,13 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                       <li className="line-clamp-2"><strong>Keep labels on separate lines</strong> from their messages for best results</li>
                       <li className="line-clamp-2"><strong>Use → (arrow symbol) on its own line</strong> to indicate a new conversation step</li>
                       <li className="line-clamp-2">Each conversation step should contain both Customer and Agent messages</li>
+                      <li className="line-clamp-2"><strong>Special step types</strong>: Use "→ [Entry Point]", "→ [Exit Point]", "→ [Integration]", or "→ [Decision Point]"</li>
                     </ul>
                     <div className="bg-white p-2 rounded mt-2 text-xs border border-blue-100 overflow-auto max-h-48">
                       <code className="block whitespace-pre-wrap text-blue-800 break-words overflow-x-auto">
-{`Customer:
+{`→ [Entry Point]
+
+Customer:
 I'm looking for a new laptop.
 
 Agent:
@@ -568,7 +571,9 @@ Customer:
 I need it for work and gaming.
 
 Agent:
-Great! I'll recommend our high-performance models.`}
+Great! I'll recommend our high-performance models.
+
+→ [Exit Point]`}
                       </code>
                     </div>
                   </div>

@@ -187,6 +187,18 @@ export function parseConversationFlow(text: string): ParsedFlow {
       }
     }
     
+    // For special step types, we may have no messages and that's okay
+    const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point'].includes(stepType);
+    
+    // If we have a special step type with no customer/agent messages, still create a valid step
+    if (isSpecialStepType && messages.length === 0) {
+      return {
+        messages: [], // Empty messages array for special step types
+        stepType,
+        stepNumber: stepIndex + 1
+      };
+    }
+    
     // Return the step with messages in their original order
     return {
       messages,
@@ -195,9 +207,13 @@ export function parseConversationFlow(text: string): ParsedFlow {
     };
   });
   
-  // Only include steps with at least one valid message
+  // Include steps with at least one valid message OR special step types with no messages
   return {
-    steps: steps.filter(step => step.messages.length > 0)
+    steps: steps.filter(step => {
+      const stepType = step.stepType || '';
+      const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point'].includes(stepType);
+      return step.messages.length > 0 || isSpecialStepType;
+    })
   };
 }
 
@@ -210,35 +226,45 @@ export function parseConversationFlowWithTypes(text: string): ParsedFlow {
   
   // Enhance with step type detection
   const enhancedSteps = basicParsed.steps.map((step, index, allSteps) => {
-    // Extract text for all messages to analyze content
-    const allText = step.messages.map(msg => msg.text).join(' ').toLowerCase();
-    
-    // First step is usually an inquiry
-    if (index === 0) {
-      return { ...step, stepType: "Customer Inquiry" };
+    // Check for special step types - preserve them
+    const stepType = step.stepType || '';
+    const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point'].includes(stepType);
+    if (isSpecialStepType) {
+      return step; // Keep special step types as is
     }
     
-    // Last step is usually completion or checkout
-    if (index === allSteps.length - 1) {
-      return { ...step, stepType: "Completion" };
-    }
-    
-    // Detect step type based on content
-    if (allText.includes("price") || allText.includes("cost") || allText.includes("$")) {
-      return { ...step, stepType: "Price Inquiry" };
-    }
-    
-    if (allText.includes("buy") || allText.includes("purchase")) {
-      return { ...step, stepType: "Purchase Decision" };
-    }
-    
-    if (allText.includes("need") || allText.includes("want") || 
-        allText.includes("recommend") || allText.includes("suggest")) {
-      return { ...step, stepType: "Requirement Gathering" };
+    // Only analyze content for steps with messages
+    if (step.messages && step.messages.length > 0) {
+      // Extract text for all messages to analyze content
+      const allText = step.messages.map(msg => msg.text).join(' ').toLowerCase();
+      
+      // First step is usually an inquiry
+      if (index === 0) {
+        return { ...step, stepType: "Customer Inquiry" };
+      }
+      
+      // Last step is usually completion or checkout
+      if (index === allSteps.length - 1) {
+        return { ...step, stepType: "Completion" };
+      }
+      
+      // Detect step type based on content
+      if (allText.includes("price") || allText.includes("cost") || allText.includes("$")) {
+        return { ...step, stepType: "Price Inquiry" };
+      }
+      
+      if (allText.includes("buy") || allText.includes("purchase")) {
+        return { ...step, stepType: "Purchase Decision" };
+      }
+      
+      if (allText.includes("need") || allText.includes("want") || 
+          allText.includes("recommend") || allText.includes("suggest")) {
+        return { ...step, stepType: "Requirement Gathering" };
+      }
     }
     
     // Default
-    return { ...step, stepType: "Conversation Step" };
+    return { ...step, stepType: step.stepType || "Conversation Step" };
   });
   
   return {
