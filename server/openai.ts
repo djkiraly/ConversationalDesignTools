@@ -104,7 +104,8 @@ export async function getConversationFlowSuggestion(
   title: string, 
   description: string,
   currentFlow: string,
-  agentPersona: string
+  agentPersona: string,
+  additionalInstructions?: string
 ): Promise<{ 
   success: boolean; 
   suggestion?: string;
@@ -114,7 +115,7 @@ export async function getConversationFlowSuggestion(
     const openai = new OpenAI({ apiKey });
     
     // Prepare the prompt
-    const prompt = `You are an expert in conversational AI design and flow optimization. 
+    let prompt = `You are an expert in conversational AI design and flow optimization. 
 Review the following conversation flow between a Customer and an Agent. 
 Suggest improvements to make the conversation more natural, effective, and helpful.
 
@@ -133,9 +134,15 @@ Please analyze this conversation flow and provide an improved version that:
 3. Ensures the agent's responses align with the provided Agent Persona
 4. Improves clarity and addresses potential points of confusion
 5. Adds appropriate follow-up questions or clarifications where needed
-6. Enhances the logical flow between conversation steps
+6. Enhances the logical flow between conversation steps`;
 
-Return ONLY the improved conversation flow in the same format with Customer/Agent labels and → arrows for step separation.
+    // Add additional instructions if provided
+    if (additionalInstructions && additionalInstructions.trim() !== '') {
+      prompt += `\n\nADDITIONAL INSTRUCTIONS:
+${additionalInstructions}`;
+    }
+
+    prompt += `\n\nReturn ONLY the improved conversation flow in the same format with Customer/Agent labels and → arrows for step separation.
 Do not include explanations or analysis - just provide the complete improved flow.`;
 
     const response = await openai.chat.completions.create({
