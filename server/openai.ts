@@ -30,7 +30,8 @@ export async function validateOpenAIKey(apiKey: string): Promise<{ valid: boolea
 export async function getUseCaseSuggestions(
   apiKey: string, 
   title: string, 
-  description: string
+  description: string,
+  agentPersona?: string
 ): Promise<{ 
   success: boolean; 
   suggestions?: { 
@@ -45,14 +46,20 @@ export async function getUseCaseSuggestions(
     const openai = new OpenAI({ apiKey });
     
     // Prepare the prompt
-    const prompt = `You are an expert in designing conversational flows for customer service scenarios. 
+    let prompt = `You are an expert in designing conversational flows for customer service scenarios. 
 Given the following use case title and description, suggest improvements to make it more specific, 
 detailed, and effective for a customer service scenario. Respond with JSON format containing suggested 
 title, description, agent persona, and optionally a sample conversation flow.
 
 Current Title: "${title}"
-Current Description: "${description}"
+Current Description: "${description}"`;
 
+    // Include agent persona if available
+    if (agentPersona) {
+      prompt += `\nCurrent Agent Persona: "${agentPersona}"`;
+    }
+
+    prompt += `\n
 Provide suggestions in this JSON format:
 {
   "title": "Improved title here",

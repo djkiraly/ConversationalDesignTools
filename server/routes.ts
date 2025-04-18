@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OpenAI Suggestions API
   app.post('/api/openai/suggestions', async (req, res) => {
     try {
-      const { title, description } = req.body;
+      const { title, description, agentPersona } = req.body;
       
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
@@ -198,6 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Received request for AI suggestions with title:", title);
       console.log("Received request for AI suggestions with description:", description);
+      console.log("Received request for AI suggestions with agentPersona:", agentPersona || "none");
       
       // Get the OpenAI API key from settings
       const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
@@ -213,7 +214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suggestionsResult = await getUseCaseSuggestions(
         apiKeySetting.value,
         title,
-        description
+        description,
+        agentPersona
       );
       
       res.json(suggestionsResult);
