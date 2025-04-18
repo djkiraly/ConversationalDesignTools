@@ -97,3 +97,75 @@ IMPORTANT: Do not include "agentPersona" or "conversationFlow" fields in your re
     };
   }
 }
+
+// Get suggestions for agent persona based on title and description
+export async function getAgentPersonaSuggestion(
+  apiKey: string, 
+  title: string, 
+  description: string,
+  currentPersona?: string
+): Promise<{ 
+  success: boolean; 
+  suggestion?: string;
+  error?: string 
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Prepare the prompt
+    let prompt = `You are an expert in designing conversational AI agent personas. 
+Given the following use case title and description, suggest a detailed agent persona 
+that would be effective for this scenario. The agent persona should define the tone, 
+personality, knowledge areas, and behavior of the AI assistant when interacting with users.
+
+Current Title: "${title}"
+Current Description: "${description}"`;
+
+    // Include current persona if available
+    if (currentPersona && currentPersona.trim() !== '') {
+      prompt += `\nCurrent Agent Persona: "${currentPersona}"
+      
+Analyze the current persona and suggest improvements or an alternative approach that might 
+better serve this use case. If the current persona is already good, enhance it with additional details.`;
+    }
+
+    prompt += `\n
+Create a comprehensive agent persona that includes:
+1. The agent's personality traits (friendly, professional, empathetic, etc.)
+2. Communication style and tone of voice
+3. Level of formality
+4. Key knowledge areas relevant to the use case
+5. How the agent should handle difficult situations or questions
+6. Any specific phrases or language patterns the agent should use
+
+Provide a cohesive paragraph (200-300 words) that covers these aspects and creates a clear 
+picture of how the agent should interact with users.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { role: "system", content: "You are an expert in creating effective agent personas for conversational AI assistants." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    const suggestion = response.choices[0].message.content?.trim();
+    
+    if (!suggestion) {
+      throw new Error('No suggestion was generated');
+    }
+    
+    return { 
+      success: true, 
+      suggestion
+    };
+  } catch (error: any) {
+    console.error('Error getting agent persona suggestion:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to generate agent persona suggestion'
+    };
+  }
+}
