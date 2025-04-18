@@ -63,6 +63,24 @@ export const insertFlowNodeSchema = createInsertSchema(flowNodes).pick({
   positionY: true,
 });
 
+// Settings model for app configuration
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSettingSchema = createInsertSchema(settings).pick({
+  key: true,
+  value: true,
+});
+
+export const updateSettingSchema = createInsertSchema(settings).pick({
+  value: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -73,6 +91,10 @@ export type UseCase = typeof useCases.$inferSelect;
 
 export type InsertFlowNode = z.infer<typeof insertFlowNodeSchema>;
 export type FlowNode = typeof flowNodes.$inferSelect;
+
+export type InsertSetting = z.infer<typeof insertSettingSchema>;
+export type UpdateSetting = z.infer<typeof updateSettingSchema>;
+export type Setting = typeof settings.$inferSelect;
 
 // Flow and conversation types
 export interface Message {

@@ -1,14 +1,18 @@
 import { 
   users, 
   useCases, 
-  flowNodes, 
+  flowNodes,
+  settings,
   type User, 
   type InsertUser, 
   type UseCase, 
   type InsertUseCase, 
   type UpdateUseCase,
   type FlowNode,
-  type InsertFlowNode
+  type InsertFlowNode,
+  type Setting,
+  type InsertSetting,
+  type UpdateSetting
 } from "@shared/schema";
 
 // Storage interface
@@ -30,6 +34,13 @@ export interface IStorage {
   createFlowNode(flowNode: InsertFlowNode): Promise<FlowNode>;
   updateFlowNode(id: number, flowNode: Partial<FlowNode>): Promise<FlowNode>;
   deleteFlowNode(id: number): Promise<void>;
+  
+  // Settings management
+  getAllSettings(): Promise<Setting[]>;
+  getSetting(key: string): Promise<Setting | undefined>;
+  createSetting(setting: InsertSetting): Promise<Setting>;
+  updateSetting(key: string, setting: UpdateSetting): Promise<Setting>;
+  deleteSetting(key: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
