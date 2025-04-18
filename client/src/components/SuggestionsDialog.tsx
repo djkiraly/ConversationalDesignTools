@@ -19,11 +19,16 @@ interface SuggestionsDialogProps {
   }) => void;
 }
 
+interface ConversationTurn {
+  customer?: string;
+  agent?: string;
+}
+
 interface Suggestions {
   title: string;
   description: string;
   agentPersona?: string;
-  conversationFlow?: string;
+  conversationFlow?: string | ConversationTurn[] | any;
 }
 
 interface OpenAIResponse {
@@ -151,7 +156,17 @@ export default function SuggestionsDialog({
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Conversation Flow Suggestion</h3>
                 <div className="bg-blue-50 border border-blue-100 rounded-md p-3 text-blue-900 whitespace-pre-line font-mono text-xs overflow-auto max-h-64">
-                  {suggestions.conversationFlow}
+                  {typeof suggestions.conversationFlow === 'string'
+                    ? suggestions.conversationFlow
+                    : Array.isArray(suggestions.conversationFlow)
+                      ? suggestions.conversationFlow.map((item, index) => (
+                          <div key={index} className="mb-2">
+                            {item.customer && <div><strong>Customer:</strong> {item.customer}</div>}
+                            {item.agent && <div><strong>Agent:</strong> {item.agent}</div>}
+                          </div>
+                        ))
+                      : JSON.stringify(suggestions.conversationFlow, null, 2)
+                  }
                 </div>
               </div>
             )}

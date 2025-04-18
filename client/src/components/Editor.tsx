@@ -152,7 +152,27 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     }
     
     if (suggestions.conversationFlow) {
-      formUpdates.conversationFlow = suggestions.conversationFlow;
+      // If conversationFlow is an array of conversation turns, convert to format expected by app
+      if (Array.isArray(suggestions.conversationFlow)) {
+        let formattedFlow = '';
+        suggestions.conversationFlow.forEach((turn, index) => {
+          if (turn.customer) {
+            formattedFlow += `Customer: ${turn.customer}\n`;
+          }
+          if (turn.agent) {
+            formattedFlow += `Agent: ${turn.agent}\n`;
+          }
+          if (index < suggestions.conversationFlow.length - 1) {
+            formattedFlow += '\n→\n\n';
+          }
+        });
+        formUpdates.conversationFlow = formattedFlow;
+      } else if (typeof suggestions.conversationFlow === 'string') {
+        formUpdates.conversationFlow = suggestions.conversationFlow;
+      } else {
+        // If it's an object or other format, stringify it
+        formUpdates.conversationFlow = JSON.stringify(suggestions.conversationFlow);
+      }
     }
     
     // Update the form with the suggestions
