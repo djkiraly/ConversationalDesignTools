@@ -184,7 +184,8 @@ export class DbStorage implements IStorage {
     const defaultSettings = [
       { key: 'openai_api_key', value: '' },
       { key: 'openai_system_prompt', value: 'You are a helpful assistant that responds to customer requests. Your goal is to understand the customer needs and provide clear, concise and helpful responses.' },
-      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' }
+      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' },
+      { key: 'agent_persona', value: 'Friendly, professional, and solution-oriented customer service representative who communicates clearly and efficiently while maintaining a positive tone.' }
     ];
 
     for (const setting of defaultSettings) {
