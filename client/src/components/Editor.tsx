@@ -45,6 +45,8 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [agentPersona, setAgentPersona] = useState('');
   const [isSavingPersona, setIsSavingPersona] = useState(false);
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Define the Setting type
@@ -103,6 +105,24 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
       }
     });
   };
+  
+  // Auto-save title field
+  const saveTitle = (title: string) => {
+    if (isSavingTitle) return;
+    
+    setIsSavingTitle(true);
+    onSave({ title });
+    setTimeout(() => setIsSavingTitle(false), 1000); // Set a delay to prevent too frequent updates
+  };
+  
+  // Auto-save description field
+  const saveDescription = (description: string) => {
+    if (isSavingDescription) return;
+    
+    setIsSavingDescription(true);
+    onSave({ description });
+    setTimeout(() => setIsSavingDescription(false), 1000); // Set a delay to prevent too frequent updates
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -157,9 +177,12 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
       ...formUpdates
     });
     
+    // Also save the changes automatically
+    onSave(formUpdates);
+    
     toast({
       title: "Suggestions Applied",
-      description: "The AI suggestions have been applied to your use case."
+      description: "The AI suggestions have been applied and saved."
     });
   }
 
@@ -225,9 +248,27 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Use Case Name</FormLabel>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Use Case Name</FormLabel>
+                    {isSavingTitle && (
+                      <span className="text-xs text-neutral-dark/60 flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </span>
+                    )}
+                  </div>
                   <FormControl>
-                    <Input placeholder="Enter use case name" {...field} />
+                    <Input 
+                      placeholder="Enter use case name" 
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        saveTitle(e.target.value);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -239,14 +280,27 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Description</FormLabel>
+                    {isSavingDescription && (
+                      <span className="text-xs text-neutral-dark/60 flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </span>
+                    )}
+                  </div>
                   <FormControl>
                     <Textarea 
                       placeholder="Briefly describe this conversation flow"
                       className="h-20"
                       value={field.value || ''}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        saveDescription(e.target.value);
+                      }}
                       name={field.name}
                       ref={field.ref}
                     />
