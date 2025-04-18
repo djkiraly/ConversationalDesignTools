@@ -13,6 +13,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/use-case/:id" component={Home} />
+        <Route path="/customer-journey" component={CustomerJourney} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
