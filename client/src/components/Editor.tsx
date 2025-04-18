@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UseCase } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface EditorProps {
   useCase: UseCase;
@@ -37,7 +40,67 @@ const formSchema = updateUseCaseSchema.extend({
 });
 
 export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
+  const { toast } = useToast();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [agentPersona, setAgentPersona] = useState('');
+  const [isSavingPersona, setIsSavingPersona] = useState(false);
+  
+  // Define the Setting type
+  interface Setting {
+    id: number;
+    key: string;
+    value: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+  
+  // Fetch agent persona from settings
+  const { data: settings, isLoading: isLoadingSettings } = useQuery<Setting[]>({
+    queryKey: ['/api/settings']
+  });
+
+  // Update agent persona when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      const personaSetting = settings.find(s => s.key === 'agent_persona');
+      if (personaSetting) {
+        setAgentPersona(personaSetting.value);
+      }
+    }
+  }, [settings]);
+  
+  // Update agent persona mutation
+  const updateAgentPersona = useMutation({
+    mutationFn: async (value: string) => {
+      return apiRequest('PUT', '/api/settings/agent_persona', { value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: "Agent Persona Updated",
+        description: "The agent persona has been saved successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Update",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Save agent persona when blurred
+  const saveAgentPersona = () => {
+    if (isSavingPersona) return;
+    
+    setIsSavingPersona(true);
+    updateAgentPersona.mutate(agentPersona, {
+      onSettled: () => {
+        setIsSavingPersona(false);
+      }
+    });
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -150,6 +213,34 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                 </FormItem>
               )}
             />
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Agent Persona
+                </label>
+                {isSavingPersona && (
+                  <span className="text-xs text-neutral-dark/60 flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </span>
+                )}
+              </div>
+              <Textarea 
+                placeholder="Define the personality, tone, and behavior of the AI agent"
+                className="h-20"
+                value={agentPersona}
+                onChange={(e) => setAgentPersona(e.target.value)}
+                onBlur={() => saveAgentPersona()}
+                name="agentPersona"
+              />
+              <div className="text-xs text-neutral-dark/60 mt-1">
+                Define how the agent should behave when interacting with users. This affects the tone and style of AI responses.
+              </div>
+            </div>
             
             <FormField
               control={form.control}
