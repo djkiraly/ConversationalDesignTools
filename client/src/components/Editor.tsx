@@ -132,6 +132,46 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     element.click();
     document.body.removeChild(element);
   }
+  
+  // Handle applying suggestions from OpenAI
+  const handleApplySuggestions = (suggestions: {
+    title?: string;
+    description?: string;
+    agentPersona?: string;
+    conversationFlow?: string;
+  }) => {
+    // Create an object with only the form fields we want to update
+    const formUpdates: Partial<z.infer<typeof formSchema>> = {};
+    
+    if (suggestions.title) {
+      formUpdates.title = suggestions.title;
+    }
+    
+    if (suggestions.description) {
+      formUpdates.description = suggestions.description;
+    }
+    
+    if (suggestions.conversationFlow) {
+      formUpdates.conversationFlow = suggestions.conversationFlow;
+    }
+    
+    // Update the form with the suggestions
+    form.reset({
+      ...form.getValues(),
+      ...formUpdates
+    });
+    
+    // Update agent persona if provided
+    if (suggestions.agentPersona) {
+      setAgentPersona(suggestions.agentPersona);
+      saveAgentPersona();
+    }
+    
+    toast({
+      title: "Suggestions Applied",
+      description: "The AI suggestions have been applied to your use case."
+    });
+  }
 
   const editorClasses = `
     ${isFullscreen ? 'fixed inset-0 z-50' : 'md:w-1/2'} 
@@ -153,6 +193,16 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
 
   return (
     <div className={editorClasses}>
+      {/* Suggestions Dialog */}
+      <SuggestionsDialog
+        isOpen={showSuggestions}
+        onClose={() => setShowSuggestions(false)}
+        title={form.getValues().title}
+        description={form.getValues().description || ''}
+        agentPersona={agentPersona}
+        onApplySuggestions={handleApplySuggestions}
+      />
+
       <div className="p-4 border-b border-neutral-medium flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold text-neutral-dark">{useCase.title}</h2>

@@ -49,8 +49,8 @@ export default function SuggestionsDialog({
         description 
       });
       
-      if (response.success && response.suggestions) {
-        setSuggestions(response.suggestions);
+      if (response && !response.error) {
+        setSuggestions(response);
       } else {
         throw new Error(response.error || 'Failed to get suggestions');
       }
