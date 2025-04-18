@@ -48,28 +48,27 @@ export async function getUseCaseSuggestions(
     // Prepare the prompt
     let prompt = `You are an expert in designing conversational flows for customer service scenarios. 
 Given the following use case title and description, suggest improvements to make it more specific, 
-detailed, and effective for a customer service scenario. Respond with JSON format containing suggested 
-title, description, agent persona, and optionally a sample conversation flow.
+detailed, and effective for a customer service scenario. Respond with JSON format containing ONLY 
+an improved title and description. DO NOT include agent persona or conversation flow in your response.
 
 Current Title: "${title}"
 Current Description: "${description}"`;
 
-    // Include agent persona if available
+    // Include agent persona if available (as reference only)
     if (agentPersona) {
-      prompt += `\nCurrent Agent Persona: "${agentPersona}"`;
+      prompt += `\nCurrent Agent Persona (for reference only, do not modify): "${agentPersona}"`;
     }
 
     prompt += `\n
 Provide suggestions in this JSON format:
 {
   "title": "Improved title here",
-  "description": "Improved detailed description here",
-  "agentPersona": "Suggested tone and personality for the agent",
-  "conversationFlow": "Optional: Sample conversation flow if you have specific suggestions"
+  "description": "Improved detailed description here"
 }
 
-The title should be concise but descriptive. The description should provide context and goals. 
-The agentPersona should define the tone, style, and personality traits the agent should exhibit.`;
+The title should be concise but descriptive (maximum 5-7 words). 
+The description should provide context and goals, be comprehensive but concise (2-3 sentences maximum).
+IMPORTANT: Do not include "agentPersona" or "conversationFlow" fields in your response.`;
 
     // Make a request to OpenAI
     const response = await openai.chat.completions.create({

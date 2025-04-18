@@ -109,13 +109,13 @@ export default function SuggestionsDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>AI Suggestions</DialogTitle>
+          <DialogTitle>Title & Description Improvements</DialogTitle>
         </DialogHeader>
         
         {loading ? (
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-sm text-neutral-dark">Generating suggestions using OpenAI...</p>
+            <p className="text-sm text-neutral-dark">Generating title and description improvements using OpenAI...</p>
           </div>
         ) : error ? (
           <div className="py-6">
@@ -143,33 +143,7 @@ export default function SuggestionsDialog({
               </div>
             </div>
             
-            {suggestions.agentPersona && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Agent Persona Suggestion</h3>
-                <div className="bg-blue-50 border border-blue-100 rounded-md p-3 text-blue-900 whitespace-pre-line">
-                  {suggestions.agentPersona}
-                </div>
-              </div>
-            )}
-            
-            {suggestions.conversationFlow && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Conversation Flow Suggestion</h3>
-                <div className="bg-blue-50 border border-blue-100 rounded-md p-3 text-blue-900 whitespace-pre-line font-mono text-xs overflow-auto max-h-64">
-                  {typeof suggestions.conversationFlow === 'string'
-                    ? suggestions.conversationFlow
-                    : Array.isArray(suggestions.conversationFlow)
-                      ? suggestions.conversationFlow.map((item, index) => (
-                          <div key={index} className="mb-2">
-                            {item.customer && <div><strong>Customer:</strong> {item.customer}</div>}
-                            {item.agent && <div><strong>Agent:</strong> {item.agent}</div>}
-                          </div>
-                        ))
-                      : JSON.stringify(suggestions.conversationFlow, null, 2)
-                  }
-                </div>
-              </div>
-            )}
+            {/* Agent Persona and Conversation Flow suggestions have been removed as requested */}
           </div>
         ) : null}
         

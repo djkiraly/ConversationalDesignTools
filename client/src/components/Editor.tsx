@@ -151,41 +151,11 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
       formUpdates.description = suggestions.description;
     }
     
-    if (suggestions.conversationFlow) {
-      // If conversationFlow is an array of conversation turns, convert to format expected by app
-      if (Array.isArray(suggestions.conversationFlow)) {
-        let formattedFlow = '';
-        suggestions.conversationFlow.forEach((turn, index) => {
-          if (turn.customer) {
-            formattedFlow += `Customer: ${turn.customer}\n`;
-          }
-          if (turn.agent) {
-            formattedFlow += `Agent: ${turn.agent}\n`;
-          }
-          if (index < suggestions.conversationFlow.length - 1) {
-            formattedFlow += '\n→\n\n';
-          }
-        });
-        formUpdates.conversationFlow = formattedFlow;
-      } else if (typeof suggestions.conversationFlow === 'string') {
-        formUpdates.conversationFlow = suggestions.conversationFlow;
-      } else {
-        // If it's an object or other format, stringify it
-        formUpdates.conversationFlow = JSON.stringify(suggestions.conversationFlow);
-      }
-    }
-    
-    // Update the form with the suggestions
+    // Update the form with the title and description suggestions only
     form.reset({
       ...form.getValues(),
       ...formUpdates
     });
-    
-    // Update agent persona if provided
-    if (suggestions.agentPersona) {
-      setAgentPersona(suggestions.agentPersona);
-      saveAgentPersona();
-    }
     
     toast({
       title: "Suggestions Applied",
@@ -308,7 +278,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                           <path d="M8 11h6" />
                           <path d="M9 7h4" />
                         </svg>
-                        Get AI Suggestions
+                        Improve Title & Description
                       </span>
                     </Button>
                   </div>
