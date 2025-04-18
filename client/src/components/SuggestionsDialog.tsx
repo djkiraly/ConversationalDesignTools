@@ -26,6 +26,12 @@ interface Suggestions {
   conversationFlow?: string;
 }
 
+interface OpenAIResponse {
+  success: boolean;
+  suggestions?: Suggestions;
+  error?: string;
+}
+
 export default function SuggestionsDialog({ 
   isOpen, 
   onClose, 
@@ -55,7 +61,7 @@ export default function SuggestionsDialog({
       const response = await apiRequest('POST', '/api/openai/suggestions', { 
         title, 
         description 
-      });
+      }) as OpenAIResponse;
       
       console.log("Received response:", response);
       
