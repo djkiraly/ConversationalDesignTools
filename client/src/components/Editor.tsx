@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { updateUseCaseSchema } from "@shared/schema";
-import { Expand, Save, Download, Wand2, MessageSquare, CornerDownRight, LogIn, LogOut, Database, GitBranch } from "lucide-react";
+import { Expand, Save, Download, Wand2, MessageSquare, CornerDownRight, LogIn, LogOut, Database, GitBranch, ChevronDown, ChevronUp } from "lucide-react";
 import SuggestionsDialog from "./SuggestionsDialog";
 import AgentPersonaSuggestionDialog from "./AgentPersonaSuggestionDialog";
 import ConversationFlowSuggestionDialog from "./ConversationFlowSuggestionDialog";
@@ -32,6 +32,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -58,6 +63,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showPersonaSuggestions, setShowPersonaSuggestions] = useState(false);
   const [showFlowSuggestions, setShowFlowSuggestions] = useState(false);
+  const [isFormatInstructionsOpen, setIsFormatInstructionsOpen] = useState(false);
   
   // Debounce timers for auto-save
   const titleSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -586,22 +592,35 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                     </div>
                   </div>
                   
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="truncate">Formatting Instructions:</span>
-                    </h4>
-                    <ul className="text-xs text-blue-700 space-y-1 ml-5 list-disc">
-                      <li className="line-clamp-2"><strong>Start each speaker with a label</strong>: "Customer:" or "Agent:"</li>
-                      <li className="line-clamp-2"><strong>Keep labels on separate lines</strong> from their messages for best results</li>
-                      <li className="line-clamp-2"><strong>Use → (arrow symbol) on its own line</strong> to indicate a new conversation step</li>
-                      <li className="line-clamp-2">Each conversation step should contain both Customer and Agent messages</li>
-                      <li className="line-clamp-2"><strong>Special step types</strong>: Use "→ [Entry Point]", "→ [Exit Point]", "→ [Integration]", or "→ [Decision Point]"</li>
-                    </ul>
-                    <div className="bg-white p-2 rounded mt-2 text-xs border border-blue-100 overflow-auto max-h-48">
-                      <code className="block whitespace-pre-wrap text-blue-800 break-words overflow-x-auto">
+                  <Collapsible 
+                    open={isFormatInstructionsOpen} 
+                    onOpenChange={setIsFormatInstructionsOpen}
+                    className="bg-blue-50 border border-blue-200 rounded-md mb-3"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <div className="p-3 flex justify-between items-center cursor-pointer hover:bg-blue-100/50 transition-colors">
+                        <h4 className="text-sm font-semibold text-blue-800 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="truncate">Formatting Instructions</span>
+                        </h4>
+                        {isFormatInstructionsOpen ? 
+                          <ChevronUp className="h-4 w-4 text-blue-700" /> : 
+                          <ChevronDown className="h-4 w-4 text-blue-700" />
+                        }
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-3 pb-3">
+                      <ul className="text-xs text-blue-700 space-y-1 ml-5 list-disc">
+                        <li className="line-clamp-2"><strong>Start each speaker with a label</strong>: "Customer:" or "Agent:"</li>
+                        <li className="line-clamp-2"><strong>Keep labels on separate lines</strong> from their messages for best results</li>
+                        <li className="line-clamp-2"><strong>Use → (arrow symbol) on its own line</strong> to indicate a new conversation step</li>
+                        <li className="line-clamp-2">Each conversation step should contain both Customer and Agent messages</li>
+                        <li className="line-clamp-2"><strong>Special step types</strong>: Use "→ [Entry Point]", "→ [Exit Point]", "→ [Integration]", or "→ [Decision Point]"</li>
+                      </ul>
+                      <div className="bg-white p-2 rounded mt-2 text-xs border border-blue-100 overflow-auto max-h-48">
+                        <code className="block whitespace-pre-wrap text-blue-800 break-words overflow-x-auto">
 {`→ [Entry Point]
 
 Customer:
@@ -619,9 +638,10 @@ Agent:
 Great! I'll recommend our high-performance models.
 
 → [Exit Point]`}
-                      </code>
-                    </div>
-                  </div>
+                        </code>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                   
                   <div className="border border-neutral-medium rounded-md overflow-hidden">
                     <div className="bg-neutral-light px-3 py-2 border-b border-neutral-medium flex items-center">
