@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { updateUseCaseSchema } from "@shared/schema";
-import { Expand, Save, Download } from "lucide-react";
+import { Expand, Save, Download, Wand2 } from "lucide-react";
+import SuggestionsDialog from "./SuggestionsDialog";
+import AgentPersonaSuggestionDialog from "./AgentPersonaSuggestionDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +29,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import SuggestionsDialog from "./SuggestionsDialog";
 
 interface EditorProps {
   useCase: UseCase;
@@ -252,6 +253,24 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
       description: "The AI suggestions have been applied and saved."
     });
   }
+  
+  // Handle applying persona suggestion
+  const handleApplyPersonaSuggestion = (suggestion: string) => {
+    if (!suggestion.trim()) return;
+    
+    // Update the agent persona
+    setAgentPersona(suggestion);
+    
+    // Save the updated agent persona
+    updateAgentPersona.mutate(suggestion, {
+      onSuccess: () => {
+        toast({
+          title: "Agent Persona Updated",
+          description: "The AI suggestion for agent persona has been applied."
+        });
+      }
+    });
+  }
 
   const editorClasses = `
     ${isFullscreen ? 'fixed inset-0 z-50' : 'md:w-1/2'} 
@@ -281,6 +300,16 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
         description={form.getValues().description || ''}
         agentPersona={agentPersona}
         onApplySuggestions={handleApplySuggestions}
+      />
+      
+      {/* Agent Persona Suggestion Dialog */}
+      <AgentPersonaSuggestionDialog
+        isOpen={showPersonaSuggestions}
+        onClose={() => setShowPersonaSuggestions(false)}
+        title={form.getValues().title}
+        description={form.getValues().description || ''}
+        currentPersona={agentPersona}
+        onApplySuggestion={handleApplyPersonaSuggestion}
       />
 
       <div className="p-4 border-b border-neutral-medium flex justify-between items-center">
@@ -430,8 +459,34 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                 onBlur={() => saveAgentPersona()}
                 name="agentPersona"
               />
-              <div className="text-xs text-neutral-dark/60 mt-1">
-                Define how the agent should behave when interacting with users. This affects the tone and style of AI responses.
+              <div className="flex justify-between mt-1">
+                <div className="text-xs text-neutral-dark/60">
+                  Define how the agent should behave when interacting with users. This affects the tone and style of AI responses.
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-primary border-primary/40 hover:bg-primary/10"
+                  onClick={() => {
+                    const values = form.getValues();
+                    // At least one of title or description should be provided
+                    if (!values.title && !values.description) {
+                      toast({
+                        title: "Missing information",
+                        description: "Please provide either a title or description for context before requesting AI suggestions for Agent Persona.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setShowPersonaSuggestions(true);
+                  }}
+                >
+                  <span className="flex items-center">
+                    <Wand2 className="w-3 h-3 mr-1" />
+                    AI Suggestion
+                  </span>
+                </Button>
               </div>
             </div>
             
