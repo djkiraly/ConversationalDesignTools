@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UseCase } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -48,6 +48,10 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Debounce timers for auto-save
+  const titleSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const descriptionSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Define the Setting type
   interface Setting {
@@ -106,22 +110,47 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     });
   };
   
-  // Auto-save title field
+  // Auto-save title field with validation
   const saveTitle = (title: string) => {
     if (isSavingTitle) return;
     
+    // Validate title length before saving
+    if (title.length < 3) {
+      return; // Don't save if title is too short
+    }
+    
     setIsSavingTitle(true);
-    onSave({ title });
-    setTimeout(() => setIsSavingTitle(false), 1000); // Set a delay to prevent too frequent updates
+    try {
+      onSave({ 
+        title, 
+        // Include current values for required fields to ensure validation passes
+        description: form.getValues().description,
+        conversationFlow: form.getValues().conversationFlow 
+      });
+    } catch (err) {
+      console.error("Error saving title:", err);
+    } finally {
+      setTimeout(() => setIsSavingTitle(false), 1000); // Set a delay to prevent too frequent updates
+    }
   };
   
-  // Auto-save description field
+  // Auto-save description field with validation
   const saveDescription = (description: string) => {
     if (isSavingDescription) return;
     
     setIsSavingDescription(true);
-    onSave({ description });
-    setTimeout(() => setIsSavingDescription(false), 1000); // Set a delay to prevent too frequent updates
+    try {
+      onSave({ 
+        description, 
+        // Include current values for required fields to ensure validation passes
+        title: form.getValues().title,
+        conversationFlow: form.getValues().conversationFlow 
+      });
+    } catch (err) {
+      console.error("Error saving description:", err);
+    } finally {
+      setTimeout(() => setIsSavingDescription(false), 1000); // Set a delay to prevent too frequent updates
+    }
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -178,7 +207,12 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     });
     
     // Also save the changes automatically
-    onSave(formUpdates);
+    // Make sure to include the conversationFlow to pass validation
+    const saveData = {
+      ...formUpdates,
+      conversationFlow: form.getValues().conversationFlow
+    };
+    onSave(saveData);
     
     toast({
       title: "Suggestions Applied",
