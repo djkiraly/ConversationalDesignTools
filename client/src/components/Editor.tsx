@@ -48,6 +48,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showPersonaSuggestions, setShowPersonaSuggestions] = useState(false);
   
   // Debounce timers for auto-save
   const titleSaveTimerRef = useRef<NodeJS.Timeout | null>(null);

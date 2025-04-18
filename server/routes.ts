@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, OPENAI_API_KEY_SETTING } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
@@ -222,6 +222,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating suggestions:", error);
       res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // Endpoint for agent persona suggestions
+  app.post('/api/openai/agent-persona', async (req, res) => {
+    try {
+      const { title, description, currentPersona } = req.body;
+      
+      // Validate input
+      if (!title && !description) {
+        return res.status(400).json({ error: "Either title or description is required for context" });
+      }
+      
+      console.log("Received request for agent persona suggestion with title:", title || "none");
+      console.log("Received request for agent persona suggestion with description:", description || "none");
+      console.log("Received request for agent persona suggestion with currentPersona:", currentPersona || "none");
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Call OpenAI to get agent persona suggestion
+      const response = await getAgentPersonaSuggestion(
+        apiKeySetting.value,
+        title || "",
+        description || "",
+        currentPersona
+      );
+      
+      res.json(response);
+    } catch (error) {
+      console.error('Error getting agent persona suggestion:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: (error as Error).message || 'Failed to get agent persona suggestion from OpenAI' 
+      });
     }
   });
 
