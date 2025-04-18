@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { updateUseCaseSchema } from "@shared/schema";
-import { Expand, Save, Download, Wand2, MessageSquare } from "lucide-react";
+import { Expand, Save, Download, Wand2, MessageSquare, CornerDownRight, LogIn, LogOut, Database, GitBranch } from "lucide-react";
 import SuggestionsDialog from "./SuggestionsDialog";
 import AgentPersonaSuggestionDialog from "./AgentPersonaSuggestionDialog";
 import ConversationFlowSuggestionDialog from "./ConversationFlowSuggestionDialog";
@@ -26,6 +26,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -658,6 +664,118 @@ Great! I'll recommend our high-performance models.`}
                         </svg>
                         Add Agent
                       </Button>
+                      
+                      {/* Dropdown for special step types */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2 text-blue-600 hover:text-blue-700"
+                          >
+                            <CornerDownRight className="w-4 h-4 mr-1" />
+                            Special Step
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Get the specific conversation flow textarea
+                              const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
+                              if (textArea) {
+                                const start = textArea.selectionStart;
+                                const value = field.value;
+                                const newValue = value.substring(0, start) + '\n→ [Entry Point]\n' + value.substring(start);
+                                field.onChange(newValue);
+                                
+                                // Set focus back to the textarea
+                                setTimeout(() => {
+                                  textArea.focus();
+                                  const newPosition = start + 15; // Length of \n→ [Entry Point]\n
+                                  textArea.setSelectionRange(newPosition, newPosition);
+                                }, 0);
+                              }
+                            }}
+                            className="flex items-center"
+                          >
+                            <LogIn className="w-4 h-4 mr-2 text-green-600" />
+                            <span>Entry Point</span>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Get the specific conversation flow textarea
+                              const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
+                              if (textArea) {
+                                const start = textArea.selectionStart;
+                                const value = field.value;
+                                const newValue = value.substring(0, start) + '\n→ [Exit Point]\n' + value.substring(start);
+                                field.onChange(newValue);
+                                
+                                // Set focus back to the textarea
+                                setTimeout(() => {
+                                  textArea.focus();
+                                  const newPosition = start + 14; // Length of \n→ [Exit Point]\n
+                                  textArea.setSelectionRange(newPosition, newPosition);
+                                }, 0);
+                              }
+                            }}
+                            className="flex items-center"
+                          >
+                            <LogOut className="w-4 h-4 mr-2 text-red-600" />
+                            <span>Exit Point</span>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Get the specific conversation flow textarea
+                              const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
+                              if (textArea) {
+                                const start = textArea.selectionStart;
+                                const value = field.value;
+                                const newValue = value.substring(0, start) + '\n→ [Integration]\n' + value.substring(start);
+                                field.onChange(newValue);
+                                
+                                // Set focus back to the textarea
+                                setTimeout(() => {
+                                  textArea.focus();
+                                  const newPosition = start + 16; // Length of \n→ [Integration]\n
+                                  textArea.setSelectionRange(newPosition, newPosition);
+                                }, 0);
+                              }
+                            }}
+                            className="flex items-center"
+                          >
+                            <Database className="w-4 h-4 mr-2 text-purple-600" />
+                            <span>Integration Step</span>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Get the specific conversation flow textarea
+                              const textArea = document.querySelector('textarea[name="conversationFlow"]') as HTMLTextAreaElement;
+                              if (textArea) {
+                                const start = textArea.selectionStart;
+                                const value = field.value;
+                                const newValue = value.substring(0, start) + '\n→ [Decision Point]\n' + value.substring(start);
+                                field.onChange(newValue);
+                                
+                                // Set focus back to the textarea
+                                setTimeout(() => {
+                                  textArea.focus();
+                                  const newPosition = start + 18; // Length of \n→ [Decision Point]\n
+                                  textArea.setSelectionRange(newPosition, newPosition);
+                                }, 0);
+                              }
+                            }}
+                            className="flex items-center"
+                          >
+                            <GitBranch className="w-4 h-4 mr-2 text-amber-600" />
+                            <span>Decision Point</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     <FormControl>
                       <Textarea

@@ -20,13 +20,37 @@ export function parseConversationFlow(text: string): ParsedFlow {
   }
 
   // Split the text by arrow symbols to get conversation steps
-  const rawSteps = text.split('→').map(step => step.trim()).filter(Boolean);
+  // Look for both plain arrows and special typed arrows like "→ [Entry Point]"
+  // We'll process the step type during this split
+  const rawStepsWithTypes: {text: string, type?: string}[] = [];
+  
+  // Split on arrow for normal steps, but catch special types in the process
+  const rawStepTexts = text.split('→').map(step => step.trim()).filter(Boolean);
+  
+  // Check for special step types in the step headers
+  rawStepTexts.forEach((stepText, index) => {
+    // The first line might contain the step type designation
+    const lines = stepText.split('\n');
+    const firstLine = lines[0].trim();
+    
+    // Check if first line is a special step designation
+    if (firstLine.startsWith('[') && firstLine.endsWith(']')) {
+      // Extract the step type from the bracket notation: [Entry Point]
+      const stepType = firstLine.substring(1, firstLine.length - 1).trim();
+      // Remove the step type line from the text
+      const remainingText = lines.slice(1).join('\n').trim();
+      rawStepsWithTypes.push({ text: remainingText, type: stepType });
+    } else {
+      // No special type, just use the step text as is
+      rawStepsWithTypes.push({ text: stepText });
+    }
+  });
   
   // Parse each step maintaining the order of messages
-  const steps: ConversationStep[] = rawSteps.map((stepText, stepIndex) => {
+  const steps: ConversationStep[] = rawStepsWithTypes.map((step, stepIndex) => {
     // Extract all messages in the exact order they appear
     const messages: Message[] = [];
-    const lines = stepText.split('\n');
+    const lines = step.text.split('\n');
     let currentRole = '';
     let currentText = '';
     
@@ -151,12 +175,16 @@ export function parseConversationFlow(text: string): ParsedFlow {
       messages.push({ role: currentRole, text: currentText.trim() });
     }
     
-    // Create a standardized step type based on position and content
-    let stepType = "Conversation Step";
-    if (stepIndex === 0) {
-      stepType = "Customer Inquiry";
-    } else if (stepIndex === rawSteps.length - 1) {
-      stepType = "Completion";
+    // Create a standardized step type based on position, content, or explicit type
+    let stepType = step.type || "Conversation Step"; // Use provided type if available
+    
+    // If no explicit type was provided, use the default logic
+    if (!step.type) {
+      if (stepIndex === 0) {
+        stepType = "Customer Inquiry";
+      } else if (stepIndex === rawStepsWithTypes.length - 1) {
+        stepType = "Completion";
+      }
     }
     
     // Return the step with messages in their original order
