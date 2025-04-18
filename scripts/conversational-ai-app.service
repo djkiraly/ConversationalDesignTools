@@ -1,0 +1,19 @@
+[Unit]
+Description=Conversational AI Workflow Builder Application
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=nodejs
+WorkingDirectory=/opt/conversational-ai-app
+EnvironmentFile=/opt/conversational-ai-app/.env
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=conversational-ai-app
+
+[Install]
+WantedBy=multi-user.target
