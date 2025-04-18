@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home } from 'lucide-react';
+import { Home, Settings } from 'lucide-react';
+import SettingsDialog from './SettingsDialog';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -16,14 +18,28 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       
+      {/* Settings Dialog */}
+      <SettingsDialog 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen} 
+      />
+      
       {/* Bottom toolbar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-center items-center shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-center items-center gap-8 shadow-lg">
         <Link href="/">
           <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location.startsWith('/use-case/') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Home className="h-6 w-6" />
             <span className="text-xs mt-1">Home</span>
           </div>
         </Link>
+        
+        <div 
+          className="flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings className="h-6 w-6" />
+          <span className="text-xs mt-1">Settings</span>
+        </div>
       </div>
       
       {/* Add bottom padding to account for the fixed toolbar */}
