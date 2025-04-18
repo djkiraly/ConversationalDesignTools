@@ -50,11 +50,11 @@ export default function Settings() {
     queryKey: ['/api/settings'],
   });
 
-  // Convert settings array to object for form
-  const settingsObj = settings.reduce((acc, setting) => {
-    acc[setting.key] = setting.value || '';
-    return acc;
-  }, {} as Record<string, string>);
+  // Find matching settings from the array
+  const getSettingValue = (key: string): string => {
+    const setting = settings.find(s => s.key === key);
+    return setting?.value || '';
+  };
 
   // Form setup
   const form = useForm<FormValues>({
@@ -65,9 +65,9 @@ export default function Settings() {
       openai_user_prompt: '',
     },
     values: {
-      openai_api_key: settingsObj.openai_api_key || '',
-      openai_system_prompt: settingsObj.openai_system_prompt || '',
-      openai_user_prompt: settingsObj.openai_user_prompt || '',
+      openai_api_key: getSettingValue('openai_api_key'),
+      openai_system_prompt: getSettingValue('openai_system_prompt'),
+      openai_user_prompt: getSettingValue('openai_user_prompt'),
     }
   });
 

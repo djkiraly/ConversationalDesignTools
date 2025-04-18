@@ -160,12 +160,12 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-neutral-light text-neutral-dark">
+    <div className="flex h-screen bg-neutral-light text-neutral-dark pb-16">
       {/* Mobile sidebar toggle */}
       {isMobile && (
         <button 
           onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-          className="fixed bottom-4 left-4 z-30 bg-primary text-white p-3 rounded-full shadow-lg"
+          className="fixed bottom-20 left-4 z-30 bg-primary text-white p-3 rounded-full shadow-lg"
         >
           <i className="fas fa-bars"></i>
         </button>
