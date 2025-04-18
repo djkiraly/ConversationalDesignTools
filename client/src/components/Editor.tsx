@@ -340,7 +340,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
         onClose={() => setShowFlowSuggestions(false)}
         title={form.getValues().title}
         description={form.getValues().description || ''}
-        currentFlow={form.getValues().conversationFlow}
+        currentFlow={form.getValues().conversationFlow} // Always get current value when dialog is shown or refreshed
         agentPersona={agentPersona}
         onApplySuggestion={handleApplyFlowSuggestion}
       />

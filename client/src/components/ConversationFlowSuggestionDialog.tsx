@@ -46,9 +46,14 @@ export default function ConversationFlowSuggestionDialog({
     // Reset states
     setIsLoading(true);
     setError(null);
-    setSuggestion(null);
+    
+    // Keep the suggestion if regenerating (for better UX during loading)
+    if (!suggestion) {
+      setSuggestion(null);
+    }
 
     try {
+      // Get the latest edited flow from the Editor component
       const response = await apiRequest(
         "POST", 
         "/api/openai/conversation-flow", 
@@ -141,10 +146,21 @@ export default function ConversationFlowSuggestionDialog({
           {suggestion && !isLoading && (
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium text-green-800 flex items-center">
-                  <Check className="h-4 w-4 mr-2" />
-                  Suggestion Generated
-                </h3>
+                <div className="flex items-center">
+                  <h3 className="font-medium text-green-800 flex items-center mr-3">
+                    <Check className="h-4 w-4 mr-2" />
+                    Suggestion Generated
+                  </h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    onClick={generateSuggestion}
+                  >
+                    <Wand2 className="h-3 w-3 mr-1" />
+                    Regenerate
+                  </Button>
+                </div>
                 <div className="flex space-x-2">
                   <Button 
                     variant="outline" 
