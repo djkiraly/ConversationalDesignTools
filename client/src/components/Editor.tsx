@@ -4,9 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { updateUseCaseSchema } from "@shared/schema";
-import { Expand, Save, Download, Wand2 } from "lucide-react";
+import { Expand, Save, Download, Wand2, MessageSquare } from "lucide-react";
 import SuggestionsDialog from "./SuggestionsDialog";
 import AgentPersonaSuggestionDialog from "./AgentPersonaSuggestionDialog";
+import ConversationFlowSuggestionDialog from "./ConversationFlowSuggestionDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -331,6 +332,17 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
         description={form.getValues().description || ''}
         currentPersona={agentPersona}
         onApplySuggestion={handleApplyPersonaSuggestion}
+      />
+      
+      {/* Conversation Flow Suggestion Dialog */}
+      <ConversationFlowSuggestionDialog
+        isOpen={showFlowSuggestions}
+        onClose={() => setShowFlowSuggestions(false)}
+        title={form.getValues().title}
+        description={form.getValues().description || ''}
+        currentFlow={form.getValues().conversationFlow}
+        agentPersona={agentPersona}
+        onApplySuggestion={handleApplyFlowSuggestion}
       />
 
       <div className="p-4 border-b border-neutral-medium flex justify-between items-center">
@@ -660,6 +672,30 @@ Great! I'll recommend our high-performance models.`}
                     </FormControl>
                   </div>
                   <FormMessage />
+                  <div className="mt-3 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="text-primary border-primary/40 hover:bg-primary/10"
+                      onClick={() => {
+                        const values = form.getValues();
+                        if (!values.conversationFlow || values.conversationFlow.trim().length < 10) {
+                          toast({
+                            title: "Missing conversation flow",
+                            description: "Please provide a conversation flow before requesting AI suggestions.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        setShowFlowSuggestions(true);
+                      }}
+                    >
+                      <span className="flex items-center">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        AI Assist - Improve Conversation Flow
+                      </span>
+                    </Button>
+                  </div>
                 </FormItem>
               )}
             />
