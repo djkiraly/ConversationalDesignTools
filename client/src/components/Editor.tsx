@@ -268,7 +268,18 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                       variant="outline"
                       size="sm"
                       className="text-primary border-primary/40 hover:bg-primary/10"
-                      onClick={() => setShowSuggestions(true)}
+                      onClick={() => {
+                        const values = form.getValues();
+                        if (!values.title || !values.description) {
+                          toast({
+                            title: "Missing information",
+                            description: "Please provide both a title and description before requesting AI suggestions.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        setShowSuggestions(true);
+                      }}
                     >
                       <span className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2">

@@ -44,15 +44,26 @@ export default function SuggestionsDialog({
     setError(null);
     
     try {
+      // Debug the input values
+      console.log("Sending request with title:", title);
+      console.log("Sending request with description:", description);
+      
+      if (!title || !description) {
+        throw new Error("Title and description must be provided");
+      }
+      
       const response = await apiRequest('POST', '/api/openai/suggestions', { 
         title, 
         description 
       });
       
-      if (response && !response.error) {
-        setSuggestions(response);
+      console.log("Received response:", response);
+      
+      if (response && response.success && response.suggestions) {
+        // The API response includes suggestions in a nested suggestions property
+        setSuggestions(response.suggestions);
       } else {
-        throw new Error(response.error || 'Failed to get suggestions');
+        throw new Error(response.error || 'Failed to get suggestions from API');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred while getting suggestions');

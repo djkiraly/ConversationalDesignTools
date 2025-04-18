@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, OPENAI_API_KEY_SETTING } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
@@ -188,14 +188,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { title, description } = req.body;
       
-      if (!title || !description) {
-        return res.status(400).json({ error: "Title and description are required" });
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
       }
       
+      if (!description) {
+        return res.status(400).json({ error: "Description is required" });
+      }
+      
+      console.log("Received request for AI suggestions with title:", title);
+      console.log("Received request for AI suggestions with description:", description);
+      
       // Get the OpenAI API key from settings
-      const apiKeySetting = await storage.getSetting('openai.apiKey');
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
       if (!apiKeySetting || !apiKeySetting.value) {
         return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
       }
       
       const suggestionsResult = await getUseCaseSuggestions(
@@ -206,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(suggestionsResult);
     } catch (error) {
+      console.error("Error generating suggestions:", error);
       res.status(500).json({ error: (error as Error).message });
     }
   });

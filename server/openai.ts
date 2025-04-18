@@ -1,5 +1,8 @@
 import OpenAI from "openai";
 
+// Constants for the OpenAI integration
+export const OPENAI_API_KEY_SETTING = 'openai.apiKey';
+
 // Function to validate an OpenAI API key
 export async function validateOpenAIKey(apiKey: string): Promise<{ valid: boolean; models?: string[]; error?: string }> {
   try {
