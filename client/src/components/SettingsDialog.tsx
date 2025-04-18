@@ -34,7 +34,6 @@ const formSchema = z.object({
   openai_api_key: z.string().optional(),
   openai_system_prompt: z.string().min(1, "System prompt is required"),
   openai_user_prompt: z.string().min(1, "User prompt is required"),
-  agent_persona: z.string().min(1, "Agent persona is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -72,13 +71,11 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       openai_api_key: '',
       openai_system_prompt: '',
       openai_user_prompt: '',
-      agent_persona: '',
     },
     values: {
       openai_api_key: getSettingValue('openai_api_key'),
       openai_system_prompt: getSettingValue('openai_system_prompt'),
       openai_user_prompt: getSettingValue('openai_user_prompt'),
-      agent_persona: getSettingValue('agent_persona'),
     }
   });
   
@@ -176,10 +173,6 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       await updateSetting.mutateAsync({ 
         key: 'openai_user_prompt', 
         value: values.openai_user_prompt 
-      });
-      await updateSetting.mutateAsync({ 
-        key: 'agent_persona', 
-        value: values.agent_persona 
       });
       
       toast({
@@ -334,26 +327,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="agent_persona"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Agent Persona</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter the agent persona description"
-                        {...field} 
-                        rows={4}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Define the personality, tone, and behavior of the AI agent when interacting with users.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               
               <DialogFooter>
                 <Button
