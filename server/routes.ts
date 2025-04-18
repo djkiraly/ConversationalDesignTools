@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint for conversation flow suggestions
   app.post('/api/openai/conversation-flow', async (req, res) => {
     try {
-      const { title, description, currentFlow, agentPersona } = req.body;
+      const { title, description, currentFlow, agentPersona, additionalInstructions } = req.body;
       
       // Validate input
       if (!currentFlow) {
@@ -281,6 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Received request for conversation flow suggestion with title:", title || "none");
       console.log("Received request for conversation flow suggestion with description:", description || "none");
       console.log("Received request for conversation flow suggestion with agentPersona:", agentPersona || "none");
+      console.log("Received request for conversation flow suggestion with additionalInstructions:", additionalInstructions || "none");
       
       // Get the OpenAI API key from settings
       const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
@@ -299,7 +300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title || "",
         description || "",
         currentFlow,
-        agentPersona || ""
+        agentPersona || "",
+        additionalInstructions || ""
       );
       
       res.json(response);

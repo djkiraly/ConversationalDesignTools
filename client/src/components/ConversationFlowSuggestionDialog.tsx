@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, AlertCircle, Check, MessageSquare } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface ConversationFlowSuggestionDialogProps {
   isOpen: boolean;
@@ -40,6 +42,7 @@ export default function ConversationFlowSuggestionDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [currentDiff, setCurrentDiff] = useState<"side-by-side" | "unified">("side-by-side");
 
   const generateSuggestion = async () => {
@@ -61,7 +64,8 @@ export default function ConversationFlowSuggestionDialog({
           title,
           description,
           currentFlow,
-          agentPersona
+          agentPersona,
+          additionalInstructions: additionalInstructions.trim()
         }
       ) as OpenAIResponse;
 
@@ -120,6 +124,24 @@ export default function ConversationFlowSuggestionDialog({
                 AI will analyze your current conversation flow and suggest improvements based on
                 best practices in conversational design, natural dialogue patterns, and effective customer interactions.
               </p>
+              
+              <div className="w-full max-w-md mb-4">
+                <Label htmlFor="additionalInstructions" className="block text-left text-sm font-medium mb-1">
+                  Additional Instructions (Optional)
+                </Label>
+                <Textarea
+                  id="additionalInstructions"
+                  placeholder="E.g., Make the conversation more concise, add specific product information, focus on empathy, etc."
+                  className="w-full"
+                  rows={3}
+                  value={additionalInstructions}
+                  onChange={(e) => setAdditionalInstructions(e.target.value)}
+                />
+                <p className="text-xs text-neutral-dark/60 mt-1 text-left">
+                  Provide specific guidance to direct the AI when improving your conversation flow.
+                </p>
+              </div>
+              
               <Button 
                 onClick={generateSuggestion} 
                 className="mt-2"
