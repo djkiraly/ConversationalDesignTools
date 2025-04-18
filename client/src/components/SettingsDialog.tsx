@@ -109,8 +109,8 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
   // Validation mutation
   const validateApiKey = useMutation({
     mutationFn: async (apiKey: string) => {
-      const response = await apiRequest('POST', '/api/openai/validate', { apiKey });
-      return response.json();
+      // apiRequest already returns the parsed JSON, so no need to call .json()
+      return apiRequest('POST', '/api/openai/validate', { apiKey });
     },
     onSuccess: (data) => {
       if (data.valid) {

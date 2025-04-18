@@ -52,11 +52,11 @@ export default function Home() {
   // Mutations
   const createUseCaseMutation = useMutation({
     mutationFn: async (useCase: { title: string; description?: string }) => {
-      const response = await apiRequest('POST', '/api/use-cases', {
+      // apiRequest already returns the parsed JSON, so no need to call .json()
+      return apiRequest('POST', '/api/use-cases', {
         ...useCase,
         conversationFlow: ''
       });
-      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
@@ -79,8 +79,8 @@ export default function Home() {
   const updateUseCaseMutation = useMutation({
     mutationFn: async (useCase: Partial<UseCase> & { id: number }) => {
       const { id, ...data } = useCase;
-      const response = await apiRequest('PUT', `/api/use-cases/${id}`, data);
-      return response.json();
+      // apiRequest already returns the parsed JSON, so no need to call .json()
+      return apiRequest('PUT', `/api/use-cases/${id}`, data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
