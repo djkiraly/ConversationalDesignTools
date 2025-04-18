@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import SuggestionsDialog from "./SuggestionsDialog";
 
 interface EditorProps {
   useCase: UseCase;
@@ -44,6 +45,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [agentPersona, setAgentPersona] = useState('');
   const [isSavingPersona, setIsSavingPersona] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Define the Setting type
   interface Setting {
@@ -210,6 +212,25 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                     />
                   </FormControl>
                   <FormMessage />
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-primary border-primary/40 hover:bg-primary/10"
+                      onClick={() => setShowSuggestions(true)}
+                    >
+                      <span className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2">
+                          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                          <path d="M10 15h2" />
+                          <path d="M8 11h6" />
+                          <path d="M9 7h4" />
+                        </svg>
+                        Get AI Suggestions
+                      </span>
+                    </Button>
+                  </div>
                 </FormItem>
               )}
             />

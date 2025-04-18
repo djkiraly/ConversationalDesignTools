@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema } from "@shared/schema";
-import { validateOpenAIKey } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
@@ -178,6 +178,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validationResult = await validateOpenAIKey(apiKey);
       res.json(validationResult);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // OpenAI Suggestions API
+  app.post('/api/openai/suggestions', async (req, res) => {
+    try {
+      const { title, description } = req.body;
+      
+      if (!title || !description) {
+        return res.status(400).json({ error: "Title and description are required" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting('openai.apiKey');
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      const suggestionsResult = await getUseCaseSuggestions(
+        apiKeySetting.value,
+        title,
+        description
+      );
+      
+      res.json(suggestionsResult);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
