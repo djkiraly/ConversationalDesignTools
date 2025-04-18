@@ -2,14 +2,18 @@ import { db } from './db';
 import { 
   users, 
   useCases, 
-  flowNodes, 
+  flowNodes,
+  settings,
   type User, 
   type InsertUser, 
   type UseCase, 
   type InsertUseCase, 
   type UpdateUseCase,
   type FlowNode,
-  type InsertFlowNode
+  type InsertFlowNode,
+  type Setting,
+  type InsertSetting,
+  type UpdateSetting
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -119,6 +123,49 @@ export class DbStorage implements IStorage {
     await db.delete(flowNodes).where(eq(flowNodes.id, id));
   }
 
+  // Settings methods
+  async getAllSettings(): Promise<Setting[]> {
+    const results = await db.select().from(settings);
+    return results;
+  }
+
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const results = await db.select().from(settings).where(eq(settings.key, key));
+    return results.length ? results[0] : undefined;
+  }
+
+  async createSetting(insertSetting: InsertSetting): Promise<Setting> {
+    const now = new Date();
+    const result = await db.insert(settings).values({
+      ...insertSetting,
+      value: insertSetting.value ?? null,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return result[0];
+  }
+
+  async updateSetting(key: string, updateData: UpdateSetting): Promise<Setting> {
+    const existingSetting = await this.getSetting(key);
+    if (!existingSetting) {
+      throw new Error(`Setting with key '${key}' not found`);
+    }
+    
+    const result = await db.update(settings)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(settings.key, key))
+      .returning();
+    
+    return result[0];
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    await db.delete(settings).where(eq(settings.key, key));
+  }
+
   // Function to seed initial data after migrations
   async seedInitialData(): Promise<void> {
     const existingUseCases = await this.getAllUseCases();
@@ -126,6 +173,25 @@ export class DbStorage implements IStorage {
     // Only seed if there are no existing use cases
     if (existingUseCases.length === 0) {
       await this.createSampleUseCases();
+    }
+
+    // Seed default settings if they don't exist
+    await this.seedDefaultSettings();
+  }
+
+  // Helper method to seed default settings
+  private async seedDefaultSettings(): Promise<void> {
+    const defaultSettings = [
+      { key: 'openai_api_key', value: '' },
+      { key: 'openai_system_prompt', value: 'You are a helpful assistant that responds to customer requests. Your goal is to understand the customer needs and provide clear, concise and helpful responses.' },
+      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' }
+    ];
+
+    for (const setting of defaultSettings) {
+      const existingSetting = await this.getSetting(setting.key);
+      if (!existingSetting) {
+        await this.createSetting(setting);
+      }
     }
   }
 

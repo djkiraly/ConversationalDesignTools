@@ -47,22 +47,29 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private useCases: Map<number, UseCase>;
   private flowNodes: Map<number, FlowNode>;
+  private settings: Map<string, Setting>;
   
   private userCurrentId: number;
   private useCaseCurrentId: number;
   private flowNodeCurrentId: number;
+  private settingCurrentId: number;
 
   constructor() {
     this.users = new Map();
     this.useCases = new Map();
     this.flowNodes = new Map();
+    this.settings = new Map();
     
     this.userCurrentId = 1;
     this.useCaseCurrentId = 1;
     this.flowNodeCurrentId = 1;
+    this.settingCurrentId = 1;
     
     // Add some sample use cases for testing
     this.addSampleUseCases();
+    
+    // Add default settings
+    this.addDefaultSettings();
   }
 
   // User methods
@@ -170,6 +177,62 @@ export class MemStorage implements IStorage {
 
   async deleteFlowNode(id: number): Promise<void> {
     this.flowNodes.delete(id);
+  }
+  
+  // Settings methods
+  async getAllSettings(): Promise<Setting[]> {
+    return Array.from(this.settings.values());
+  }
+
+  async getSetting(key: string): Promise<Setting | undefined> {
+    return this.settings.get(key);
+  }
+
+  async createSetting(insertSetting: InsertSetting): Promise<Setting> {
+    const id = this.settingCurrentId++;
+    const now = new Date();
+    const setting: Setting = {
+      ...insertSetting,
+      id,
+      value: insertSetting.value ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.settings.set(setting.key, setting);
+    return setting;
+  }
+
+  async updateSetting(key: string, updateData: UpdateSetting): Promise<Setting> {
+    const existingSetting = this.settings.get(key);
+    if (!existingSetting) {
+      throw new Error(`Setting with key '${key}' not found`);
+    }
+    
+    const updatedSetting: Setting = {
+      ...existingSetting,
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    this.settings.set(key, updatedSetting);
+    return updatedSetting;
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    this.settings.delete(key);
+  }
+  
+  // Helper method to add default settings
+  private addDefaultSettings(): void {
+    const defaultSettings = [
+      { key: 'openai_api_key', value: '' },
+      { key: 'openai_system_prompt', value: 'You are a helpful assistant that responds to customer requests. Your goal is to understand the customer needs and provide clear, concise and helpful responses.' },
+      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' }
+    ];
+
+    for (const setting of defaultSettings) {
+      this.createSetting(setting);
+    }
   }
   
   // Helper method to add sample data
