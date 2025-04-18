@@ -105,9 +105,11 @@ export class MemStorage implements IStorage {
     const id = this.useCaseCurrentId++;
     const now = new Date();
     const useCase: UseCase = {
-      ...insertUseCase,
       id,
+      title: insertUseCase.title,
       description: insertUseCase.description ?? null,
+      conversationFlow: insertUseCase.conversationFlow,
+      nodePositions: insertUseCase.nodePositions ?? null,
       createdAt: now,
       updatedAt: now
     };

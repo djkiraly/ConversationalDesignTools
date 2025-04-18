@@ -20,6 +20,13 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+  
+  // Check if the response status is 204 (No Content)
+  // or if the content-length header is 0, return null instead of parsing JSON
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return null;
+  }
+  
   return res.json();
 }
 
@@ -43,6 +50,13 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
+    
+    // Check if the response status is 204 (No Content)
+    // or if the content-length header is 0, return null instead of parsing JSON
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+      return null;
+    }
+    
     return await res.json();
   };
 
