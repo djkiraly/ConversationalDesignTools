@@ -50,6 +50,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showPersonaSuggestions, setShowPersonaSuggestions] = useState(false);
+  const [showFlowSuggestions, setShowFlowSuggestions] = useState(false);
   
   // Debounce timers for auto-save
   const titleSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -269,6 +270,26 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
           description: "The AI suggestion for agent persona has been applied."
         });
       }
+    });
+  }
+  
+  // Handle applying conversation flow suggestion
+  const handleApplyFlowSuggestion = (suggestion: string) => {
+    if (!suggestion.trim()) return;
+    
+    // Update the conversation flow
+    form.setValue('conversationFlow', suggestion);
+    
+    // Save the changes
+    onSave({
+      conversationFlow: suggestion,
+      title: form.getValues().title,
+      description: form.getValues().description
+    });
+    
+    toast({
+      title: "Conversation Flow Updated",
+      description: "The AI suggested conversation flow has been applied."
     });
   }
 

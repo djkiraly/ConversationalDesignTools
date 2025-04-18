@@ -99,6 +99,74 @@ IMPORTANT: Do not include "agentPersona" or "conversationFlow" fields in your re
 }
 
 // Get suggestions for agent persona based on title and description
+export async function getConversationFlowSuggestion(
+  apiKey: string, 
+  title: string, 
+  description: string,
+  currentFlow: string,
+  agentPersona: string
+): Promise<{ 
+  success: boolean; 
+  suggestion?: string;
+  error?: string 
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Prepare the prompt
+    const prompt = `You are an expert in conversational AI design and flow optimization. 
+Review the following conversation flow between a Customer and an Agent. 
+Suggest improvements to make the conversation more natural, effective, and helpful.
+
+Use Case Title: "${title}"
+Use Case Description: "${description}"
+Agent Persona: "${agentPersona}"
+
+Current Conversation Flow:
+\`\`\`
+${currentFlow}
+\`\`\`
+
+Please analyze this conversation flow and provide an improved version that:
+1. Maintains the same general structure and purpose
+2. Makes dialogue more natural and conversational
+3. Ensures the agent's responses align with the provided Agent Persona
+4. Improves clarity and addresses potential points of confusion
+5. Adds appropriate follow-up questions or clarifications where needed
+6. Enhances the logical flow between conversation steps
+
+Return ONLY the improved conversation flow in the same format with Customer/Agent labels and → arrows for step separation.
+Do not include explanations or analysis - just provide the complete improved flow.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { role: "system", content: "You are an expert in conversational AI design and natural dialogue patterns." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    const suggestion = response.choices[0].message.content?.trim();
+    
+    if (!suggestion) {
+      throw new Error('No suggestion was generated');
+    }
+    
+    return { 
+      success: true, 
+      suggestion
+    };
+  } catch (error: any) {
+    console.error('Error getting conversation flow suggestion:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to generate conversation flow suggestion'
+    };
+  }
+}
+
 export async function getAgentPersonaSuggestion(
   apiKey: string, 
   title: string, 

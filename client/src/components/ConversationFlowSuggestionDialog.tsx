@@ -8,15 +8,16 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2, AlertCircle, Check } from "lucide-react";
+import { Wand2, AlertCircle, Check, MessageSquare } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
-interface AgentPersonaSuggestionDialogProps {
+interface ConversationFlowSuggestionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   description: string;
-  currentPersona: string;
+  currentFlow: string;
+  agentPersona: string;
   onApplySuggestion: (suggestion: string) => void;
 }
 
@@ -26,18 +27,20 @@ interface OpenAIResponse {
   error?: string;
 }
 
-export default function AgentPersonaSuggestionDialog({ 
+export default function ConversationFlowSuggestionDialog({ 
   isOpen, 
   onClose, 
   title, 
   description, 
-  currentPersona,
+  currentFlow,
+  agentPersona,
   onApplySuggestion 
-}: AgentPersonaSuggestionDialogProps) {
+}: ConversationFlowSuggestionDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [currentDiff, setCurrentDiff] = useState<"side-by-side" | "unified">("side-by-side");
 
   const generateSuggestion = async () => {
     // Reset states
@@ -48,11 +51,12 @@ export default function AgentPersonaSuggestionDialog({
     try {
       const response = await apiRequest(
         "POST", 
-        "/api/openai/agent-persona", 
+        "/api/openai/conversation-flow", 
         {
           title,
           description,
-          currentPersona
+          currentFlow,
+          agentPersona
         }
       ) as OpenAIResponse;
 
@@ -62,7 +66,7 @@ export default function AgentPersonaSuggestionDialog({
         setError(response.error || "Failed to generate suggestion. Please try again.");
       }
     } catch (err) {
-      console.error("Error generating agent persona suggestion:", err);
+      console.error("Error generating conversation flow suggestion:", err);
       setError("An error occurred while generating a suggestion. Please check your OpenAI API key and try again.");
     } finally {
       setIsLoading(false);
@@ -74,19 +78,19 @@ export default function AgentPersonaSuggestionDialog({
       onApplySuggestion(suggestion);
       onClose();
       toast({
-        title: "Agent Persona Updated",
-        description: "The AI suggestion has been applied to the agent persona.",
+        title: "Conversation Flow Updated",
+        description: "The AI suggestion has been applied to the conversation flow.",
       });
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Generate Agent Persona Suggestion</DialogTitle>
+          <DialogTitle>Improve Conversation Flow</DialogTitle>
           <DialogDescription>
-            AI will suggest a persona based on your use case title and description.
+            AI will suggest improvements to your conversation flow based on best practices in conversational AI.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,11 +109,11 @@ export default function AgentPersonaSuggestionDialog({
             <div className="rounded-md border p-6 flex flex-col items-center text-center">
               <Wand2 className="h-8 w-8 text-neutral-dark/70 mb-2" />
               <h3 className="text-lg font-medium mb-2">
-                Get AI Suggestions for Agent Persona
+                Get AI Suggestions for Conversation Flow
               </h3>
               <p className="text-sm text-neutral-dark/70 mb-4 max-w-md">
-                AI will analyze your use case and suggest an appropriate agent persona 
-                that aligns with your conversation scenario.
+                AI will analyze your current conversation flow and suggest improvements based on
+                best practices in conversational design, natural dialogue patterns, and effective customer interactions.
               </p>
               <Button 
                 onClick={generateSuggestion} 
@@ -126,32 +130,71 @@ export default function AgentPersonaSuggestionDialog({
             <div className="rounded-md border p-6 flex flex-col items-center justify-center min-h-[200px] text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
               <p className="text-neutral-dark/80">
-                Generating persona suggestion...
+                Generating flow suggestions...
               </p>
               <p className="text-xs text-neutral-dark/60 mt-2">
-                This might take a moment as we craft the perfect agent persona for your use case.
+                This might take a moment as we analyze your conversation flow and craft improvements.
               </p>
             </div>
           )}
 
           {suggestion && !isLoading && (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                <h3 className="font-medium text-green-800 flex items-center mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium text-green-800 flex items-center">
                   <Check className="h-4 w-4 mr-2" />
                   Suggestion Generated
                 </h3>
-                <div className="bg-white p-3 rounded border border-green-100">
-                  <p className="text-neutral-dark whitespace-pre-wrap">{suggestion}</p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={currentDiff === 'side-by-side' ? 'bg-blue-50' : ''}
+                    onClick={() => setCurrentDiff('side-by-side')}
+                  >
+                    Side by Side
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={currentDiff === 'unified' ? 'bg-blue-50' : ''}
+                    onClick={() => setCurrentDiff('unified')}
+                  >
+                    Unified View
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2">
+              {currentDiff === 'side-by-side' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="border rounded-md p-3">
+                    <div className="text-sm font-medium mb-2 text-neutral-dark/70">Current Flow</div>
+                    <div className="bg-neutral-light/50 p-3 rounded overflow-auto max-h-[400px]">
+                      <pre className="text-xs whitespace-pre-wrap font-mono">{currentFlow}</pre>
+                    </div>
+                  </div>
+                  <div className="border rounded-md p-3">
+                    <div className="text-sm font-medium mb-2 text-green-700">Suggested Flow</div>
+                    <div className="bg-green-50 p-3 rounded overflow-auto max-h-[400px]">
+                      <pre className="text-xs whitespace-pre-wrap font-mono">{suggestion}</pre>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="border rounded-md p-3">
+                  <div className="text-sm font-medium mb-2 text-green-700">Suggested Flow</div>
+                  <div className="bg-green-50 p-3 rounded overflow-auto max-h-[400px]">
+                    <pre className="text-xs whitespace-pre-wrap font-mono">{suggestion}</pre>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 mt-4">
                 <Button variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
                 <Button onClick={handleApply}>
-                  Apply Suggestion
+                  Apply Suggestions
                 </Button>
               </div>
             </div>
