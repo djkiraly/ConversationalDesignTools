@@ -77,6 +77,9 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     queryKey: ['/api/settings']
   });
 
+  // Check if OpenAI API key is available
+  const hasOpenAIKey = settings?.find(s => s.key === 'openai_api_key')?.value?.trim() !== '';
+
   // Update agent persona when settings are loaded
   useEffect(() => {
     if (settings) {
@@ -442,34 +445,55 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                   </FormControl>
                   <FormMessage />
                   <div className="mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-primary border-primary/40 hover:bg-primary/10"
-                      onClick={() => {
-                        const values = form.getValues();
-                        if (!values.title || !values.description) {
-                          toast({
-                            title: "Missing information",
-                            description: "Please provide both a title and description before requesting AI suggestions.",
-                            variant: "destructive"
-                          });
-                          return;
-                        }
-                        setShowSuggestions(true);
-                      }}
-                    >
-                      <span className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2">
-                          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                          <path d="M10 15h2" />
-                          <path d="M8 11h6" />
-                          <path d="M9 7h4" />
-                        </svg>
-                        Improve Title & Description
-                      </span>
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className={`border-primary/40 ${hasOpenAIKey ? 'text-primary hover:bg-primary/10' : 'text-neutral-medium cursor-not-allowed'}`}
+                            disabled={!hasOpenAIKey}
+                            onClick={() => {
+                              if (!hasOpenAIKey) {
+                                toast({
+                                  title: "OpenAI API Key Missing",
+                                  description: "Please add your OpenAI API key in Settings to use AI features.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              const values = form.getValues();
+                              if (!values.title || !values.description) {
+                                toast({
+                                  title: "Missing information",
+                                  description: "Please provide both a title and description before requesting AI suggestions.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              setShowSuggestions(true);
+                            }}
+                          >
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2">
+                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                                <path d="M10 15h2" />
+                                <path d="M8 11h6" />
+                                <path d="M9 7h4" />
+                              </svg>
+                              Improve Title & Description
+                            </span>
+                          </Button>
+                        </TooltipTrigger>
+                        {!hasOpenAIKey && (
+                          <TooltipContent>
+                            <p>Add OpenAI API key in Settings to enable</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </FormItem>
               )}
@@ -502,30 +526,51 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                 <div className="text-xs text-neutral-dark/60">
                   Define how the agent should behave when interacting with users. This affects the tone and style of AI responses.
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-primary border-primary/40 hover:bg-primary/10"
-                  onClick={() => {
-                    const values = form.getValues();
-                    // At least one of title or description should be provided
-                    if (!values.title && !values.description) {
-                      toast({
-                        title: "Missing information",
-                        description: "Please provide either a title or description for context before requesting AI suggestions for Agent Persona.",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    setShowPersonaSuggestions(true);
-                  }}
-                >
-                  <span className="flex items-center">
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    AI Suggestion
-                  </span>
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={`border-primary/40 ${hasOpenAIKey ? 'text-primary hover:bg-primary/10' : 'text-neutral-medium cursor-not-allowed'}`}
+                        disabled={!hasOpenAIKey}
+                        onClick={() => {
+                          if (!hasOpenAIKey) {
+                            toast({
+                              title: "OpenAI API Key Missing",
+                              description: "Please add your OpenAI API key in Settings to use AI features.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
+                          const values = form.getValues();
+                          // At least one of title or description should be provided
+                          if (!values.title && !values.description) {
+                            toast({
+                              title: "Missing information",
+                              description: "Please provide either a title or description for context before requesting AI suggestions for Agent Persona.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          setShowPersonaSuggestions(true);
+                        }}
+                      >
+                        <span className="flex items-center">
+                          <Wand2 className="w-3 h-3 mr-1" />
+                          AI Suggestion
+                        </span>
+                      </Button>
+                    </TooltipTrigger>
+                    {!hasOpenAIKey && (
+                      <TooltipContent>
+                        <p>Add OpenAI API key in Settings to enable</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
             
@@ -796,28 +841,49 @@ Great! I'll recommend our high-performance models.
                   </div>
                   <FormMessage />
                   <div className="mt-3 flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="text-primary border-primary/40 hover:bg-primary/10"
-                      onClick={() => {
-                        const values = form.getValues();
-                        if (!values.conversationFlow || values.conversationFlow.trim().length < 10) {
-                          toast({
-                            title: "Missing conversation flow",
-                            description: "Please provide a conversation flow before requesting AI suggestions.",
-                            variant: "destructive"
-                          });
-                          return;
-                        }
-                        setShowFlowSuggestions(true);
-                      }}
-                    >
-                      <span className="flex items-center">
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        AI Assist - Improve Conversation Flow
-                      </span>
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={`border-primary/40 ${hasOpenAIKey ? 'text-primary hover:bg-primary/10' : 'text-neutral-medium cursor-not-allowed'}`}
+                            disabled={!hasOpenAIKey}
+                            onClick={() => {
+                              if (!hasOpenAIKey) {
+                                toast({
+                                  title: "OpenAI API Key Missing",
+                                  description: "Please add your OpenAI API key in Settings to use AI features.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              const values = form.getValues();
+                              if (!values.conversationFlow || values.conversationFlow.trim().length < 10) {
+                                toast({
+                                  title: "Missing conversation flow",
+                                  description: "Please provide a conversation flow before requesting AI suggestions.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              setShowFlowSuggestions(true);
+                            }}
+                          >
+                            <span className="flex items-center">
+                              <MessageSquare className="w-4 h-4 mr-2" />
+                              AI Assist - Improve Conversation Flow
+                            </span>
+                          </Button>
+                        </TooltipTrigger>
+                        {!hasOpenAIKey && (
+                          <TooltipContent>
+                            <p>Add OpenAI API key in Settings to enable</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </FormItem>
               )}

@@ -153,10 +153,15 @@ export class MemStorage implements IStorage {
   async createFlowNode(insertFlowNode: InsertFlowNode): Promise<FlowNode> {
     const id = this.flowNodeCurrentId++;
     const flowNode: FlowNode = { 
-      ...insertFlowNode, 
       id,
+      useCaseId: insertFlowNode.useCaseId,
+      stepNumber: insertFlowNode.stepNumber,
+      customerText: insertFlowNode.customerText,
+      agentText: insertFlowNode.agentText,
       stepType: insertFlowNode.stepType ?? null,
-      nextNodeId: insertFlowNode.nextNodeId ?? null
+      nextNodeId: insertFlowNode.nextNodeId ?? null,
+      positionX: insertFlowNode.positionX ?? null,
+      positionY: insertFlowNode.positionY ?? null
     };
     this.flowNodes.set(id, flowNode);
     return flowNode;
