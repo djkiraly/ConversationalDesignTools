@@ -77,6 +77,18 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     }
   }, [settings]);
   
+  // Clean up any pending timeouts when component unmounts
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimerRef.current) {
+        clearTimeout(titleSaveTimerRef.current);
+      }
+      if (descriptionSaveTimerRef.current) {
+        clearTimeout(descriptionSaveTimerRef.current);
+      }
+    };
+  }, []);
+  
   // Update agent persona mutation
   const updateAgentPersona = useMutation({
     mutationFn: async (value: string) => {
@@ -110,7 +122,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     });
   };
   
-  // Auto-save title field with validation
+  // Auto-save title field with validation and debounce
   const saveTitle = (title: string) => {
     if (isSavingTitle) return;
     
@@ -119,38 +131,58 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
       return; // Don't save if title is too short
     }
     
-    setIsSavingTitle(true);
-    try {
-      onSave({ 
-        title, 
-        // Include current values for required fields to ensure validation passes
-        description: form.getValues().description,
-        conversationFlow: form.getValues().conversationFlow 
-      });
-    } catch (err) {
-      console.error("Error saving title:", err);
-    } finally {
-      setTimeout(() => setIsSavingTitle(false), 1000); // Set a delay to prevent too frequent updates
+    // Clear any existing timeout
+    if (titleSaveTimerRef.current) {
+      clearTimeout(titleSaveTimerRef.current);
     }
+    
+    setIsSavingTitle(true);
+    
+    // Set a new timeout for debouncing
+    titleSaveTimerRef.current = setTimeout(() => {
+      try {
+        onSave({ 
+          title, 
+          // Include current values for required fields to ensure validation passes
+          description: form.getValues().description,
+          conversationFlow: form.getValues().conversationFlow 
+        });
+      } catch (err) {
+        console.error("Error saving title:", err);
+      } finally {
+        setTimeout(() => setIsSavingTitle(false), 500);
+        titleSaveTimerRef.current = null;
+      }
+    }, 800); // Wait for 800ms of inactivity before saving
   };
   
-  // Auto-save description field with validation
+  // Auto-save description field with validation and debounce
   const saveDescription = (description: string) => {
     if (isSavingDescription) return;
     
-    setIsSavingDescription(true);
-    try {
-      onSave({ 
-        description, 
-        // Include current values for required fields to ensure validation passes
-        title: form.getValues().title,
-        conversationFlow: form.getValues().conversationFlow 
-      });
-    } catch (err) {
-      console.error("Error saving description:", err);
-    } finally {
-      setTimeout(() => setIsSavingDescription(false), 1000); // Set a delay to prevent too frequent updates
+    // Clear any existing timeout
+    if (descriptionSaveTimerRef.current) {
+      clearTimeout(descriptionSaveTimerRef.current);
     }
+    
+    setIsSavingDescription(true);
+    
+    // Set a new timeout for debouncing
+    descriptionSaveTimerRef.current = setTimeout(() => {
+      try {
+        onSave({ 
+          description, 
+          // Include current values for required fields to ensure validation passes
+          title: form.getValues().title,
+          conversationFlow: form.getValues().conversationFlow 
+        });
+      } catch (err) {
+        console.error("Error saving description:", err);
+      } finally {
+        setTimeout(() => setIsSavingDescription(false), 500);
+        descriptionSaveTimerRef.current = null;
+      }
+    }, 800); // Wait for 800ms of inactivity before saving
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
