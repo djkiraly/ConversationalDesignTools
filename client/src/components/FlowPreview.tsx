@@ -55,8 +55,8 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
         nodePositions: JSON.stringify(positions)
       };
       
-      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, updateData);
-      return response.json();
+      // apiRequest already returns the parsed JSON, so no need to call .json()
+      return apiRequest('PUT', `/api/use-cases/${useCase.id}`, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/use-cases', useCase.id.toString()] });
