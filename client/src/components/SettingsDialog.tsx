@@ -233,13 +233,50 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>OpenAI API Key</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter your OpenAI API key"
-                        {...field} 
-                        type="text"
-                      />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your OpenAI API key"
+                          {...field} 
+                          type="text"
+                          className="flex-grow"
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        onClick={handleValidateApiKey}
+                        disabled={validateApiKey.isPending || !field.value}
+                        variant="outline"
+                        className="shrink-0"
+                      >
+                        {validateApiKey.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : "Validate"}
+                      </Button>
+                    </div>
+                    
+                    {/* Validation status */}
+                    {validationStatus !== 'none' && (
+                      <div className={`mt-2 text-sm flex items-center gap-1.5 ${
+                        validationStatus === 'valid' 
+                          ? 'text-green-600' 
+                          : validationStatus === 'invalid' 
+                            ? 'text-red-600' 
+                            : 'text-amber-600'
+                      }`}>
+                        {validationStatus === 'valid' && <CheckCircle2 className="h-4 w-4" />}
+                        {validationStatus === 'invalid' && <XCircle className="h-4 w-4" />}
+                        {validationStatus === 'validating' && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <span>{validationMessage || (
+                          validationStatus === 'validating' 
+                            ? 'Validating API key...' 
+                            : validationStatus === 'valid' 
+                              ? 'API key is valid' 
+                              : 'API key is invalid'
+                        )}</span>
+                      </div>
+                    )}
+                    
                     <FormDescription>
                       Your OpenAI API key used for AI-powered features.
                     </FormDescription>
