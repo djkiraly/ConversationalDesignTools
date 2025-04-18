@@ -60,7 +60,8 @@ export default function SuggestionsDialog({
       
       const response = await apiRequest('POST', '/api/openai/suggestions', { 
         title, 
-        description 
+        description,
+        agentPersona 
       }) as OpenAIResponse;
       
       console.log("Received response:", response);
