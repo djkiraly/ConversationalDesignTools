@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Setting } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 // Form validation schema
 const formSchema = z.object({
@@ -45,6 +45,8 @@ interface SettingsDialogProps {
 
 export default function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { toast } = useToast();
+  const [validationStatus, setValidationStatus] = useState<'none' | 'validating' | 'valid' | 'invalid'>('none');
+  const [validationMessage, setValidationMessage] = useState<string>('');
   
   // Query to fetch settings
   const { 
@@ -76,6 +78,13 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       openai_user_prompt: getSettingValue('openai_user_prompt'),
     }
   });
+  
+  // Reset validation status when API key changes
+  const apiKey = form.watch('openai_api_key');
+  useEffect(() => {
+    setValidationStatus('none');
+    setValidationMessage('');
+  }, [apiKey]);
 
   // Update setting mutation
   const updateSetting = useMutation({
@@ -93,6 +102,61 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       });
     }
   });
+  
+  // Validation mutation
+  const validateApiKey = useMutation({
+    mutationFn: async (apiKey: string) => {
+      const response = await apiRequest('POST', '/api/openai/validate', { apiKey });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.valid) {
+        setValidationStatus('valid');
+        setValidationMessage(
+          data.models?.length 
+            ? `API key is valid. Found ${data.models.length} models.` 
+            : 'API key is valid.'
+        );
+        toast({
+          title: "API Key Validated",
+          description: "The OpenAI API key is valid.",
+        });
+      } else {
+        setValidationStatus('invalid');
+        setValidationMessage(data.error || 'API key is invalid.');
+        toast({
+          title: "API Key Invalid",
+          description: data.error || "The OpenAI API key is invalid.",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error) => {
+      setValidationStatus('invalid');
+      setValidationMessage((error as Error).message);
+      toast({
+        title: "Validation Failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle validation button click
+  const handleValidateApiKey = () => {
+    const apiKey = form.getValues('openai_api_key');
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter an API key to validate.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setValidationStatus('validating');
+    validateApiKey.mutate(apiKey);
+  };
 
   // Form submit handler
   async function onSubmit(values: FormValues) {

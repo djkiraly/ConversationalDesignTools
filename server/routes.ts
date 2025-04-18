@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema } from "@shared/schema";
+import { validateOpenAIKey } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
@@ -161,6 +162,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.deleteSetting(key);
       res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // OpenAI Validation API
+  app.post('/api/openai/validate', async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      
+      if (!apiKey) {
+        return res.status(400).json({ error: "API key is required" });
+      }
+      
+      const validationResult = await validateOpenAIKey(apiKey);
+      res.json(validationResult);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
