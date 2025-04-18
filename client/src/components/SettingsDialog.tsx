@@ -327,8 +327,6 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                 )}
               />
               
-
-              
               <DialogFooter>
                 <Button
                   type="button"
