@@ -1,30 +1,22 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import pg from 'pg';
+const { Pool } = pg;
 import { log } from './vite';
 
-neonConfig.webSocketConstructor = ws;
-
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
-
 // Create database connection
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-// Create drizzle database instance with schema
-export const db = drizzle({ client: pool, schema });
+// Create drizzle database instance
+export const db = drizzle(pool);
 
-// Run migrations on startup (using direct SQL as we're using drizzle-kit push)
+// Run migrations on startup
 export async function runMigrations() {
   log('Running database migrations...', 'db');
   try {
-    // Execute any pending migrations via SQL directly
-    // This is just a placeholder since we're using drizzle-kit push instead
-    await pool.query(`SELECT NOW()`);
+    await migrate(db, { migrationsFolder: './migrations' });
     log('Migrations completed successfully', 'db');
   } catch (error) {
     log(`Migration error: ${(error as Error).message}`, 'db');
@@ -71,7 +63,7 @@ async function createTablesDirectly() {
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
+      password_hash TEXT NOT NULL
     )
   `);
   
@@ -92,53 +84,13 @@ async function createTablesDirectly() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS flow_nodes (
       id SERIAL PRIMARY KEY,
-      use_case_id INTEGER NOT NULL,
+      use_case_id INTEGER NOT NULL REFERENCES use_cases(id),
       step_number INTEGER NOT NULL,
       step_type TEXT,
-      customer_text TEXT NOT NULL,
-      agent_text TEXT NOT NULL,
+      messages TEXT NOT NULL,
       next_node_id INTEGER,
       position_x REAL,
       position_y REAL
-    )
-  `);
-  
-  // Create settings table
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS settings (
-      id SERIAL PRIMARY KEY,
-      key TEXT NOT NULL UNIQUE,
-      value TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-    )
-  `);
-  
-  // Create transcripts table
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS transcripts (
-      id SERIAL PRIMARY KEY,
-      title TEXT NOT NULL,
-      source TEXT NOT NULL,
-      content TEXT NOT NULL,
-      analyzed_flow JSONB,
-      metrics JSONB,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-    )
-  `);
-  
-  // Create journey_maps table
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS journey_maps (
-      id SERIAL PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT,
-      node_data JSONB NOT NULL,
-      node_styles JSONB,
-      insights JSONB,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
     )
   `);
 }

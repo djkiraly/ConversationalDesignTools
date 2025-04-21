@@ -53,16 +53,11 @@ app.use((req, res, next) => {
     
     // Seed initial data if database is empty
     log('Seeding initial data...', 'server');
-    try {
-      await seedInitialData();
-      log('Data seeding completed', 'server');
-    } catch (seedError) {
-      log(`Data seeding encountered issues: ${(seedError as Error).message}`, 'server');
-      log('Continuing with application startup...', 'server');
-    }
+    await seedInitialData();
+    log('Data seeding completed', 'server');
   } catch (error) {
-    log(`Initialization warning: ${(error as Error).message}`, 'server');
-    log('Attempting to continue with partial initialization...', 'server');
+    log(`Initialization failed: ${(error as Error).message}`, 'server');
+    process.exit(1);
   }
   
   const server = await registerRoutes(app);
