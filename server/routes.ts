@@ -2,8 +2,8 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, OPENAI_API_KEY_SETTING } from "./openai";
+import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema, insertTranscriptSchema, updateTranscriptSchema, insertJourneyMapSchema, updateJourneyMapSchema } from "@shared/schema";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, OPENAI_API_KEY_SETTING, analyzeTranscript, optimizeJourneyMap } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
@@ -311,6 +311,345 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         error: (error as Error).message || 'Failed to get conversation flow suggestion from OpenAI' 
       });
+    }
+  });
+
+  // Transcript APIs
+  app.get('/api/transcripts', async (_req, res) => {
+    try {
+      const transcripts = await storage.getAllTranscripts();
+      res.json(transcripts);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/transcripts/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const transcript = await storage.getTranscript(id);
+      if (!transcript) {
+        return res.status(404).json({ error: "Transcript not found" });
+      }
+
+      res.json(transcript);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/transcripts', async (req, res) => {
+    try {
+      const result = insertTranscriptSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const newTranscript = await storage.createTranscript(result.data);
+      res.status(201).json(newTranscript);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.put('/api/transcripts/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingTranscript = await storage.getTranscript(id);
+      if (!existingTranscript) {
+        return res.status(404).json({ error: "Transcript not found" });
+      }
+
+      const result = updateTranscriptSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedTranscript = await storage.updateTranscript(id, result.data);
+      res.json(updatedTranscript);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.delete('/api/transcripts/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingTranscript = await storage.getTranscript(id);
+      if (!existingTranscript) {
+        return res.status(404).json({ error: "Transcript not found" });
+      }
+
+      await storage.deleteTranscript(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Endpoint for transcript analysis
+  app.post('/api/openai/analyze-transcript', async (req, res) => {
+    try {
+      const { transcriptId } = req.body;
+      
+      // Validate input
+      if (!transcriptId) {
+        return res.status(400).json({ error: "Transcript ID is required" });
+      }
+      
+      // Get the transcript
+      const id = parseInt(transcriptId);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid transcript ID format" });
+      }
+      
+      const transcript = await storage.getTranscript(id);
+      if (!transcript) {
+        return res.status(404).json({ error: "Transcript not found" });
+      }
+      
+      console.log(`Analyzing transcript: ${transcript.title} (ID: ${transcript.id})`);
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Call OpenAI to analyze the transcript
+      const analysisResult = await analyzeTranscript(
+        apiKeySetting.value,
+        transcript.title,
+        transcript.content
+      );
+      
+      if (!analysisResult.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: analysisResult.error || 'Failed to analyze transcript'
+        });
+      }
+      
+      // Update the transcript with the analysis
+      const updatedTranscript = await storage.updateTranscript(transcript.id, {
+        ...transcript,
+        analyzedFlow: analysisResult.analysis,
+        updatedAt: new Date()
+      });
+      
+      res.json({ 
+        success: true, 
+        transcript: updatedTranscript,
+        analysis: analysisResult.analysis
+      });
+    } catch (error) {
+      console.error('Error analyzing transcript:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: (error as Error).message || 'Failed to analyze transcript'
+      });
+    }
+  });
+
+  // Endpoint for journey map optimization
+  app.post('/api/openai/optimize-journey-map', async (req, res) => {
+    try {
+      const { title, description, journeyMapId } = req.body;
+      
+      // Validate input
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
+      }
+      
+      if (!description) {
+        return res.status(400).json({ error: "Description is required" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Get existing journey map if provided
+      let currentJourneyMap;
+      if (journeyMapId) {
+        const id = parseInt(journeyMapId);
+        if (!isNaN(id)) {
+          const journeyMap = await storage.getJourneyMap(id);
+          if (journeyMap) {
+            currentJourneyMap = journeyMap.nodeData;
+          }
+        }
+      }
+      
+      console.log(`Optimizing journey map: ${title} ${currentJourneyMap ? '(updating existing)' : '(creating new)'}`);
+      
+      // Call OpenAI to optimize the journey map
+      const optimizationResult = await optimizeJourneyMap(
+        apiKeySetting.value,
+        title,
+        description,
+        currentJourneyMap
+      );
+      
+      if (!optimizationResult.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: optimizationResult.error || 'Failed to optimize journey map'
+        });
+      }
+      
+      // If updating an existing journey map
+      if (journeyMapId) {
+        const id = parseInt(journeyMapId);
+        if (!isNaN(id)) {
+          const existingJourneyMap = await storage.getJourneyMap(id);
+          if (existingJourneyMap) {
+            const updatedJourneyMap = await storage.updateJourneyMap(id, {
+              ...existingJourneyMap,
+              title,
+              description,
+              nodeData: optimizationResult.journeyMap,
+              updatedAt: new Date()
+            });
+            
+            return res.json({ 
+              success: true, 
+              journeyMap: updatedJourneyMap,
+              isNew: false
+            });
+          }
+        }
+      }
+      
+      // Create a new journey map
+      const newJourneyMap = await storage.createJourneyMap({
+        title,
+        description,
+        nodeData: optimizationResult.journeyMap,
+        nodeStyles: {},
+        insights: {}
+      });
+      
+      res.json({ 
+        success: true, 
+        journeyMap: newJourneyMap,
+        isNew: true
+      });
+    } catch (error) {
+      console.error('Error optimizing journey map:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: (error as Error).message || 'Failed to optimize journey map'
+      });
+    }
+  });
+
+  // Journey Map APIs
+  app.get('/api/journey-maps', async (_req, res) => {
+    try {
+      const journeyMaps = await storage.getAllJourneyMaps();
+      res.json(journeyMaps);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/journey-maps/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const journeyMap = await storage.getJourneyMap(id);
+      if (!journeyMap) {
+        return res.status(404).json({ error: "Journey map not found" });
+      }
+
+      res.json(journeyMap);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/journey-maps', async (req, res) => {
+    try {
+      const result = insertJourneyMapSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const newJourneyMap = await storage.createJourneyMap(result.data);
+      res.status(201).json(newJourneyMap);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.put('/api/journey-maps/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourneyMap = await storage.getJourneyMap(id);
+      if (!existingJourneyMap) {
+        return res.status(404).json({ error: "Journey map not found" });
+      }
+
+      const result = updateJourneyMapSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedJourneyMap = await storage.updateJourneyMap(id, result.data);
+      res.json(updatedJourneyMap);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.delete('/api/journey-maps/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourneyMap = await storage.getJourneyMap(id);
+      if (!existingJourneyMap) {
+        return res.status(404).json({ error: "Journey map not found" });
+      }
+
+      await storage.deleteJourneyMap(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 
