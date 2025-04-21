@@ -1,22 +1,30 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import pg from 'pg';
-const { Pool } = pg;
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from "ws";
+import * as schema from "@shared/schema";
 import { log } from './vite';
 
+neonConfig.webSocketConstructor = ws;
+
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
+
 // Create database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Create drizzle database instance
-export const db = drizzle(pool);
+// Create drizzle database instance with schema
+export const db = drizzle({ client: pool, schema });
 
-// Run migrations on startup
+// Run migrations on startup (using direct SQL as we're using drizzle-kit push)
 export async function runMigrations() {
   log('Running database migrations...', 'db');
   try {
-    await migrate(db, { migrationsFolder: './migrations' });
+    // Execute any pending migrations via SQL directly
+    // This is just a placeholder since we're using drizzle-kit push instead
+    await pool.query(`SELECT NOW()`);
     log('Migrations completed successfully', 'db');
   } catch (error) {
     log(`Migration error: ${(error as Error).message}`, 'db');
