@@ -399,7 +399,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint for transcript analysis
+  // Endpoint for transcript analysis by ID
+  app.post('/api/transcripts/:id/analyze', async (req, res) => {
+    try {
+      // Get the transcript
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid transcript ID format" });
+      }
+      
+      const transcript = await storage.getTranscript(id);
+      if (!transcript) {
+        return res.status(404).json({ error: "Transcript not found" });
+      }
+      
+      console.log(`Analyzing transcript: ${transcript.title} (ID: ${transcript.id})`);
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Call OpenAI to analyze the transcript
+      const analysisResult = await analyzeTranscript(
+        apiKeySetting.value,
+        transcript.title,
+        transcript.content
+      );
+      
+      if (!analysisResult.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: analysisResult.error || 'Failed to analyze transcript'
+        });
+      }
+      
+      // Update the transcript with the analysis
+      const updatedTranscript = await storage.updateTranscript(transcript.id, {
+        ...transcript,
+        analyzedFlow: analysisResult.analysis,
+        updatedAt: new Date()
+      });
+      
+      res.json({ 
+        success: true, 
+        transcript: updatedTranscript,
+        analysis: analysisResult.analysis
+      });
+    } catch (error) {
+      console.error('Error analyzing transcript:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: (error as Error).message || 'Failed to analyze transcript'
+      });
+    }
+  });
+  
+  // Legacy endpoint for transcript analysis (keeping for backward compatibility)
   app.post('/api/openai/analyze-transcript', async (req, res) => {
     try {
       const { transcriptId } = req.body;
@@ -650,6 +712,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // Endpoint for optimizing a specific journey map
+  app.post('/api/journey-maps/:id/optimize', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const journeyMap = await storage.getJourneyMap(id);
+      if (!journeyMap) {
+        return res.status(404).json({ error: "Journey map not found" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      console.log(`Optimizing journey map: ${journeyMap.title} (ID: ${journeyMap.id})`);
+      
+      // Call OpenAI to optimize the journey map
+      const optimizationResult = await optimizeJourneyMap(
+        apiKeySetting.value,
+        journeyMap.title,
+        journeyMap.description || '',
+        journeyMap.nodeData
+      );
+      
+      if (!optimizationResult.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: optimizationResult.error || 'Failed to optimize journey map'
+        });
+      }
+      
+      // Update the journey map with the optimized data
+      const updatedJourneyMap = await storage.updateJourneyMap(journeyMap.id, {
+        ...journeyMap,
+        nodeData: optimizationResult.journeyMap,
+        insights: optimizationResult.insights || journeyMap.insights,
+        updatedAt: new Date()
+      });
+      
+      res.json({ 
+        success: true, 
+        journeyMap: updatedJourneyMap
+      });
+    } catch (error) {
+      console.error('Error optimizing journey map:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: (error as Error).message || 'Failed to optimize journey map'
+      });
     }
   });
 
