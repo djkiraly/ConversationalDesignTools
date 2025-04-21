@@ -4,6 +4,8 @@ import {
   useCases, 
   flowNodes,
   settings,
+  transcripts,
+  journeyMaps,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -13,7 +15,13 @@ import {
   type InsertFlowNode,
   type Setting,
   type InsertSetting,
-  type UpdateSetting
+  type UpdateSetting,
+  type Transcript,
+  type InsertTranscript,
+  type UpdateTranscript,
+  type JourneyMap,
+  type InsertJourneyMap,
+  type UpdateJourneyMap
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
