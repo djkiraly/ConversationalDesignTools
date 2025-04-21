@@ -63,7 +63,7 @@ async function createTablesDirectly() {
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL
+      password TEXT NOT NULL
     )
   `);
   
@@ -84,13 +84,53 @@ async function createTablesDirectly() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS flow_nodes (
       id SERIAL PRIMARY KEY,
-      use_case_id INTEGER NOT NULL REFERENCES use_cases(id),
+      use_case_id INTEGER NOT NULL,
       step_number INTEGER NOT NULL,
       step_type TEXT,
-      messages TEXT NOT NULL,
+      customer_text TEXT NOT NULL,
+      agent_text TEXT NOT NULL,
       next_node_id INTEGER,
       position_x REAL,
       position_y REAL
+    )
+  `);
+  
+  // Create settings table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id SERIAL PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      value TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+    )
+  `);
+  
+  // Create transcripts table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS transcripts (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      source TEXT NOT NULL,
+      content TEXT NOT NULL,
+      analyzed_flow JSONB,
+      metrics JSONB,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+    )
+  `);
+  
+  // Create journey_maps table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS journey_maps (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      node_data JSONB NOT NULL,
+      node_styles JSONB,
+      insights JSONB,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
     )
   `);
 }

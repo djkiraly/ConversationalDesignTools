@@ -3,6 +3,8 @@ import {
   useCases, 
   flowNodes,
   settings,
+  transcripts,
+  journeyMaps,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -12,7 +14,13 @@ import {
   type InsertFlowNode,
   type Setting,
   type InsertSetting,
-  type UpdateSetting
+  type UpdateSetting,
+  type Transcript,
+  type InsertTranscript,
+  type UpdateTranscript,
+  type JourneyMap,
+  type InsertJourneyMap,
+  type UpdateJourneyMap
 } from "@shared/schema";
 
 // Storage interface
@@ -35,6 +43,20 @@ export interface IStorage {
   updateFlowNode(id: number, flowNode: Partial<FlowNode>): Promise<FlowNode>;
   deleteFlowNode(id: number): Promise<void>;
   
+  // Transcript management
+  getAllTranscripts(): Promise<Transcript[]>;
+  getTranscript(id: number): Promise<Transcript | undefined>;
+  createTranscript(transcript: InsertTranscript): Promise<Transcript>;
+  updateTranscript(id: number, transcript: UpdateTranscript): Promise<Transcript>;
+  deleteTranscript(id: number): Promise<void>;
+
+  // Journey map management
+  getAllJourneyMaps(): Promise<JourneyMap[]>;
+  getJourneyMap(id: number): Promise<JourneyMap | undefined>;
+  createJourneyMap(journeyMap: InsertJourneyMap): Promise<JourneyMap>;
+  updateJourneyMap(id: number, journeyMap: UpdateJourneyMap): Promise<JourneyMap>;
+  deleteJourneyMap(id: number): Promise<void>;
+  
   // Settings management
   getAllSettings(): Promise<Setting[]>;
   getSetting(key: string): Promise<Setting | undefined>;
@@ -48,22 +70,30 @@ export class MemStorage implements IStorage {
   private useCases: Map<number, UseCase>;
   private flowNodes: Map<number, FlowNode>;
   private settings: Map<string, Setting>;
+  private transcripts: Map<number, Transcript>;
+  private journeyMaps: Map<number, JourneyMap>;
   
   private userCurrentId: number;
   private useCaseCurrentId: number;
   private flowNodeCurrentId: number;
   private settingCurrentId: number;
+  private transcriptCurrentId: number;
+  private journeyMapCurrentId: number;
 
   constructor() {
     this.users = new Map();
     this.useCases = new Map();
     this.flowNodes = new Map();
     this.settings = new Map();
+    this.transcripts = new Map();
+    this.journeyMaps = new Map();
     
     this.userCurrentId = 1;
     this.useCaseCurrentId = 1;
     this.flowNodeCurrentId = 1;
     this.settingCurrentId = 1;
+    this.transcriptCurrentId = 1;
+    this.journeyMapCurrentId = 1;
     
     // Add some sample use cases for testing
     this.addSampleUseCases();
@@ -228,13 +258,111 @@ export class MemStorage implements IStorage {
   async deleteSetting(key: string): Promise<void> {
     this.settings.delete(key);
   }
+
+  // Transcript methods
+  async getAllTranscripts(): Promise<Transcript[]> {
+    return Array.from(this.transcripts.values()).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+
+  async getTranscript(id: number): Promise<Transcript | undefined> {
+    return this.transcripts.get(id);
+  }
+
+  async createTranscript(insertTranscript: InsertTranscript): Promise<Transcript> {
+    const id = this.transcriptCurrentId++;
+    const now = new Date();
+    const transcript: Transcript = {
+      id,
+      title: insertTranscript.title,
+      source: insertTranscript.source,
+      content: insertTranscript.content,
+      analyzedFlow: insertTranscript.analyzedFlow ?? null,
+      metrics: insertTranscript.metrics ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.transcripts.set(id, transcript);
+    return transcript;
+  }
+
+  async updateTranscript(id: number, updateData: UpdateTranscript): Promise<Transcript> {
+    const existingTranscript = this.transcripts.get(id);
+    if (!existingTranscript) {
+      throw new Error(`Transcript with id ${id} not found`);
+    }
+    
+    const updatedTranscript: Transcript = {
+      ...existingTranscript,
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    this.transcripts.set(id, updatedTranscript);
+    return updatedTranscript;
+  }
+
+  async deleteTranscript(id: number): Promise<void> {
+    this.transcripts.delete(id);
+  }
+
+  // Journey map methods
+  async getAllJourneyMaps(): Promise<JourneyMap[]> {
+    return Array.from(this.journeyMaps.values()).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+
+  async getJourneyMap(id: number): Promise<JourneyMap | undefined> {
+    return this.journeyMaps.get(id);
+  }
+
+  async createJourneyMap(insertJourneyMap: InsertJourneyMap): Promise<JourneyMap> {
+    const id = this.journeyMapCurrentId++;
+    const now = new Date();
+    const journeyMap: JourneyMap = {
+      id,
+      title: insertJourneyMap.title,
+      description: insertJourneyMap.description ?? null,
+      nodeData: insertJourneyMap.nodeData,
+      nodeStyles: insertJourneyMap.nodeStyles ?? null,
+      insights: insertJourneyMap.insights ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.journeyMaps.set(id, journeyMap);
+    return journeyMap;
+  }
+
+  async updateJourneyMap(id: number, updateData: UpdateJourneyMap): Promise<JourneyMap> {
+    const existingJourneyMap = this.journeyMaps.get(id);
+    if (!existingJourneyMap) {
+      throw new Error(`Journey map with id ${id} not found`);
+    }
+    
+    const updatedJourneyMap: JourneyMap = {
+      ...existingJourneyMap,
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    this.journeyMaps.set(id, updatedJourneyMap);
+    return updatedJourneyMap;
+  }
+
+  async deleteJourneyMap(id: number): Promise<void> {
+    this.journeyMaps.delete(id);
+  }
   
   // Helper method to add default settings
   private addDefaultSettings(): void {
     const defaultSettings = [
       { key: 'openai_api_key', value: '' },
       { key: 'openai_system_prompt', value: 'You are a helpful assistant that responds to customer requests. Your goal is to understand the customer needs and provide clear, concise and helpful responses.' },
-      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' }
+      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' },
+      { key: 'analysis.minConfidenceScore', value: '0.7' },
+      { key: 'analysis.defaultNodeLayout', value: 'dagre' }
     ];
 
     for (const setting of defaultSettings) {
