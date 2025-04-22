@@ -264,6 +264,7 @@ export class MemStorage implements IStorage {
       customerName: insertJourney.customerName || null,
       workflowIntent: insertJourney.workflowIntent || null,
       notes: insertJourney.notes || null,
+      summary: insertJourney.summary || null,
       nodes: insertJourney.nodes,
       edges: insertJourney.edges,
       createdAt: now,
