@@ -160,3 +160,27 @@ export async function generateJourneySummary(journeyId: number): Promise<Custome
   
   return response.data.journey;
 }
+
+// Generate a customer journey using AI
+export interface GeneratedJourney {
+  nodes: any[];
+  edges: any[];
+}
+
+export async function generateAIJourney(description: string): Promise<GeneratedJourney> {
+  const response = await apiRequest<{ success: boolean; journey: GeneratedJourney }>(
+    '/api/customer-journeys/generate-ai-journey',
+    'POST',
+    { description }
+  );
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  if (!response.data || !response.data.success) {
+    throw new Error('Failed to generate AI journey');
+  }
+  
+  return response.data.journey;
+}

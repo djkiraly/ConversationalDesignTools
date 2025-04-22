@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { Node, Edge, XYPosition, MarkerType } from 'reactflow';
 
 // Constants for the OpenAI integration
 export const OPENAI_API_KEY_SETTING = 'openai.apiKey';
@@ -250,6 +251,123 @@ Your summary should be a single paragraph without bullet points or numbered list
     return {
       success: false,
       error: error.message || 'Failed to generate journey summary'
+    };
+  }
+}
+
+// Generate a complete journey flow based on a description
+export async function generateAIJourney(
+  apiKey: string,
+  description: string
+): Promise<{
+  success: boolean;
+  journey?: {
+    nodes: Node[];
+    edges: Edge[];
+  };
+  error?: string;
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Prepare the prompt
+    const prompt = `You are an expert in designing customer journey maps. Create a detailed customer journey based on the following description:
+
+Description: "${description}"
+
+Generate a complete customer journey map with appropriate stages that makes sense for this scenario. 
+Each step should have a type, title, and brief description.
+
+Respond with JSON in the following format:
+{
+  "steps": [
+    {
+      "id": "node1",
+      "type": "Entry Point",
+      "title": "Step Title",
+      "description": "Brief description of this step"
+    },
+    ... more steps ...
+  ],
+  "connections": [
+    { 
+      "source": "node1", 
+      "target": "node2" 
+    },
+    ... more connections ...
+  ]
+}
+
+The journey should have 5-8 logical steps. Each step should have a descriptive title and a concise description.
+Valid step types include: "Entry Point", "Awareness", "Research", "Consideration", "Evaluation", "Decision", "Purchase", "Onboarding", "Support", "Feedback", "Retention".
+Connections should form a logical flow from one step to the next.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert in customer experience design and journey mapping." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7
+    });
+
+    const content = response.choices[0].message.content;
+    
+    if (!content) {
+      throw new Error('No journey was generated');
+    }
+    
+    const journeyData = JSON.parse(content);
+    
+    // Transform the returned data into ReactFlow nodes and edges
+    const nodes: Node[] = journeyData.steps.map((step: any, index: number) => {
+      // Calculate position - place nodes in a horizontal line
+      const position: XYPosition = {
+        x: 100 + (index * 250),
+        y: 100
+      };
+      
+      return {
+        id: step.id,
+        type: 'journeyNode',
+        data: {
+          stepType: step.type,
+          title: step.title,
+          description: step.description
+        },
+        position
+      };
+    });
+    
+    const edges: Edge[] = journeyData.connections.map((connection: any, index: number) => ({
+      id: `e${connection.source}-${connection.target}`,
+      source: connection.source,
+      target: connection.target,
+      type: 'smoothstep',
+      animated: true,
+      style: { stroke: '#2563eb' },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: '#2563eb',
+      }
+    }));
+    
+    return {
+      success: true,
+      journey: {
+        nodes,
+        edges
+      }
+    };
+  } catch (error: any) {
+    console.error('Error generating AI journey:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate AI journey'
     };
   }
 }
