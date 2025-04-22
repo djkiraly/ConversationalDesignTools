@@ -222,9 +222,9 @@ const initialNodes: Node[] = [
   }
 ];
 
-// Interface for saved journey data
-interface SavedJourney {
-  id: string; // The localStorage key
+// Interface for our display of saved journeys in the sidebar
+interface SavedJourneyDisplay {
+  id: number;
   title: string;
   lastSaved: string;
   preview?: {
@@ -240,9 +240,9 @@ export default function CustomerJourney() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
-  const [currentJourneyId, setCurrentJourneyId] = useState<string | null>(null);
+  const [currentJourneyId, setCurrentJourneyId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   // State for node editing
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -258,139 +258,126 @@ export default function CustomerJourney() {
     description: ""
   });
   
-  // Auto-save functionality
-  const autoSaveChanges = useCallback(() => {
-    // Clear any existing timeout
-    if (saveTimeout) {
-      clearTimeout(saveTimeout);
-    }
-    
-    // Set a new timeout to save after 5 seconds of inactivity
-    const timeout = setTimeout(() => {
-      saveJourney();
-    }, 5000);
-    
-    setSaveTimeout(timeout);
-  }, [saveTimeout, nodes, edges]);
+  // React Query for fetching all journeys
+  const { 
+    data: journeysData, 
+    isLoading: isLoadingJourneys,
+    isError: isJourneysError,
+    error: journeysError
+  } = useQuery({
+    queryKey: ['/api/customer-journeys'],
+    queryFn: () => fetchAllCustomerJourneys(),
+  });
   
-  // Load saved journeys from localStorage
-  const loadSavedJourneys = useCallback(() => {
-    try {
-      const journeys: SavedJourney[] = [];
-      
-      // Get all keys from localStorage
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        
-        // Only include journey keys
-        if (key && key.startsWith('journey_')) {
-          try {
-            const journeyData = JSON.parse(localStorage.getItem(key) || '');
-            
-            journeys.push({
-              id: key,
-              title: journeyData.title || 'Untitled Journey',
-              lastSaved: journeyData.lastSaved || new Date().toISOString(),
-              preview: {
-                nodeCount: journeyData.nodes?.length || 0,
-                edgeCount: journeyData.edges?.length || 0,
-              }
-            });
-          } catch (e) {
-            console.error(`Failed to parse journey data for key ${key}`, e);
-          }
-        }
-      }
-      
-      // Sort by last saved time, newest first
-      journeys.sort((a, b) => new Date(b.lastSaved).getTime() - new Date(a.lastSaved).getTime());
-      
-      setSavedJourneys(journeys);
-    } catch (error) {
-      console.error("Failed to load saved journeys:", error);
+  // Format journeys for display
+  const savedJourneys: SavedJourneyDisplay[] = journeysData?.map(journey => ({
+    id: journey.id,
+    title: journey.title,
+    lastSaved: journey.updatedAt,
+    preview: {
+      nodeCount: journey.nodes?.length || 0,
+      edgeCount: journey.edges?.length || 0,
     }
-  }, []);
+  })) || [];
   
-  // Load a specific journey
-  const loadJourney = useCallback((journeyId: string) => {
-    try {
-      const journeyData = JSON.parse(localStorage.getItem(journeyId) || '');
-      
-      if (journeyData) {
-        setJourneyTitle(journeyData.title || 'Untitled Journey');
-        setNodes(journeyData.nodes || initialNodes);
-        setEdges(journeyData.edges || []);
-        setCurrentJourneyId(journeyId);
-        
-        toast({
-          title: "Journey Loaded",
-          description: `Loaded "${journeyData.title || 'Untitled Journey'}"`,
-          duration: 2000
-        });
-      }
-    } catch (error) {
-      console.error("Failed to load journey:", error);
+  // Mutations for creating, updating and deleting journeys
+  const createJourneyMutation = useMutation({
+    mutationFn: (journeyData: { title: string, nodes: any[], edges: any[] }) => 
+      createCustomerJourney(journeyData),
+    onSuccess: (data) => {
+      setCurrentJourneyId(data.id);
       toast({
-        title: "Load Failed",
-        description: "There was an error loading the journey.",
+        title: "Journey Created",
+        description: "Your journey has been created successfully.",
+        duration: 3000
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Create Failed",
+        description: error instanceof Error ? error.message : "There was an error creating your journey.",
         variant: "destructive"
       });
     }
-  }, [setNodes, setEdges, toast]);
+  });
   
-  // Delete a saved journey
-  const deleteJourney = useCallback((journeyId: string, journeyTitle: string) => {
-    try {
-      localStorage.removeItem(journeyId);
-      loadSavedJourneys(); // Refresh the list
-      
+  const updateJourneyMutation = useMutation({
+    mutationFn: (params: { id: number, journeyData: Partial<CustomerJourneyType> }) => 
+      updateCustomerJourney(params.id, params.journeyData),
+    onSuccess: () => {
+      toast({
+        title: "Journey Updated",
+        description: "Your journey has been updated successfully.",
+        duration: 3000
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "There was an error updating your journey.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const deleteJourneyMutation = useMutation({
+    mutationFn: (id: number) => deleteCustomerJourney(id),
+    onSuccess: () => {
       toast({
         title: "Journey Deleted",
-        description: `Deleted "${journeyTitle}"`,
-        duration: 2000
+        description: "The journey has been deleted successfully.",
+        duration: 3000
       });
-      
-      // If the current journey was deleted, reset to a new journey
-      if (journeyId === currentJourneyId) {
-        setNodes(initialNodes);
-        setEdges([]);
-        setJourneyTitle("New Customer Journey");
-        setCurrentJourneyId(null);
-      }
-    } catch (error) {
-      console.error("Failed to delete journey:", error);
+    },
+    onError: (error) => {
       toast({
         title: "Delete Failed",
-        description: "There was an error deleting the journey.",
+        description: error instanceof Error ? error.message : "There was an error deleting the journey.",
         variant: "destructive"
       });
     }
-  }, [currentJourneyId, loadSavedJourneys, toast, setNodes, setEdges]);
+  });
   
-  // Save journey to localStorage
-  const saveJourney = useCallback((isAutoSave = true) => {
+  const deleteAllJourneysMutation = useMutation({
+    mutationFn: () => deleteAllCustomerJourneys(),
+    onSuccess: () => {
+      toast({
+        title: "All Journeys Deleted",
+        description: "All journeys have been deleted successfully.",
+        duration: 3000
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Bulk Delete Failed",
+        description: error instanceof Error ? error.message : "There was an error deleting all journeys.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Save journey to database - declare before usage
+  const saveJourney = useCallback(async (isAutoSave = true) => {
     try {
       const journeyData = {
         title: journeyTitle,
         nodes,
         edges,
-        lastSaved: new Date().toISOString()
       };
       
-      // Generate a new ID or use the existing one
-      const journeyId = currentJourneyId || `journey_${Date.now()}`;
-      
-      localStorage.setItem(journeyId, JSON.stringify(journeyData));
-      
-      // Set the current journey ID
-      if (!currentJourneyId) {
-        setCurrentJourneyId(journeyId);
+      // If we have a currentJourneyId, update the existing journey
+      if (currentJourneyId) {
+        await updateJourneyMutation.mutateAsync({
+          id: currentJourneyId,
+          journeyData
+        });
+      } else {
+        // Otherwise create a new journey
+        const newJourney = await createJourneyMutation.mutateAsync(journeyData);
+        setCurrentJourneyId(newJourney.id);
       }
       
-      // Refresh the journeys list
-      loadSavedJourneys();
-      
-      // Only show toast for manual saves or first auto-save
+      // Only show toast for manual saves
       if (!isAutoSave) {
         toast({
           title: "Journey Saved",
@@ -404,11 +391,96 @@ export default function CustomerJourney() {
       console.error("Failed to save journey:", error);
       toast({
         title: "Save Failed",
-        description: "There was an error saving your journey.",
+        description: error instanceof Error ? error.message : "There was an error saving your journey.",
         variant: "destructive"
       });
     }
-  }, [nodes, edges, journeyTitle, currentJourneyId, loadSavedJourneys, toast]);
+  }, [
+    nodes, 
+    edges, 
+    journeyTitle, 
+    currentJourneyId, 
+    toast, 
+    createJourneyMutation, 
+    updateJourneyMutation
+  ]);
+  
+  // Auto-save functionality
+  const autoSaveChanges = useCallback(() => {
+    // Clear any existing timeout
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    
+    // Set a new timeout to save after 5 seconds of inactivity
+    const timeout = setTimeout(() => {
+      saveJourney();
+    }, 5000);
+    
+    setSaveTimeout(timeout);
+  }, [saveTimeout, saveJourney]);
+  
+  // Load a specific journey
+  const loadJourney = useCallback(async (journeyId: number) => {
+    try {
+      setIsLoading(true);
+      const journey = await fetchCustomerJourney(journeyId);
+      
+      if (journey) {
+        setJourneyTitle(journey.title || 'Untitled Journey');
+        setNodes(journey.nodes || initialNodes);
+        setEdges(journey.edges || []);
+        setCurrentJourneyId(journey.id);
+        
+        toast({
+          title: "Journey Loaded",
+          description: `Loaded "${journey.title || 'Untitled Journey'}"`,
+          duration: 2000
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load journey:", error);
+      toast({
+        title: "Load Failed",
+        description: error instanceof Error ? error.message : "There was an error loading the journey.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setNodes, setEdges, toast]);
+  
+  // Delete a saved journey
+  const deleteJourney = useCallback(async (journeyId: number, journeyTitle: string) => {
+    try {
+      await deleteJourneyMutation.mutateAsync(journeyId);
+      
+      // If the current journey was deleted, reset to a new journey
+      if (journeyId === currentJourneyId) {
+        setNodes(initialNodes);
+        setEdges([]);
+        setJourneyTitle("New Customer Journey");
+        setCurrentJourneyId(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete journey:", error);
+    }
+  }, [currentJourneyId, setNodes, setEdges, deleteJourneyMutation]);
+  
+  // Delete all journeys
+  const handlePurgeAllJourneys = useCallback(async () => {
+    if (window.confirm("Are you sure you want to delete ALL saved Customer Journey Maps? This cannot be undone.")) {
+      try {
+        await deleteAllJourneysMutation.mutateAsync();
+        setNodes(initialNodes);
+        setEdges([]);
+        setJourneyTitle("New Customer Journey");
+        setCurrentJourneyId(null);
+      } catch (error) {
+        console.error("Failed to delete all journeys:", error);
+      }
+    }
+  }, [deleteAllJourneysMutation, setNodes, setEdges]);
   
   // Cleanup effect
   useEffect(() => {
@@ -419,6 +491,19 @@ export default function CustomerJourney() {
       }
     };
   }, [saveTimeout]);
+
+  // Update all nodes to include the onNodeEdit callback
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onNodeEdit: handleNodeEdit
+        }
+      }))
+    );
+  }, []);
 
   // Handle new connections between nodes
   const onConnect = useCallback(
@@ -705,7 +790,7 @@ export default function CustomerJourney() {
       
       const salesEdges: Edge[] = [
         {
-          id: 'e1',
+          id: 'e-entry-research',
           source: 'entry',
           target: 'research',
           type: 'smoothstep',
@@ -714,10 +799,10 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         },
         {
-          id: 'e2',
+          id: 'e-research-evaluation',
           source: 'research',
           target: 'evaluation',
           type: 'smoothstep',
@@ -726,10 +811,10 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         },
         {
-          id: 'e3',
+          id: 'e-evaluation-decision',
           source: 'evaluation',
           target: 'decision',
           type: 'smoothstep',
@@ -738,10 +823,10 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         },
         {
-          id: 'e4',
+          id: 'e-decision-purchase',
           source: 'decision',
           target: 'purchase',
           type: 'smoothstep',
@@ -750,17 +835,12 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         }
       ];
       
       setNodes(salesNodes);
       setEdges(salesEdges);
-      
-      toast({
-        title: "Sales Journey Template Loaded",
-        description: "A basic sales journey template has been loaded."
-      });
     } 
     else if (value === 'support') {
       // Create a support journey template
@@ -771,7 +851,8 @@ export default function CustomerJourney() {
           data: { 
             stepType: 'Entry Point',
             title: 'Issue Occurs',
-            description: 'Customer experiences a problem'
+            description: 'Customer experiences an issue',
+            onNodeEdit: handleNodeEdit
           },
           position: { x: 100, y: 100 }
         },
@@ -780,8 +861,8 @@ export default function CustomerJourney() {
           type: 'journeyNode',
           data: { 
             stepType: 'Contact',
-            title: 'Support Contact',
-            description: 'Customer reaches out for support'
+            title: 'Contact Support',
+            description: 'Customer reaches out for help'
           },
           position: { x: 350, y: 100 }
         },
@@ -791,7 +872,7 @@ export default function CustomerJourney() {
           data: { 
             stepType: 'Identification',
             title: 'Issue Identification',
-            description: 'Customer issue is identified'
+            description: 'Support identifies the issue'
           },
           position: { x: 600, y: 100 }
         },
@@ -800,8 +881,8 @@ export default function CustomerJourney() {
           type: 'journeyNode',
           data: { 
             stepType: 'Resolution',
-            title: 'Issue Resolution',
-            description: 'Customer issue is resolved'
+            title: 'Resolution',
+            description: 'Issue is resolved'
           },
           position: { x: 850, y: 100 }
         },
@@ -811,7 +892,7 @@ export default function CustomerJourney() {
           data: { 
             stepType: 'Follow-up',
             title: 'Follow-up',
-            description: 'Agent follows up on resolution'
+            description: 'Follow-up with customer'
           },
           position: { x: 1100, y: 100 }
         }
@@ -819,7 +900,7 @@ export default function CustomerJourney() {
       
       const supportEdges: Edge[] = [
         {
-          id: 'e1',
+          id: 'e-entry-contact',
           source: 'entry',
           target: 'contact',
           type: 'smoothstep',
@@ -828,10 +909,10 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         },
         {
-          id: 'e2',
+          id: 'e-contact-identification',
           source: 'contact',
           target: 'identification',
           type: 'smoothstep',
@@ -840,10 +921,10 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         },
         {
-          id: 'e3',
+          id: 'e-identification-resolution',
           source: 'identification',
           target: 'resolution',
           type: 'smoothstep',
@@ -852,10 +933,10 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         },
         {
-          id: 'e4',
+          id: 'e-resolution-followup',
           source: 'resolution',
           target: 'followup',
           type: 'smoothstep',
@@ -864,37 +945,14 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          }
+          },
         }
       ];
       
       setNodes(supportNodes);
       setEdges(supportEdges);
-      
-      toast({
-        title: "Support Journey Template Loaded",
-        description: "A basic support journey template has been loaded."
-      });
     }
   };
-
-  // Load saved journeys on component mount
-  useEffect(() => {
-    loadSavedJourneys();
-  }, [loadSavedJourneys]);
-
-  // Update all nodes to include the onNodeEdit callback
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          onNodeEdit: handleNodeEdit
-        }
-      }))
-    );
-  }, []);
 
   // Format date/time for display
   const formatDateTime = (dateString: string): string => {
@@ -943,36 +1001,7 @@ export default function CustomerJourney() {
           
           <Button 
             variant="destructive"
-            onClick={() => {
-              // Find all journey keys in localStorage
-              const keysToRemove = [];
-              for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('journey_')) {
-                  keysToRemove.push(key);
-                }
-              }
-              
-              // Remove all journey entries
-              keysToRemove.forEach(key => {
-                localStorage.removeItem(key);
-              });
-              
-              // Reset current journey
-              setNodes(initialNodes);
-              setEdges([]);
-              setCurrentJourneyId(null);
-              setJourneyTitle("New Customer Journey");
-              
-              // Refresh the journeys list
-              loadSavedJourneys();
-              
-              toast({
-                title: "All Journeys Purged",
-                description: `Removed ${keysToRemove.length} saved journeys from storage.`,
-                duration: 2000
-              });
-            }}
+            onClick={handlePurgeAllJourneys}
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Purge All Journeys
@@ -1001,7 +1030,12 @@ export default function CustomerJourney() {
               </Button>
             </div>
             
-            {savedJourneys.length === 0 ? (
+            {isLoadingJourneys ? (
+              <div className="text-center text-muted-foreground p-4">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                <p>Loading journeys...</p>
+              </div>
+            ) : savedJourneys.length === 0 ? (
               <div className="text-center text-muted-foreground p-4">
                 <p>No saved journeys yet.</p>
                 <p className="text-sm mt-2">Create and save a journey to see it here.</p>
