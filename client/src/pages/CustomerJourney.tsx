@@ -179,6 +179,7 @@ const initialNodes: Node[] = [
       stepType: 'Entry Point',
       title: 'Journey Start',
       description: 'Customer begins their journey'
+      // onNodeEdit will be added via useEffect
     },
     position: { x: 100, y: 100 }
   }
@@ -633,19 +634,6 @@ export default function CustomerJourney() {
     };
   }, [saveTimeout]);
 
-  // Update all nodes to include the onNodeEdit callback
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          onNodeEdit: handleNodeEdit
-        }
-      }))
-    );
-  }, []);
-
   // Handle new connections between nodes
   const onConnect = useCallback(
     (params: Connection) => {
@@ -718,6 +706,19 @@ export default function CustomerJourney() {
     });
     setEditDialogOpen(true);
   };
+  
+  // Update all nodes to include the onNodeEdit callback
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onNodeEdit: handleNodeEdit
+        }
+      }))
+    );
+  }, [handleNodeEdit, setNodes]);
   
   // Update a node's data
   const updateNode = (id: string, data: { stepType: string; title: string; description: string }) => {
