@@ -12,7 +12,8 @@ import ReactFlow, {
   MarkerType,
   ConnectionLineType,
   useNodesState,
-  useEdgesState
+  useEdgesState,
+  XYPosition
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
@@ -22,16 +23,25 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NewFlowDialog from "../components/NewFlowDialog";
 import EditableTitle from "../components/EditableTitle";
+import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
+import EditNodeDialog from "../components/EditNodeDialog";
 
 // Import our custom node component
 import { Handle, Position } from 'reactflow';
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, ShoppingCart, Bot, Repeat, HelpCircle, Brain, Star, Search, Check } from 'lucide-react';
 
-// Node component (inlined to fix import issues)
-function JourneyNode({ data }: any) {
-  const { stepType, title, description } = data;
+// Node component with edit functionality
+function JourneyNode({ data, id }: any) {
+  const { stepType, title, description, onNodeEdit } = data;
   const styles = getStepTypeStyles(stepType);
+  
+  const handleDoubleClick = () => {
+    // Call the onNodeEdit function passed in the node data
+    if (onNodeEdit) {
+      onNodeEdit(id, { stepType, title, description });
+    }
+  };
   
   return (
     <div className="journey-node">
@@ -41,7 +51,10 @@ function JourneyNode({ data }: any) {
         className="w-3 h-3 bg-blue-600"
       />
       
-      <Card className={`w-64 shadow-md border-2 ${styles.borderColor} ${styles.bg}`}>
+      <Card 
+        className={`w-64 shadow-md border-2 ${styles.borderColor} ${styles.bg} hover:shadow-lg transition-shadow cursor-pointer`}
+        onDoubleClick={handleDoubleClick}
+      >
         <CardHeader className="py-3">
           <div className="flex justify-between items-center">
             <Badge variant="outline" className={`px-2 py-1 ${styles.text} font-medium flex items-center gap-1`}>
@@ -191,6 +204,20 @@ export default function CustomerJourney() {
   const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   
+  // State for node editing
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingNode, setEditingNode] = useState<{
+    id: string;
+    stepType: string;
+    title: string;
+    description: string;
+  }>({
+    id: "",
+    stepType: "",
+    title: "",
+    description: ""
+  });
+  
   // Auto-save functionality
   const autoSaveChanges = useCallback(() => {
     // Clear any existing timeout
@@ -271,26 +298,23 @@ export default function CustomerJourney() {
     [setEdges]
   );
 
-  // Add a new node to the journey
-  const addNode = (type: string) => {
-    const newNodeId = `node_${nodes.length + 1}`;
-    const newNode: Node = {
-      id: newNodeId,
-      type: 'journeyNode',
-      data: { 
-        stepType: type,
-        title: `${type} Node`,
-        description: `Description for ${type.toLowerCase()} node`
-      },
-      position: { 
-        x: nodes.length > 0 ? nodes[nodes.length - 1].position.x + 250 : 100,
-        y: nodes.length > 0 ? nodes[nodes.length - 1].position.y : 100
-      }
+  // Get a position for a new node
+  const getNewNodePosition = (): XYPosition => {
+    if (nodes.length === 0) {
+      return { x: 100, y: 100 };
+    }
+    
+    // Calculate a position based on the existing nodes
+    // Option 1: Continue the flow horizontally from the last node
+    const lastNode = nodes[nodes.length - 1];
+    return { 
+      x: lastNode.position.x + 250, 
+      y: lastNode.position.y 
     };
-    
-    setNodes((nds) => [...nds, newNode]);
-    
-    // If there's at least one other node, connect to the last one
+  };
+  
+  // Create a connection between a new node and the last node in the flow
+  const connectToLastNode = (newNodeId: string) => {
     if (nodes.length > 0) {
       const lastNodeId = nodes[nodes.length - 1].id;
       setEdges((eds) => 
@@ -311,6 +335,125 @@ export default function CustomerJourney() {
         )
       );
     }
+  };
+  
+  // Handler to open the edit dialog for a node
+  const handleNodeEdit = (nodeId: string, nodeData: any) => {
+    setEditingNode({
+      id: nodeId,
+      stepType: nodeData.stepType,
+      title: nodeData.title,
+      description: nodeData.description
+    });
+    setEditDialogOpen(true);
+  };
+  
+  // Update a node's data
+  const updateNode = (id: string, data: { stepType: string; title: string; description: string }) => {
+    setNodes((nds) => 
+      nds.map((node) => {
+        if (node.id === id) {
+          // Update the node data
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              stepType: data.stepType,
+              title: data.title,
+              description: data.description,
+              onNodeEdit: handleNodeEdit
+            }
+          };
+        }
+        return node;
+      })
+    );
+    
+    toast({
+      title: "Node Updated",
+      description: `Updated "${data.title}" node.`,
+      duration: 2000
+    });
+    
+    // Auto-save when a node is updated
+    autoSaveChanges();
+  };
+  
+  // Delete a node from the flow
+  const deleteNode = (id: string) => {
+    // Find the node to get its title for the toast message
+    const nodeToDelete = nodes.find(node => node.id === id);
+    const nodeTitle = nodeToDelete?.data?.title || "Node";
+    
+    // Remove the node
+    setNodes((nds) => nds.filter((node) => node.id !== id));
+    
+    // Remove any edges connected to the node
+    setEdges((eds) => 
+      eds.filter((edge) => edge.source !== id && edge.target !== id)
+    );
+    
+    toast({
+      title: "Node Deleted",
+      description: `Deleted "${nodeTitle}" node from the flow.`,
+      duration: 2000
+    });
+    
+    // Auto-save after deleting a node
+    autoSaveChanges();
+  };
+  
+  // Add a custom node with specified characteristics
+  const addCustomNode = (nodeData: NodeCreationData) => {
+    const newNodeId = `node_${Date.now()}`;
+    const position = getNewNodePosition();
+    
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'journeyNode',
+      data: { 
+        stepType: nodeData.stepType,
+        title: nodeData.title,
+        description: nodeData.description,
+        onNodeEdit: handleNodeEdit // Pass the edit handler to the node
+      },
+      position
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    connectToLastNode(newNodeId);
+    
+    toast({
+      title: "Node Added",
+      description: `Added "${nodeData.title}" node to the journey.`,
+      duration: 2000
+    });
+    
+    // Auto-save when a node is added
+    autoSaveChanges();
+  };
+  
+  // Add a quick node to the journey (for quick-add buttons)
+  const addNode = (type: string) => {
+    const newNodeId = `node_${Date.now()}`;
+    const position = getNewNodePosition();
+    
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'journeyNode',
+      data: { 
+        stepType: type,
+        title: `${type} Node`,
+        description: `Description for ${type.toLowerCase()} node`
+      },
+      position
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    connectToLastNode(newNodeId);
+    
+    // Auto-save when a node is added
+    autoSaveChanges();
   };
 
   // Handler for updating the journey title
@@ -649,31 +792,37 @@ export default function CustomerJourney() {
           </Panel>
           
           <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Awareness
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Research
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Consideration
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Decision
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Purchase
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Support
-              </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between">
+                <div className="text-sm font-medium mb-1">Quick Add</div>
+                <NewNodeDialog onCreateNode={addCustomNode} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Awareness
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Research
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Consideration
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Decision
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Purchase
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Support
+                </Button>
+              </div>
             </div>
           </Panel>
         </ReactFlow>
