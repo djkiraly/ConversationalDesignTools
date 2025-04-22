@@ -930,6 +930,43 @@ export default function CustomerJourney() {
             Clear
           </Button>
           
+          <Button 
+            variant="destructive"
+            onClick={() => {
+              // Find all journey keys in localStorage
+              const keysToRemove = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('journey_')) {
+                  keysToRemove.push(key);
+                }
+              }
+              
+              // Remove all journey entries
+              keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+              });
+              
+              // Reset current journey
+              setNodes(initialNodes);
+              setEdges([]);
+              setCurrentJourneyId(null);
+              setJourneyTitle("New Customer Journey");
+              
+              // Refresh the journeys list
+              loadSavedJourneys();
+              
+              toast({
+                title: "All Journeys Purged",
+                description: `Removed ${keysToRemove.length} saved journeys from storage.`,
+                duration: 2000
+              });
+            }}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Purge All Journeys
+          </Button>
+          
           <Button onClick={() => saveJourney(false)}>
             <Save className="mr-2 h-4 w-4" />
             Save Journey
