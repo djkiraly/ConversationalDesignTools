@@ -250,6 +250,7 @@ export default function CustomerJourney() {
   const [currentJourneyId, setCurrentJourneyId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingAIJourney, setIsGeneratingAIJourney] = useState(false);
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
   
   // State for node editing
