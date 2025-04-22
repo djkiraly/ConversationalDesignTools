@@ -4,14 +4,18 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import HomePage from "@/pages/HomePage";
 import CustomerJourney from "@/pages/CustomerJourney";
+import Settings from "@/pages/Settings";
 import AppLayout from "@/components/AppLayout";
 
 function Router() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={HomePage} />
+        <Route path="/home" component={HomePage} />
+        <Route path="/happy-path" component={Home} />
         <Route path="/use-case/:id" component={Home} />
         <Route path="/customer-journey" component={CustomerJourney} />
         <Route component={NotFound} />
