@@ -267,10 +267,12 @@ export default function CustomerJourney() {
     customerName: string;
     workflowIntent: string;
     notes: string;
+    summary?: string;
   }>({
     customerName: "",
     workflowIntent: "",
-    notes: ""
+    notes: "",
+    summary: ""
   });
   
   // React Query for fetching all journeys
@@ -566,6 +568,7 @@ export default function CustomerJourney() {
     customerName: string;
     workflowIntent: string;
     notes: string;
+    summary?: string;
   }) => {
     setJourneyMetadata(metadata);
     
