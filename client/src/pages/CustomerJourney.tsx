@@ -21,6 +21,7 @@ import { Plus, Trash2, Save, Map } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NewFlowDialog from "../components/NewFlowDialog";
+import EditableTitle from "../components/EditableTitle";
 
 // Import our custom node component
 import { Handle, Position } from 'reactflow';
@@ -312,6 +313,20 @@ export default function CustomerJourney() {
     }
   };
 
+  // Handler for updating the journey title
+  const handleTitleUpdate = (newTitle: string) => {
+    setJourneyTitle(newTitle);
+    
+    toast({
+      title: "Title Updated",
+      description: "Journey title has been updated.",
+      duration: 2000
+    });
+    
+    // Auto-save when title changes
+    autoSaveChanges();
+  };
+  
   // Handler for creating a new flow
   const handleCreateFlow = (flowName: string, templateType: string | null) => {
     // Set the journey title
@@ -596,10 +611,6 @@ export default function CustomerJourney() {
             <Save className="mr-2 h-4 w-4" />
             Save Journey
           </Button>
-          
-          <div className="text-sm font-medium">
-            {journeyTitle}
-          </div>
         </div>
       </div>
     
@@ -627,6 +638,15 @@ export default function CustomerJourney() {
           <Controls />
           <MiniMap nodeBorderRadius={2} />
           <Background size={1} gap={16} color="#f1f5f9" />
+          
+          {/* Journey Title Panel - Positioned at the top */}
+          <Panel position="top-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-b-lg shadow-md mt-2">
+            <EditableTitle 
+              title={journeyTitle} 
+              onSave={handleTitleUpdate} 
+              className="min-w-[200px]"
+            />
+          </Panel>
           
           <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
             <div className="flex gap-2">
