@@ -9,12 +9,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertCircle, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
+
 
 interface JourneyMetadataDialogProps {
   metadata: {
@@ -39,15 +38,14 @@ export default function JourneyMetadataDialog({
   const [customerName, setCustomerName] = useState(metadata.customerName || "");
   const [workflowIntent, setWorkflowIntent] = useState(metadata.workflowIntent || "");
   const [notes, setNotes] = useState(metadata.notes || "");
-  const [summary, setSummary] = useState(metadata.summary || "");
-  const [summaryError, setSummaryError] = useState("");
+
 
   const handleSubmit = () => {
     onUpdateMetadata({
       customerName,
       workflowIntent,
       notes,
-      summary, // Include summary in the update
+      summary: metadata.summary, // Keep existing summary
     });
     setOpen(false);
   };
@@ -60,7 +58,6 @@ export default function JourneyMetadataDialog({
       setCustomerName(metadata.customerName || "");
       setWorkflowIntent(metadata.workflowIntent || "");
       setNotes(metadata.notes || "");
-      setSummary(metadata.summary || "");
     }
     setOpen(openState);
   };
@@ -117,37 +114,6 @@ export default function JourneyMetadataDialog({
               placeholder="Additional notes or context about this journey"
               rows={4}
             />
-          </div>
-          
-          <Separator className="my-2" />
-          
-          <div className="grid grid-cols-4 gap-4">
-            <Label htmlFor="summary" className="text-right pt-2">
-              Journey Summary
-            </Label>
-            <div className="col-span-3 space-y-2">
-              {summaryError && (
-                <Alert variant="destructive" className="mb-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{summaryError}</AlertDescription>
-                </Alert>
-              )}
-              
-              <Textarea
-                id="summary"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="AI-generated summary of the customer journey"
-                rows={4}
-              />
-              
-              {!summary && !summaryError && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Use the "Generate AI Summary" button in the main toolbar to create an AI-powered summary of this journey.
-                </p>
-              )}
-            </div>
           </div>
         </div>
         <DialogFooter>
