@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import HomePage from "@/pages/HomePage";
 import CustomerJourney from "@/pages/CustomerJourney";
+import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
 import AppLayout from "@/components/AppLayout";
 
@@ -18,6 +19,7 @@ function Router() {
         <Route path="/happy-path" component={Home} />
         <Route path="/use-case/:id" component={Home} />
         <Route path="/customer-journey" component={CustomerJourney} />
+        <Route path="/customers" component={Customers} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

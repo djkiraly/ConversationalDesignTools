@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { CheckCircle2, Settings, Map, Home } from 'lucide-react';
+import { CheckCircle2, Settings, Map, Home, Users } from 'lucide-react';
 import SettingsDialog from './SettingsDialog';
 
 interface AppLayoutProps {
@@ -44,6 +44,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/customer-journey' ? 'text-primary' : 'text-muted-foreground'}`}>
             <Map className="h-6 w-6" />
             <span className="text-xs mt-1">Customer Journey</span>
+          </div>
+        </Link>
+        
+        <Link href="/customers">
+          <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/customers' ? 'text-primary' : 'text-muted-foreground'}`}>
+            <Users className="h-6 w-6" />
+            <span className="text-xs mt-1">Customers</span>
           </div>
         </Link>
         
