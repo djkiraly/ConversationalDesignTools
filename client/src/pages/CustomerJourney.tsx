@@ -444,13 +444,20 @@ export default function CustomerJourney() {
       data: { 
         stepType: type,
         title: `${type} Node`,
-        description: `Description for ${type.toLowerCase()} node`
+        description: `Description for ${type.toLowerCase()} node`,
+        onNodeEdit: handleNodeEdit // Pass the edit handler to the node
       },
       position
     };
     
     setNodes((nds) => [...nds, newNode]);
     connectToLastNode(newNodeId);
+    
+    toast({
+      title: "Node Added",
+      description: `Added quick "${type}" node to the journey.`,
+      duration: 2000
+    });
     
     // Auto-save when a node is added
     autoSaveChanges();
@@ -504,7 +511,8 @@ export default function CustomerJourney() {
           data: { 
             stepType: 'Entry Point',
             title: 'Awareness',
-            description: 'Customer discovers product/service'
+            description: 'Customer discovers product/service',
+            onNodeEdit: handleNodeEdit
           },
           position: { x: 100, y: 100 }
         },
@@ -725,8 +733,30 @@ export default function CustomerJourney() {
     }
   };
 
+  // Update all nodes to include the onNodeEdit callback
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onNodeEdit: handleNodeEdit
+        }
+      }))
+    );
+  }, []);
+
   return (
     <div className="flex flex-col h-screen">
+      {/* Node Edit Dialog */}
+      <EditNodeDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        nodeData={editingNode}
+        onUpdate={updateNode}
+        onDelete={deleteNode}
+      />
+
       <div className="bg-background p-4 border-b flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
