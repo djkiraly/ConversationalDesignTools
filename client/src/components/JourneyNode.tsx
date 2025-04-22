@@ -7,6 +7,7 @@ interface JourneyNodeData {
   stepType: string;
   title: string;
   description: string;
+  onNodeEdit?: (id: string, data: any) => void;
 }
 
 // Get appropriate icon and style for each step type
@@ -108,9 +109,16 @@ function getStepTypeStyles(stepType: string): {
   };
 }
 
-export default function JourneyNode({ data }: NodeProps<JourneyNodeData>) {
-  const { stepType, title, description } = data;
+export default function JourneyNode({ data, id }: NodeProps<JourneyNodeData>) {
+  const { stepType, title, description, onNodeEdit } = data;
   const styles = getStepTypeStyles(stepType);
+  
+  const handleDoubleClick = () => {
+    // Call the onNodeEdit function passed in the node data if available
+    if (onNodeEdit && id) {
+      onNodeEdit(id, { stepType, title, description });
+    }
+  };
   
   return (
     <div className="journey-node">
@@ -120,7 +128,10 @@ export default function JourneyNode({ data }: NodeProps<JourneyNodeData>) {
         className="w-3 h-3 bg-blue-600"
       />
       
-      <Card className={`w-64 shadow-md border-2 ${styles.borderColor} ${styles.bg}`}>
+      <Card 
+        className={`w-64 shadow-md border-2 ${styles.borderColor} ${styles.bg} hover:shadow-lg transition-shadow cursor-pointer`}
+        onDoubleClick={handleDoubleClick}
+      >
         <CardHeader className="py-3">
           <div className="flex justify-between items-center">
             <Badge variant="outline" className={`px-2 py-1 ${styles.text} font-medium flex items-center gap-1`}>
