@@ -10,7 +10,7 @@ import {
   insertCustomerJourneySchema,
   updateCustomerJourneySchema
 } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, OPENAI_API_KEY_SETTING } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs

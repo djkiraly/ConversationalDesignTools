@@ -88,6 +88,7 @@ export const customerJourneys = pgTable("customer_journeys", {
   customerName: text("customer_name"),
   workflowIntent: text("workflow_intent"),
   notes: text("notes"),
+  summary: text("summary"), // AI-generated journey summary
   nodes: json("nodes").notNull(), // Storing ReactFlow nodes
   edges: json("edges").notNull(), // Storing ReactFlow edges
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -99,6 +100,7 @@ export const insertCustomerJourneySchema = createInsertSchema(customerJourneys).
   customerName: true,
   workflowIntent: true,
   notes: true,
+  summary: true,
   nodes: true,
   edges: true,
 });
@@ -108,6 +110,7 @@ export const updateCustomerJourneySchema = createInsertSchema(customerJourneys).
   customerName: true,
   workflowIntent: true,
   notes: true,
+  summary: true,
   nodes: true,
   edges: true,
 });

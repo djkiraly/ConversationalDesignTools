@@ -174,6 +174,86 @@ Do not include explanations or analysis - just provide the complete improved flo
   }
 }
 
+// Generate a summary for a customer journey based on its metadata and nodes
+export async function generateJourneySummary(
+  apiKey: string,
+  journey: {
+    title: string;
+    customerName?: string;
+    workflowIntent?: string;
+    notes?: string;
+    nodes: any[];
+  }
+): Promise<{
+  success: boolean;
+  summary?: string;
+  error?: string;
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Extract node information
+    const nodeInfo = journey.nodes.map((node: any) => ({
+      type: node.data?.stepType || 'Unknown',
+      title: node.data?.title || 'Untitled Node',
+      description: node.data?.description || ''
+    }));
+    
+    // Prepare the prompt
+    const prompt = `You are an expert in analyzing customer journey maps and workflow processes.
+Based on the following customer journey information, generate a concise and informative summary (100-150 words).
+
+Journey Title: "${journey.title}"
+${journey.customerName ? `Customer Name: "${journey.customerName}"` : ''}
+${journey.workflowIntent ? `Workflow Intent: "${journey.workflowIntent}"` : ''}
+${journey.notes ? `Notes: "${journey.notes}"` : ''}
+
+Journey Flow Nodes:
+${nodeInfo.map((node: any, index: number) => 
+  `${index + 1}. ${node.type}: "${node.title}" - ${node.description}`
+).join('\n')}
+
+The summary should:
+1. Capture the main purpose of this customer journey
+2. Identify the key stages in the workflow
+3. Highlight any important aspects of the customer experience
+4. Be written in clear, professional language
+5. Be useful for someone who needs a quick understanding of this journey flow
+
+Your summary should be a single paragraph without bullet points or numbered lists.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert in customer experience analysis and workflow optimization." 
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 300
+    });
+
+    const summary = response.choices[0].message.content?.trim();
+    
+    if (!summary) {
+      throw new Error('No summary was generated');
+    }
+    
+    return {
+      success: true,
+      summary
+    };
+  } catch (error: any) {
+    console.error('Error generating journey summary:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate journey summary'
+    };
+  }
+}
+
 export async function getAgentPersonaSuggestion(
   apiKey: string, 
   title: string, 

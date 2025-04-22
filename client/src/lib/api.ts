@@ -62,6 +62,7 @@ export interface CustomerJourney {
   customerName?: string;
   workflowIntent?: string;
   notes?: string;
+  summary?: string;
   nodes: any[];
   edges: any[];
   createdAt: string;
