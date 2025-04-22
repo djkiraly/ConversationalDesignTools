@@ -297,8 +297,14 @@ export default function CustomerJourney() {
   
   // Mutations for creating, updating and deleting journeys
   const createJourneyMutation = useMutation({
-    mutationFn: (journeyData: { title: string, nodes: any[], edges: any[] }) => 
-      createCustomerJourney(journeyData),
+    mutationFn: (journeyData: { 
+      title: string, 
+      customerName: string, 
+      workflowIntent: string, 
+      notes: string, 
+      nodes: any[], 
+      edges: any[] 
+    }) => createCustomerJourney(journeyData),
     onSuccess: (data) => {
       setCurrentJourneyId(data.id);
       toast({
