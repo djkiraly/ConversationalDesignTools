@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -186,6 +186,65 @@ export default function CustomerJourney() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Auto-save functionality
+  const autoSaveChanges = useCallback(() => {
+    // Clear any existing timeout
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    
+    // Set a new timeout to save after 5 seconds of inactivity
+    const timeout = setTimeout(() => {
+      saveJourney();
+    }, 5000);
+    
+    setSaveTimeout(timeout);
+  }, [saveTimeout, nodes, edges]);
+  
+  // Save journey to localStorage for now
+  const saveJourney = useCallback((isAutoSave = true) => {
+    try {
+      const journeyData = {
+        title: journeyTitle,
+        nodes,
+        edges,
+        lastSaved: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`journey_${Date.now()}`, JSON.stringify(journeyData));
+      
+      // Only show toast for manual saves or first auto-save
+      if (!isAutoSave) {
+        toast({
+          title: "Journey Saved",
+          description: "Your journey has been saved successfully.",
+          duration: 3000
+        });
+      } else {
+        console.log("Auto-saved journey at", new Date().toISOString());
+      }
+    } catch (error) {
+      console.error("Failed to save journey:", error);
+      toast({
+        title: "Save Failed",
+        description: "There was an error saving your journey.",
+        variant: "destructive"
+      });
+    }
+  }, [nodes, edges, journeyTitle, toast]);
+  
+  // Cleanup effect
+  useEffect(() => {
+    // Cleanup function to clear timeout when component unmounts
+    return () => {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+    };
+  }, [saveTimeout]);
 
   // Handle new connections between nodes
   const onConnect = useCallback(
@@ -521,7 +580,7 @@ export default function CustomerJourney() {
             Clear
           </Button>
           
-          <Button>
+          <Button onClick={() => saveJourney(false)}>
             <Save className="mr-2 h-4 w-4" />
             Save Journey
           </Button>
@@ -532,9 +591,18 @@ export default function CustomerJourney() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onNodesChange={(changes) => {
+            onNodesChange(changes);
+            autoSaveChanges();
+          }}
+          onEdgesChange={(changes) => {
+            onEdgesChange(changes);
+            autoSaveChanges();
+          }}
+          onConnect={(params) => {
+            onConnect(params);
+            autoSaveChanges();
+          }}
           nodeTypes={nodeTypes}
           connectionLineStyle={{ stroke: '#2563eb' }}
           connectionLineType={ConnectionLineType.SmoothStep}
