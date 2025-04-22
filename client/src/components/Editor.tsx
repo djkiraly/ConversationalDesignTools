@@ -264,6 +264,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     // Make sure to include the conversationFlow to pass validation
     const saveData = {
       ...formUpdates,
+      // We don't include customer in saveData as it's not in the UseCase schema
       conversationFlow: form.getValues().conversationFlow
     };
     onSave(saveData);
@@ -304,6 +305,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
       conversationFlow: suggestion,
       title: form.getValues().title,
       description: form.getValues().description
+      // The customer field is stored locally in the form but not in the database schema
     });
     
     toast({
@@ -582,6 +584,28 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                 </TooltipProvider>
               </div>
             </div>
+            
+            <FormField
+              control={form.control}
+              name="customer"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Customer</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter customer name or identifier" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <div className="text-xs text-neutral-dark/60 mt-1">
+                    Identify who the customer is in this conversation flow
+                  </div>
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
@@ -932,6 +956,7 @@ Great! I'll recommend our high-performance models.
             onClick={() => form.reset({
               title: useCase.title,
               description: useCase.description,
+              customer: form.getValues().customer || "",
               conversationFlow: useCase.conversationFlow
             })}
           >
