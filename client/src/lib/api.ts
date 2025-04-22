@@ -138,3 +138,25 @@ export async function deleteAllCustomerJourneys(): Promise<void> {
   
   queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
 }
+
+// Generate a summary for a customer journey using AI
+export async function generateJourneySummary(journeyId: number): Promise<CustomerJourney> {
+  const response = await apiRequest<{ success: boolean; journey: CustomerJourney }>(
+    `/api/customer-journeys/${journeyId}/generate-summary`,
+    'POST'
+  );
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  if (!response.data || !response.data.success) {
+    throw new Error('Failed to generate journey summary');
+  }
+  
+  // Invalidate queries to refresh data
+  queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
+  queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys', journeyId] });
+  
+  return response.data.journey;
+}

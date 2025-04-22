@@ -405,6 +405,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: (error as Error).message });
     }
   });
+  
+  // Endpoint for generating journey summaries
+  app.post('/api/customer-journeys/:id/generate-summary', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const journey = await storage.getCustomerJourney(id);
+      if (!journey) {
+        return res.status(404).json({ error: "Customer journey not found" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Generate summary using OpenAI
+      const result = await generateJourneySummary(
+        apiKeySetting.value,
+        {
+          title: journey.title,
+          customerName: journey.customerName || undefined,
+          workflowIntent: journey.workflowIntent || undefined,
+          notes: journey.notes || undefined,
+          nodes: journey.nodes as any[]
+        }
+      );
+      
+      if (!result.success || !result.summary) {
+        return res.status(500).json({ 
+          error: result.error || "Failed to generate summary" 
+        });
+      }
+      
+      // Update the journey with the generated summary
+      const updatedJourney = await storage.updateCustomerJourney(id, {
+        title: journey.title,
+        customerName: journey.customerName,
+        workflowIntent: journey.workflowIntent,
+        notes: journey.notes,
+        summary: result.summary,
+        nodes: journey.nodes as any,
+        edges: journey.edges as any
+      });
+      
+      res.json({
+        success: true,
+        journey: updatedJourney
+      });
+    } catch (error) {
+      console.error('Error generating journey summary:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: (error as Error).message || 'Failed to generate journey summary' 
+      });
+    }
+  });
 
   // Health check endpoint for monitoring
   app.get('/api/health', async (_req, res) => {
