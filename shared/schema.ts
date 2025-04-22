@@ -19,6 +19,7 @@ export const useCases = pgTable("use_cases", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
+  customer: text("customer"),  // Store the customer name for this use case
   conversationFlow: text("conversation_flow").notNull(),
   nodePositions: text("node_positions"),  // Store node positions as JSON string
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -28,6 +29,7 @@ export const useCases = pgTable("use_cases", {
 export const insertUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
+  customer: true,
   conversationFlow: true,
   nodePositions: true,
 });
@@ -35,6 +37,7 @@ export const insertUseCaseSchema = createInsertSchema(useCases).pick({
 export const updateUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
+  customer: true,
   conversationFlow: true,
   nodePositions: true,
 });
