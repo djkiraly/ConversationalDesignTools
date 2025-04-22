@@ -12,12 +12,17 @@ import ReactFlow, {
   MarkerType,
   ConnectionLineType,
   useNodesState,
-  useEdgesState
+  useEdgesState,
+  useReactFlow,
+  ReactFlowProvider
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Save, Map } from "lucide-react";
+import { 
+  Plus, Trash2, Save, Map, Edit, Settings, LayoutGrid, 
+  PanelRight, RotateCw, Minus, Copy, Scissors, FileEdit
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NewFlowDialog from "../components/NewFlowDialog";
@@ -190,6 +195,13 @@ export default function CustomerJourney() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
+  const [nodeFormData, setNodeFormData] = useState<{
+    title: string;
+    stepType: string;
+    description: string;
+  }>({ title: '', stepType: '', description: '' });
   
   // Auto-save functionality
   const autoSaveChanges = useCallback(() => {
@@ -247,6 +259,132 @@ export default function CustomerJourney() {
       }
     };
   }, [saveTimeout]);
+  
+  // Handle node selection
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+    
+    // Load node data into form
+    if (node.data) {
+      setNodeFormData({
+        title: node.data.title || '',
+        stepType: node.data.stepType || '',
+        description: node.data.description || ''
+      });
+    }
+    
+    // Open the edit panel
+    setIsEditPanelOpen(true);
+  }, []);
+  
+  // Update node data
+  const updateNodeData = useCallback(() => {
+    if (!selectedNode) return;
+    
+    const updatedNodes = nodes.map(node => {
+      if (node.id === selectedNode.id) {
+        // Create a new node object with the updated data
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            title: nodeFormData.title,
+            stepType: nodeFormData.stepType,
+            description: nodeFormData.description
+          }
+        };
+      }
+      return node;
+    });
+    
+    setNodes(updatedNodes);
+    autoSaveChanges();
+    
+    toast({
+      title: "Node Updated",
+      description: "Node data has been updated.",
+      duration: 2000
+    });
+  }, [selectedNode, nodes, nodeFormData, setNodes, autoSaveChanges, toast]);
+  
+  // Delete selected node
+  const deleteSelectedNode = useCallback(() => {
+    if (!selectedNode) return;
+    
+    // Remove node
+    setNodes(nodes.filter(node => node.id !== selectedNode.id));
+    
+    // Remove any connected edges
+    setEdges(edges.filter(edge => 
+      edge.source !== selectedNode.id && edge.target !== selectedNode.id
+    ));
+    
+    // Close the edit panel
+    setIsEditPanelOpen(false);
+    setSelectedNode(null);
+    
+    toast({
+      title: "Node Deleted",
+      description: "Node has been removed from the journey.",
+      duration: 2000
+    });
+    
+    autoSaveChanges();
+  }, [selectedNode, nodes, edges, setNodes, setEdges, autoSaveChanges, toast]);
+  
+  // Duplicate selected node
+  const duplicateNode = useCallback(() => {
+    if (!selectedNode) return;
+    
+    const newNodeId = `node_${Date.now()}`;
+    const newNode: Node = {
+      ...selectedNode,
+      id: newNodeId,
+      position: {
+        x: selectedNode.position.x + 20,
+        y: selectedNode.position.y + 20
+      }
+    };
+    
+    setNodes(nodes => [...nodes, newNode]);
+    
+    toast({
+      title: "Node Duplicated",
+      description: "A copy of the node has been created.",
+      duration: 2000
+    });
+    
+    autoSaveChanges();
+  }, [selectedNode, setNodes, autoSaveChanges, toast]);
+  
+  // Add node from right toolbar
+  const addNodeFromToolbar = useCallback((type: string, reactFlowInstance: any) => {
+    // Get viewport center - fallback to center if viewport info not available
+    const centerX = window.innerWidth / 2 - 200; // Adjust for panel width
+    const centerY = window.innerHeight / 2;
+    
+    const newNodeId = `node_${Date.now()}`;
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'journeyNode',
+      data: { 
+        stepType: type,
+        title: `${type} Node`,
+        description: `Description for ${type.toLowerCase()} node`
+      },
+      position: { x: centerX, y: centerY }
+    };
+    
+    setNodes(nodes => [...nodes, newNode]);
+    
+    toast({
+      title: "Node Added",
+      description: `Added new ${type} node to the journey.`,
+      duration: 2000
+    });
+    
+    autoSaveChanges();
+  }, [setNodes, autoSaveChanges, toast]);
 
   // Handle new connections between nodes
   const onConnect = useCallback(
@@ -582,6 +720,133 @@ export default function CustomerJourney() {
     }
   };
 
+  // Create a flow component to use useReactFlow hook
+  function Flow() {
+    const reactFlowInstance = useReactFlow();
+    
+    return (
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={(changes) => {
+          onNodesChange(changes);
+          autoSaveChanges();
+        }}
+        onEdgesChange={(changes) => {
+          onEdgesChange(changes);
+          autoSaveChanges();
+        }}
+        onConnect={(params) => {
+          onConnect(params);
+          autoSaveChanges();
+        }}
+        onNodeClick={onNodeClick}
+        nodeTypes={nodeTypes}
+        connectionLineStyle={{ stroke: '#2563eb' }}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        fitView
+      >
+        <Controls />
+        <MiniMap nodeBorderRadius={2} />
+        <Background size={1} gap={16} color="#f1f5f9" />
+        
+        {/* Journey Title Panel - Positioned at the top */}
+        <Panel position="top-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-b-lg shadow-md mt-2">
+          <EditableTitle 
+            title={journeyTitle} 
+            onSave={handleTitleUpdate} 
+            className="min-w-[200px]"
+          />
+        </Panel>
+        
+        {/* Right side toolbar */}
+        <Panel position="right" className="bg-background/80 backdrop-blur-sm p-2 rounded-l-lg shadow-md mr-2 my-10">
+          <div className="flex flex-col gap-3">
+            <h3 className="text-sm font-semibold mb-2 text-center">Add Node</h3>
+            
+            <Button size="sm" variant="outline" onClick={() => addNodeFromToolbar('Awareness')} title="Add Awareness Node">
+              <Plus className="mr-1 h-3 w-3" />
+              Awareness
+            </Button>
+            
+            <Button size="sm" variant="outline" onClick={() => addNodeFromToolbar('Research')} title="Add Research Node">
+              <Plus className="mr-1 h-3 w-3" />
+              Research
+            </Button>
+            
+            <Button size="sm" variant="outline" onClick={() => addNodeFromToolbar('Consideration')} title="Add Consideration Node">
+              <Plus className="mr-1 h-3 w-3" />
+              Consideration
+            </Button>
+            
+            <Button size="sm" variant="outline" onClick={() => addNodeFromToolbar('Decision')} title="Add Decision Node">
+              <Plus className="mr-1 h-3 w-3" />
+              Decision
+            </Button>
+            
+            <Button size="sm" variant="outline" onClick={() => addNodeFromToolbar('Purchase')} title="Add Purchase Node">
+              <Plus className="mr-1 h-3 w-3" />
+              Purchase
+            </Button>
+            
+            <Button size="sm" variant="outline" onClick={() => addNodeFromToolbar('Support')} title="Add Support Node">
+              <Plus className="mr-1 h-3 w-3" />
+              Support
+            </Button>
+            
+            {selectedNode && (
+              <>
+                <div className="border-t my-2 pt-2">
+                  <h3 className="text-sm font-semibold mb-2 text-center">Edit Node</h3>
+                </div>
+                
+                <Button size="sm" variant="outline" onClick={() => duplicateNode()} title="Duplicate Selected Node">
+                  <Copy className="mr-1 h-3 w-3" />
+                  Duplicate
+                </Button>
+                
+                <Button size="sm" variant="destructive" onClick={() => deleteSelectedNode()} title="Delete Selected Node">
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Delete
+                </Button>
+              </>
+            )}
+          </div>
+        </Panel>
+        
+        {/* Bottom toolbar */}
+        <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
+              <Plus className="mr-1 h-3 w-3" />
+              Awareness
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
+              <Plus className="mr-1 h-3 w-3" />
+              Research
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
+              <Plus className="mr-1 h-3 w-3" />
+              Consideration
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
+              <Plus className="mr-1 h-3 w-3" />
+              Decision
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
+              <Plus className="mr-1 h-3 w-3" />
+              Purchase
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
+              <Plus className="mr-1 h-3 w-3" />
+              Support
+            </Button>
+          </div>
+        </Panel>
+      </ReactFlow>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-background p-4 border-b flex justify-between items-center">
@@ -601,6 +866,8 @@ export default function CustomerJourney() {
             onClick={() => {
               setNodes(initialNodes);
               setEdges([]);
+              setSelectedNode(null);
+              setIsEditPanelOpen(false);
             }}
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -615,68 +882,9 @@ export default function CustomerJourney() {
       </div>
     
       <div className="flex-1 w-full">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={(changes) => {
-            onNodesChange(changes);
-            autoSaveChanges();
-          }}
-          onEdgesChange={(changes) => {
-            onEdgesChange(changes);
-            autoSaveChanges();
-          }}
-          onConnect={(params) => {
-            onConnect(params);
-            autoSaveChanges();
-          }}
-          nodeTypes={nodeTypes}
-          connectionLineStyle={{ stroke: '#2563eb' }}
-          connectionLineType={ConnectionLineType.SmoothStep}
-          fitView
-        >
-          <Controls />
-          <MiniMap nodeBorderRadius={2} />
-          <Background size={1} gap={16} color="#f1f5f9" />
-          
-          {/* Journey Title Panel - Positioned at the top */}
-          <Panel position="top-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-b-lg shadow-md mt-2">
-            <EditableTitle 
-              title={journeyTitle} 
-              onSave={handleTitleUpdate} 
-              className="min-w-[200px]"
-            />
-          </Panel>
-          
-          <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Awareness
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Research
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Consideration
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Decision
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Purchase
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
-                <Plus className="mr-1 h-3 w-3" />
-                Support
-              </Button>
-            </div>
-          </Panel>
-        </ReactFlow>
+        <ReactFlowProvider>
+          <Flow />
+        </ReactFlowProvider>
       </div>
     </div>
   );
