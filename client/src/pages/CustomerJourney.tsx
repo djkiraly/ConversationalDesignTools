@@ -914,6 +914,64 @@ export default function CustomerJourney() {
       duration: 3000
     });
   };
+  
+  // Create a new journey using AI generation
+  const handleCreateAIFlow = async (flowName: string, description: string) => {
+    try {
+      setIsGeneratingAIJourney(true);
+      setJourneyTitle(flowName);
+      
+      // Reset metadata with journey description as notes
+      setJourneyMetadata({
+        customerName: "",
+        workflowIntent: description,
+        notes: description,
+        summary: ""
+      });
+      
+      toast({
+        title: "Generating AI Journey",
+        description: "Please wait while we generate your customer journey...",
+        duration: 5000
+      });
+      
+      // Call the AI journey generation API
+      const generatedJourney = await generateAIJourney(description);
+      
+      if (generatedJourney && generatedJourney.nodes && generatedJourney.edges) {
+        // Set the nodes and edges from the AI-generated journey
+        setNodes(generatedJourney.nodes.map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            onNodeEdit: handleNodeEdit
+          }
+        })));
+        setEdges(generatedJourney.edges);
+        setCurrentJourneyId(null);
+        
+        toast({
+          title: "AI Journey Created",
+          description: `Created new AI journey: ${flowName}`,
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.error("Failed to generate AI journey:", error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate AI journey",
+        variant: "destructive",
+        duration: 5000
+      });
+      
+      // Reset to default initial nodes
+      setNodes(initialNodes);
+      setEdges([]);
+    } finally {
+      setIsGeneratingAIJourney(false);
+    }
+  };
 
   // Template selection handler
   const handleTemplateChange = (value: string) => {
@@ -1194,7 +1252,10 @@ export default function CustomerJourney() {
         </div>
         
         <div className="flex items-center gap-4">
-          <NewFlowDialog onCreateFlow={handleCreateFlow} />
+          <NewFlowDialog 
+            onCreateFlow={handleCreateFlow} 
+            onCreateAIFlow={handleCreateAIFlow}
+          />
           
           {/* AI Summary Button */}
           <Button
