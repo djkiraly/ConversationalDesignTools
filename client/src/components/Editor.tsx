@@ -177,6 +177,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
           title, 
           // Include current values for required fields to ensure validation passes
           description: form.getValues().description,
+          customer: form.getValues().customer,
           conversationFlow: form.getValues().conversationFlow 
         });
       } catch (err) {
@@ -206,6 +207,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
           description, 
           // Include current values for required fields to ensure validation passes
           title: form.getValues().title,
+          customer: form.getValues().customer,
           conversationFlow: form.getValues().conversationFlow 
         });
       } catch (err) {
@@ -276,7 +278,7 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     // Make sure to include the conversationFlow to pass validation
     const saveData = {
       ...formUpdates,
-      // We don't include customer in saveData as it's not in the UseCase schema
+      customer: form.getValues().customer,
       conversationFlow: form.getValues().conversationFlow
     };
     onSave(saveData);
