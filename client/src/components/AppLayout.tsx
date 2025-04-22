@@ -29,7 +29,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Link href="/">
           <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location.startsWith('/use-case/') ? 'text-primary' : 'text-muted-foreground'}`}>
             <Home className="h-6 w-6" />
-            <span className="text-xs mt-1">Home</span>
+            <span className="text-xs mt-1">Happy Path</span>
           </div>
         </Link>
         
