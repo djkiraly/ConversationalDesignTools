@@ -11,3 +11,19 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Custom styles for ReactFlow nodes */
+.journey-node {
+  cursor: pointer;
+}
+
+.journey-node .react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Ensure node content is clickable */
+.journey-node > div {
+  pointer-events: all !important;
+}
