@@ -59,7 +59,8 @@ import {
   deleteAllCustomerJourneys,
   CustomerJourney as CustomerJourneyType,
   getCustomerJourneys,
-  generateJourneySummary
+  generateJourneySummary,
+  generateAIJourney
 } from "../lib/api";
 
 // Node component with edit functionality

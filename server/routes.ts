@@ -10,7 +10,7 @@ import {
   insertCustomerJourneySchema,
   updateCustomerJourneySchema
 } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, OPENAI_API_KEY_SETTING } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
@@ -469,6 +469,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         error: (error as Error).message || 'Failed to generate journey summary' 
       });
+    }
+  });
+  
+  // Generate AI journey
+  app.post('/api/customer-journeys/generate-ai-journey', async (req, res) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description) {
+        return res.status(400).json({ error: "Journey description is required" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value || apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      const result = await generateAIJourney(apiKeySetting.value, description);
+      
+      if (!result.success || !result.journey) {
+        return res.status(500).json({ 
+          error: result.error || "Failed to generate AI journey" 
+        });
+      }
+      
+      return res.json({
+        success: true,
+        journey: result.journey
+      });
+    } catch (error) {
+      console.error("Error generating AI journey:", error);
+      return res.status(500).json({ error: (error as Error).message });
     }
   });
 
