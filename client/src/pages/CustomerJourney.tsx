@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Trash2, Save, Map } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import NewFlowDialog from "../components/NewFlowDialog";
 
 // Import our custom node component
 import { Handle, Position } from 'reactflow';
@@ -311,6 +312,27 @@ export default function CustomerJourney() {
     }
   };
 
+  // Handler for creating a new flow
+  const handleCreateFlow = (flowName: string, templateType: string | null) => {
+    // Set the journey title
+    setJourneyTitle(flowName);
+    
+    // Clear current flow
+    setNodes(initialNodes);
+    setEdges([]);
+    
+    // If a template was selected, load it
+    if (templateType) {
+      handleTemplateChange(templateType);
+    }
+    
+    toast({
+      title: "New Journey Created",
+      description: `Created new journey: ${flowName}`,
+      duration: 3000
+    });
+  };
+
   // Template selection handler
   const handleTemplateChange = (value: string) => {
     setSelectedTemplate(value);
@@ -557,17 +579,7 @@ export default function CustomerJourney() {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="w-[200px]">
-            <Select onValueChange={handleTemplateChange} value={selectedTemplate}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a template" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales">Sales Journey</SelectItem>
-                <SelectItem value="support">Support Journey</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <NewFlowDialog onCreateFlow={handleCreateFlow} />
           
           <Button
             variant="outline"
@@ -584,6 +596,10 @@ export default function CustomerJourney() {
             <Save className="mr-2 h-4 w-4" />
             Save Journey
           </Button>
+          
+          <div className="text-sm font-medium">
+            {journeyTitle}
+          </div>
         </div>
       </div>
     
