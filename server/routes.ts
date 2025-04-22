@@ -2,6 +2,8 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { 
   insertUseCaseSchema, 
   updateUseCaseSchema, 
@@ -502,6 +504,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating AI journey:", error);
       return res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // App statistics endpoint
+  app.get('/api/statistics', async (_req, res) => {
+    try {
+      // Get counts of entities
+      const useCases = await storage.getAllUseCases();
+      const customerJourneys = await storage.getAllCustomerJourneys();
+      
+      // Get database statistics
+      const tableStats = await db.execute(sql`
+        SELECT 
+          table_name,
+          pg_total_relation_size(quote_ident(table_name)) as total_size_bytes,
+          pg_relation_size(quote_ident(table_name)) as table_size_bytes,
+          (SELECT count(*) FROM ${sql.raw(`"${table_name}"`)}) as row_count
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY total_size_bytes DESC;
+      `);
+      
+      // Calculate total database size
+      const dbSizeResult = await db.execute(sql`
+        SELECT pg_database_size(current_database()) as db_size_bytes;
+      `);
+      
+      const dbSizeBytes = dbSizeResult[0]?.db_size_bytes || 0;
+      const dbSizeMB = Math.round(dbSizeBytes / (1024 * 1024) * 100) / 100;
+      
+      // Format the table statistics
+      const tables = tableStats.map(table => ({
+        name: table.table_name,
+        sizeMB: Math.round(table.total_size_bytes / (1024 * 1024) * 100) / 100,
+        rowCount: parseInt(table.row_count)
+      }));
+      
+      // Build the response
+      res.json({
+        useCaseCount: useCases.length,
+        customerJourneyCount: customerJourneys.length,
+        database: {
+          totalSizeMB: dbSizeMB,
+          tables: tables,
+          tableCount: tables.length,
+          totalRowCount: tables.reduce((sum, table) => sum + table.rowCount, 0)
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting application statistics:', error);
+      res.status(500).json({ 
+        error: (error as Error).message || 'Failed to retrieve application statistics'
+      });
     }
   });
 

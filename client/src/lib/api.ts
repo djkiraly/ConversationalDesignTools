@@ -184,3 +184,34 @@ export async function generateAIJourney(description: string): Promise<GeneratedJ
   
   return response.data.journey;
 }
+
+// App Statistics API
+export interface AppStatistics {
+  useCaseCount: number;
+  customerJourneyCount: number;
+  database: {
+    totalSizeMB: number;
+    tables: {
+      name: string;
+      sizeMB: number;
+      rowCount: number;
+    }[];
+    tableCount: number;
+    totalRowCount: number;
+  };
+  timestamp: string;
+}
+
+export async function fetchAppStatistics(): Promise<AppStatistics> {
+  const response = await apiRequest<AppStatistics>('/api/statistics');
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  if (!response.data) {
+    throw new Error('Failed to retrieve application statistics');
+  }
+  
+  return response.data;
+}
