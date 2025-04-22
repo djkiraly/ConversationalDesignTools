@@ -36,15 +36,26 @@ import {
   Brain, 
   Star, 
   Search, 
-  Check 
+  Check, 
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import NewFlowDialog from "../components/NewFlowDialog";
 import EditableTitle from "../components/EditableTitle";
 import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
 import EditNodeDialog from "../components/EditNodeDialog";
+import { 
+  fetchAllCustomerJourneys, 
+  fetchCustomerJourney, 
+  createCustomerJourney, 
+  updateCustomerJourney, 
+  deleteCustomerJourney, 
+  deleteAllCustomerJourneys,
+  CustomerJourney as CustomerJourneyType
+} from "../lib/api";
 
 // Node component with edit functionality
 function JourneyNode({ data, id }: any) {
