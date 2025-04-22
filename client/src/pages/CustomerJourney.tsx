@@ -14,8 +14,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   XYPosition,
-  Handle, 
-  Position
+  Position,
+  Handle
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
@@ -27,18 +27,18 @@ import {
   Map, 
   ChevronLeft, 
   ChevronRight,
-  MapPin, 
   Users, 
-  ShoppingCart, 
-  Bot, 
-  Repeat, 
-  HelpCircle, 
-  Brain, 
-  Star, 
-  Search, 
-  Check, 
   Loader2,
-  Info
+  Info,
+  MapPin,
+  ShoppingCart,
+  Bot,
+  Repeat,
+  HelpCircle,
+  Brain,
+  Star,
+  Search,
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,6 +50,7 @@ import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
 import EditNodeDialog from "../components/EditNodeDialog";
 import JourneyMetadataDialog from "../components/JourneyMetadataDialog";
 import AISummaryDialog from "../components/AISummaryDialog";
+import JourneyNode from "../components/JourneyNode";
 import { 
   fetchAllCustomerJourneys, 
   fetchCustomerJourney, 
@@ -63,52 +64,7 @@ import {
   generateAIJourney
 } from "../lib/api";
 
-// Node component with edit functionality
-function JourneyNode({ data, id }: any) {
-  const { stepType, title, description, onNodeEdit } = data;
-  const styles = getStepTypeStyles(stepType);
-  
-  const handleDoubleClick = () => {
-    // Call the onNodeEdit function passed in the node data
-    if (onNodeEdit) {
-      onNodeEdit(id, { stepType, title, description });
-    }
-  };
-  
-  return (
-    <div className="journey-node">
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="w-3 h-3 bg-blue-600"
-      />
-      
-      <Card 
-        className={`w-64 shadow-md border-2 ${styles.borderColor} ${styles.bg} hover:shadow-lg transition-shadow cursor-pointer`}
-        onDoubleClick={handleDoubleClick}
-      >
-        <CardHeader className="py-3">
-          <div className="flex justify-between items-center">
-            <Badge variant="outline" className={`px-2 py-1 ${styles.text} font-medium flex items-center gap-1`}>
-              {styles.icon}
-              <span>{stepType}</span>
-            </Badge>
-          </div>
-          <CardTitle className={`text-lg mt-2 ${styles.text}`}>{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="py-3">
-          <p className="text-sm text-gray-600">{description}</p>
-        </CardContent>
-      </Card>
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="w-3 h-3 bg-blue-600"
-      />
-    </div>
-  );
-}
+
 
 // Get appropriate icon and style for each step type
 function getStepTypeStyles(stepType: string): { 
