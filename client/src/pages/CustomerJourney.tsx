@@ -395,11 +395,12 @@ export default function CustomerJourney() {
         return;
       }
       
+      // Ensure metadata fields are included and properly set
       const journeyData = {
         title: journeyTitle,
-        customerName: journeyMetadata.customerName,
-        workflowIntent: journeyMetadata.workflowIntent,
-        notes: journeyMetadata.notes,
+        customerName: journeyMetadata.customerName || "",
+        workflowIntent: journeyMetadata.workflowIntent || "",
+        notes: journeyMetadata.notes || "",
         nodes,
         edges,
       };
