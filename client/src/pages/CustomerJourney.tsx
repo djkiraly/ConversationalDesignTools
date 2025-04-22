@@ -13,23 +13,38 @@ import ReactFlow, {
   ConnectionLineType,
   useNodesState,
   useEdgesState,
-  XYPosition
+  XYPosition,
+  Handle, 
+  Position
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Save, Map } from "lucide-react";
+import { 
+  Plus, 
+  Trash2, 
+  Save, 
+  Map, 
+  ChevronLeft, 
+  ChevronRight,
+  MapPin, 
+  Users, 
+  ShoppingCart, 
+  Bot, 
+  Repeat, 
+  HelpCircle, 
+  Brain, 
+  Star, 
+  Search, 
+  Check 
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import NewFlowDialog from "../components/NewFlowDialog";
 import EditableTitle from "../components/EditableTitle";
 import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
 import EditNodeDialog from "../components/EditNodeDialog";
-
-// Import our custom node component
-import { Handle, Position } from 'reactflow';
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, ShoppingCart, Bot, Repeat, HelpCircle, Brain, Star, Search, Check } from 'lucide-react';
 
 // Node component with edit functionality
 function JourneyNode({ data, id }: any) {
@@ -196,6 +211,17 @@ const initialNodes: Node[] = [
   }
 ];
 
+// Interface for saved journey data
+interface SavedJourney {
+  id: string; // The localStorage key
+  title: string;
+  lastSaved: string;
+  preview?: {
+    nodeCount: number;
+    edgeCount: number;
+  };
+}
+
 export default function CustomerJourney() {
   const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -203,6 +229,9 @@ export default function CustomerJourney() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [savedJourneys, setSavedJourneys] = useState<SavedJourney[]>([]);
+  const [currentJourneyId, setCurrentJourneyId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // State for node editing
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -233,7 +262,101 @@ export default function CustomerJourney() {
     setSaveTimeout(timeout);
   }, [saveTimeout, nodes, edges]);
   
-  // Save journey to localStorage for now
+  // Load saved journeys from localStorage
+  const loadSavedJourneys = useCallback(() => {
+    try {
+      const journeys: SavedJourney[] = [];
+      
+      // Get all keys from localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        
+        // Only include journey keys
+        if (key && key.startsWith('journey_')) {
+          try {
+            const journeyData = JSON.parse(localStorage.getItem(key) || '');
+            
+            journeys.push({
+              id: key,
+              title: journeyData.title || 'Untitled Journey',
+              lastSaved: journeyData.lastSaved || new Date().toISOString(),
+              preview: {
+                nodeCount: journeyData.nodes?.length || 0,
+                edgeCount: journeyData.edges?.length || 0,
+              }
+            });
+          } catch (e) {
+            console.error(`Failed to parse journey data for key ${key}`, e);
+          }
+        }
+      }
+      
+      // Sort by last saved time, newest first
+      journeys.sort((a, b) => new Date(b.lastSaved).getTime() - new Date(a.lastSaved).getTime());
+      
+      setSavedJourneys(journeys);
+    } catch (error) {
+      console.error("Failed to load saved journeys:", error);
+    }
+  }, []);
+  
+  // Load a specific journey
+  const loadJourney = useCallback((journeyId: string) => {
+    try {
+      const journeyData = JSON.parse(localStorage.getItem(journeyId) || '');
+      
+      if (journeyData) {
+        setJourneyTitle(journeyData.title || 'Untitled Journey');
+        setNodes(journeyData.nodes || initialNodes);
+        setEdges(journeyData.edges || []);
+        setCurrentJourneyId(journeyId);
+        
+        toast({
+          title: "Journey Loaded",
+          description: `Loaded "${journeyData.title || 'Untitled Journey'}"`,
+          duration: 2000
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load journey:", error);
+      toast({
+        title: "Load Failed",
+        description: "There was an error loading the journey.",
+        variant: "destructive"
+      });
+    }
+  }, [setNodes, setEdges, toast]);
+  
+  // Delete a saved journey
+  const deleteJourney = useCallback((journeyId: string, journeyTitle: string) => {
+    try {
+      localStorage.removeItem(journeyId);
+      loadSavedJourneys(); // Refresh the list
+      
+      toast({
+        title: "Journey Deleted",
+        description: `Deleted "${journeyTitle}"`,
+        duration: 2000
+      });
+      
+      // If the current journey was deleted, reset to a new journey
+      if (journeyId === currentJourneyId) {
+        setNodes(initialNodes);
+        setEdges([]);
+        setJourneyTitle("New Customer Journey");
+        setCurrentJourneyId(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete journey:", error);
+      toast({
+        title: "Delete Failed",
+        description: "There was an error deleting the journey.",
+        variant: "destructive"
+      });
+    }
+  }, [currentJourneyId, loadSavedJourneys, toast, setNodes, setEdges]);
+  
+  // Save journey to localStorage
   const saveJourney = useCallback((isAutoSave = true) => {
     try {
       const journeyData = {
@@ -243,7 +366,18 @@ export default function CustomerJourney() {
         lastSaved: new Date().toISOString()
       };
       
-      localStorage.setItem(`journey_${Date.now()}`, JSON.stringify(journeyData));
+      // Generate a new ID or use the existing one
+      const journeyId = currentJourneyId || `journey_${Date.now()}`;
+      
+      localStorage.setItem(journeyId, JSON.stringify(journeyData));
+      
+      // Set the current journey ID
+      if (!currentJourneyId) {
+        setCurrentJourneyId(journeyId);
+      }
+      
+      // Refresh the journeys list
+      loadSavedJourneys();
       
       // Only show toast for manual saves or first auto-save
       if (!isAutoSave) {
@@ -263,7 +397,7 @@ export default function CustomerJourney() {
         variant: "destructive"
       });
     }
-  }, [nodes, edges, journeyTitle, toast]);
+  }, [nodes, edges, journeyTitle, currentJourneyId, loadSavedJourneys, toast]);
   
   // Cleanup effect
   useEffect(() => {
@@ -733,6 +867,11 @@ export default function CustomerJourney() {
     }
   };
 
+  // Load saved journeys on component mount
+  useEffect(() => {
+    loadSavedJourneys();
+  }, [loadSavedJourneys]);
+
   // Update all nodes to include the onNodeEdit callback
   useEffect(() => {
     setNodes((nds) =>
@@ -745,6 +884,15 @@ export default function CustomerJourney() {
       }))
     );
   }, []);
+
+  // Format date/time for display
+  const formatDateTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(date);
+  };
 
   return (
     <div className="flex flex-col h-screen">
@@ -774,6 +922,8 @@ export default function CustomerJourney() {
             onClick={() => {
               setNodes(initialNodes);
               setEdges([]);
+              setCurrentJourneyId(null);
+              setJourneyTitle("New Customer Journey");
             }}
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -787,75 +937,155 @@ export default function CustomerJourney() {
         </div>
       </div>
     
-      <div className="flex-1 w-full">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={(changes) => {
-            onNodesChange(changes);
-            autoSaveChanges();
-          }}
-          onEdgesChange={(changes) => {
-            onEdgesChange(changes);
-            autoSaveChanges();
-          }}
-          onConnect={(params) => {
-            onConnect(params);
-            autoSaveChanges();
-          }}
-          nodeTypes={nodeTypes}
-          connectionLineStyle={{ stroke: '#2563eb' }}
-          connectionLineType={ConnectionLineType.SmoothStep}
-          fitView
-        >
-          <Controls />
-          <MiniMap nodeBorderRadius={2} />
-          <Background size={1} gap={16} color="#f1f5f9" />
-          
-          {/* Journey Title Panel - Positioned at the top */}
-          <Panel position="top-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-b-lg shadow-md mt-2">
-            <EditableTitle 
-              title={journeyTitle} 
-              onSave={handleTitleUpdate} 
-              className="min-w-[200px]"
-            />
-          </Panel>
-          
-          <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between">
-                <div className="text-sm font-medium mb-1">Quick Add</div>
-                <NewNodeDialog onCreateNode={addCustomNode} />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  Awareness
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  Research
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  Consideration
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  Decision
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  Purchase
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  Support
-                </Button>
-              </div>
+      <div className="flex flex-1 h-full overflow-hidden">
+        {/* Sidebar for saved journeys */}
+        <div className={`border-r bg-background transition-all duration-300 overflow-y-auto ${sidebarOpen ? 'w-80' : 'w-0'}`}>
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Saved Journeys</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSidebarOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft size={16} />
+              </Button>
             </div>
-          </Panel>
-        </ReactFlow>
+            
+            {savedJourneys.length === 0 ? (
+              <div className="text-center text-muted-foreground p-4">
+                <p>No saved journeys yet.</p>
+                <p className="text-sm mt-2">Create and save a journey to see it here.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {savedJourneys.map((journey) => (
+                  <div 
+                    key={journey.id} 
+                    className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${currentJourneyId === journey.id ? 'bg-primary/10 border-primary' : ''}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 
+                        className="font-medium truncate w-44"
+                        onClick={() => loadJourney(journey.id)}
+                      >
+                        {journey.title}
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
+                            deleteJourney(journey.id, journey.title);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Last modified: {formatDateTime(journey.lastSaved)}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {journey.preview?.nodeCount || 0} nodes
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {journey.preview?.edgeCount || 0} connections
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Toggle sidebar button - appears when sidebar is closed */}
+        {!sidebarOpen && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSidebarOpen(true)}
+            className="absolute top-20 left-0 z-10 h-8 rounded-r-full rounded-l-none bg-background border border-l-0"
+          >
+            <ChevronRight size={16} />
+          </Button>
+        )}
+        
+        {/* Main flow area */}
+        <div className="flex-1">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={(changes) => {
+              onNodesChange(changes);
+              autoSaveChanges();
+            }}
+            onEdgesChange={(changes) => {
+              onEdgesChange(changes);
+              autoSaveChanges();
+            }}
+            onConnect={(params) => {
+              onConnect(params);
+              autoSaveChanges();
+            }}
+            nodeTypes={nodeTypes}
+            connectionLineStyle={{ stroke: '#2563eb' }}
+            connectionLineType={ConnectionLineType.SmoothStep}
+            fitView
+          >
+            <Controls />
+            <MiniMap nodeBorderRadius={2} />
+            <Background size={1} gap={16} color="#f1f5f9" />
+            
+            {/* Journey Title Panel - Positioned at the top */}
+            <Panel position="top-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-b-lg shadow-md mt-2">
+              <EditableTitle 
+                title={journeyTitle} 
+                onSave={handleTitleUpdate} 
+                className="min-w-[200px]"
+              />
+            </Panel>
+            
+            <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <div className="text-sm font-medium mb-1">Quick Add</div>
+                  <NewNodeDialog onCreateNode={addCustomNode} />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Awareness
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Research
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Consideration
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Decision
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Purchase
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Support
+                  </Button>
+                </div>
+              </div>
+            </Panel>
+          </ReactFlow>
+        </div>
       </div>
     </div>
   );
