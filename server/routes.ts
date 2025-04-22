@@ -473,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Generate AI journey
-  app.post('/api/customer-journeys/generate-ai-journey', async (req, res) => {
+  app.post('/api/generate-ai-journey', async (req, res) => {
     try {
       const { description } = req.body;
       
