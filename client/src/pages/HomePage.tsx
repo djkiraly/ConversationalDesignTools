@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useQuery } from '@tanstack/react-query';
+import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3 } from 'lucide-react';
+import { fetchAppStatistics, AppStatistics } from '../lib/api';
 
 // Define the structure for application pages
 interface AppPage {
@@ -15,6 +21,13 @@ interface AppPage {
 }
 
 export default function HomePage() {
+  // Fetch app statistics
+  const { data: statistics, isLoading: isStatsLoading, error: statsError } = useQuery({
+    queryKey: ['/api/statistics'],
+    queryFn: () => fetchAppStatistics(),
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+  
   // Define the list of application pages
   const appPages: AppPage[] = [
     {
@@ -81,11 +94,117 @@ export default function HomePage() {
         <p className="mb-4">
           This application provides tools to design conversational flows and customer journeys:
         </p>
-        <ul className="list-disc pl-6 space-y-2">
+        <ul className="list-disc pl-6 space-y-2 mb-6">
           <li>Use <strong>Happy Path</strong> to define the optimal conversation flows for your AI agents</li>
           <li>Create a <strong>Customer Journey</strong> map to visualize the end-to-end user experience</li>
           <li>Configure AI behavior and system settings in the <strong>Settings</strong> page</li>
         </ul>
+      </div>
+      
+      {/* App Statistics Section */}
+      <div className="mt-12">
+        <div className="flex items-center mb-4">
+          <BarChart3 className="h-6 w-6 mr-2 text-primary" />
+          <h2 className="text-xl font-semibold">Application Statistics</h2>
+        </div>
+        
+        {isStatsLoading ? (
+          <div className="p-6 bg-muted rounded-lg">
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </div>
+        ) : statsError ? (
+          <div className="p-6 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg">
+            <p>Unable to load application statistics. Please try again later.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* App Metrics Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <BarChart3 className="h-5 w-5 mr-2" />
+                  Application Metrics
+                </CardTitle>
+                <CardDescription>
+                  Current state of your conversation designs
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">Happy Path Entries</span>
+                      <Badge variant="outline">{statistics?.useCaseCount || 0}</Badge>
+                    </div>
+                    <Progress value={statistics?.useCaseCount ? Math.min(statistics.useCaseCount * 10, 100) : 0} className="h-2" />
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">Customer Journeys</span>
+                      <Badge variant="outline">{statistics?.customerJourneyCount || 0}</Badge>
+                    </div>
+                    <Progress value={statistics?.customerJourneyCount ? Math.min(statistics.customerJourneyCount * 10, 100) : 0} className="h-2" />
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-xs text-muted-foreground">
+                      Last updated: {statistics ? new Date(statistics.timestamp).toLocaleTimeString() : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Database Stats Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <Database className="h-5 w-5 mr-2" />
+                  Database Statistics
+                </CardTitle>
+                <CardDescription>
+                  Database size: {statistics?.database.totalSizeMB.toFixed(2) || 0} MB
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableCaption>
+                    Total tables: {statistics?.database.tableCount || 0}, 
+                    Total records: {statistics?.database.totalRowCount || 0}
+                  </TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Table</TableHead>
+                      <TableHead className="text-right">Size (MB)</TableHead>
+                      <TableHead className="text-right">Records</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {statistics?.database.tables.map((table) => (
+                      <TableRow key={table.name}>
+                        <TableCell className="font-medium">{table.name}</TableCell>
+                        <TableCell className="text-right">{table.sizeMB.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{table.rowCount}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!statistics || statistics.database.tables.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                          No database tables found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
