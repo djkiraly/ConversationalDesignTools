@@ -19,11 +19,13 @@ interface JourneyMetadataDialogProps {
     customerName: string;
     workflowIntent: string;
     notes: string;
+    summary?: string;
   };
   onUpdateMetadata: (metadata: {
     customerName: string;
     workflowIntent: string;
     notes: string;
+    summary?: string;
   }) => void;
 }
 
@@ -35,12 +37,14 @@ export default function JourneyMetadataDialog({
   const [customerName, setCustomerName] = useState(metadata.customerName || "");
   const [workflowIntent, setWorkflowIntent] = useState(metadata.workflowIntent || "");
   const [notes, setNotes] = useState(metadata.notes || "");
+  const [summary, setSummary] = useState(metadata.summary || "");
 
   const handleSubmit = () => {
     onUpdateMetadata({
       customerName,
       workflowIntent,
       notes,
+      summary, // Include summary in the update
     });
     setOpen(false);
   };
