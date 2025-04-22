@@ -189,6 +189,7 @@ const initialNodes: Node[] = [
 interface SavedJourneyDisplay {
   id: number;
   title: string;
+  customerName?: string; // Added customer name
   lastSaved: string;
   preview?: {
     nodeCount: number;
@@ -252,6 +253,7 @@ export default function CustomerJourney() {
   const savedJourneys: SavedJourneyDisplay[] = journeysData?.map(journey => ({
     id: journey.id,
     title: journey.title,
+    customerName: journey.customerName || "",
     lastSaved: journey.updatedAt,
     preview: {
       nodeCount: journey.nodes?.length || 0,
@@ -1329,6 +1331,17 @@ export default function CustomerJourney() {
                         <Trash2 size={14} />
                       </Button>
                     </div>
+                    
+                    {/* Customer Name */}
+                    {journey.customerName && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <Users className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {journey.customerName}
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="text-xs text-muted-foreground mt-1">
                       Last modified: {formatDateTime(journey.lastSaved)}
                     </div>
