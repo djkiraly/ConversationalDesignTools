@@ -261,6 +261,9 @@ export class MemStorage implements IStorage {
     const journey: CustomerJourney = {
       id,
       title: insertJourney.title,
+      customerName: insertJourney.customerName || null,
+      workflowIntent: insertJourney.workflowIntent || null,
+      notes: insertJourney.notes || null,
       nodes: insertJourney.nodes,
       edges: insertJourney.edges,
       createdAt: now,

@@ -507,11 +507,36 @@ export default function CustomerJourney() {
         setEdges([]);
         setJourneyTitle("New Customer Journey");
         setCurrentJourneyId(null);
+        
+        // Reset metadata
+        setJourneyMetadata({
+          customerName: "",
+          workflowIntent: "",
+          notes: ""
+        });
       } catch (error) {
         console.error("Failed to delete all journeys:", error);
       }
     }
   }, [deleteAllJourneysMutation, setNodes, setEdges]);
+  
+  // Handler for updating journey metadata
+  const handleUpdateMetadata = useCallback((metadata: {
+    customerName: string;
+    workflowIntent: string;
+    notes: string;
+  }) => {
+    setJourneyMetadata(metadata);
+    
+    toast({
+      title: "Metadata Updated",
+      description: "Journey metadata has been updated.",
+      duration: 2000
+    });
+    
+    // Auto-save when metadata changes
+    autoSaveChanges();
+  }, [autoSaveChanges, toast]);
   
   // Cleanup effect
   useEffect(() => {

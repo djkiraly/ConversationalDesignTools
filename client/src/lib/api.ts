@@ -59,6 +59,9 @@ export async function apiRequest<T = any>(
 export interface CustomerJourney {
   id: number;
   title: string;
+  customerName?: string;
+  workflowIntent?: string;
+  notes?: string;
   nodes: any[];
   edges: any[];
   createdAt: string;
