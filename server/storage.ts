@@ -86,12 +86,14 @@ export class MemStorage implements IStorage {
     this.flowNodes = new Map();
     this.settings = new Map();
     this.customerJourneys = new Map();
+    this.customers = new Map();
     
     this.userCurrentId = 1;
     this.useCaseCurrentId = 1;
     this.flowNodeCurrentId = 1;
     this.settingCurrentId = 1;
     this.customerJourneyCurrentId = 1;
+    this.customerCurrentId = 1;
     
     // Add some sample use cases for testing
     this.addSampleUseCases();
@@ -305,6 +307,54 @@ export class MemStorage implements IStorage {
 
   async deleteCustomerJourney(id: number): Promise<void> {
     this.customerJourneys.delete(id);
+  }
+  
+  // Customer methods
+  async getAllCustomers(): Promise<Customer[]> {
+    return Array.from(this.customers.values()).sort((a, b) => 
+      a.companyName.localeCompare(b.companyName)
+    );
+  }
+  
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    return this.customers.get(id);
+  }
+  
+  async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
+    const id = this.customerCurrentId++;
+    const now = new Date();
+    const customer: Customer = {
+      id,
+      companyName: insertCustomer.companyName,
+      companyWebsite: insertCustomer.companyWebsite || null,
+      primaryContactName: insertCustomer.primaryContactName,
+      primaryContactPhone: insertCustomer.primaryContactPhone || null,
+      primaryContactEmail: insertCustomer.primaryContactEmail,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.customers.set(id, customer);
+    return customer;
+  }
+  
+  async updateCustomer(id: number, updateData: UpdateCustomer): Promise<Customer> {
+    const existingCustomer = this.customers.get(id);
+    if (!existingCustomer) {
+      throw new Error(`Customer with id ${id} not found`);
+    }
+    
+    const updatedCustomer: Customer = {
+      ...existingCustomer,
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    this.customers.set(id, updatedCustomer);
+    return updatedCustomer;
+  }
+  
+  async deleteCustomer(id: number): Promise<void> {
+    this.customers.delete(id);
   }
   
   // Helper method to add default settings
