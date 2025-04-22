@@ -38,6 +38,7 @@ import {
   Search, 
   Check, 
   Loader2,
+  Sparkles,
   Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -1167,6 +1168,26 @@ export default function CustomerJourney() {
         
         <div className="flex items-center gap-4">
           <NewFlowDialog onCreateFlow={handleCreateFlow} />
+          
+          {/* AI Summary Button */}
+          <Button
+            variant="outline"
+            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+            onClick={handleGenerateSummary}
+            disabled={isLoading || !currentJourneyId}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Summary...
+              </>
+            ) : (
+              <>
+                <Brain className="mr-2 h-4 w-4" />
+                Generate AI Summary
+              </>
+            )}
+          </Button>
           
           <Button
             variant="outline"

@@ -55,26 +55,7 @@ export default function JourneyMetadataDialog({
     setOpen(false);
   };
   
-  // Function to handle generating summary via AI
-  const handleGenerateSummary = async () => {
-    if (!onGenerateSummary) return;
-    
-    try {
-      setIsGeneratingSummary(true);
-      setSummaryError("");
-      const newSummary = await onGenerateSummary();
-      setSummary(newSummary);
-    } catch (error) {
-      console.error("Error generating summary:", error);
-      setSummaryError(
-        error instanceof Error 
-          ? error.message 
-          : "Failed to generate summary. Please try again."
-      );
-    } finally {
-      setIsGeneratingSummary(false);
-    }
-  };
+
 
   const handleOpen = (openState: boolean) => {
     if (openState) {
@@ -148,29 +129,6 @@ export default function JourneyMetadataDialog({
               Journey Summary
             </Label>
             <div className="col-span-3 space-y-2">
-              <div className="flex justify-between items-start">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="gap-1 mb-2"
-                  onClick={handleGenerateSummary}
-                  disabled={isGeneratingSummary || !onGenerateSummary}
-                >
-                  {isGeneratingSummary ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Generate AI Summary
-                    </>
-                  )}
-                </Button>
-              </div>
-              
               {summaryError && (
                 <Alert variant="destructive" className="mb-2">
                   <AlertCircle className="h-4 w-4" />
@@ -189,7 +147,7 @@ export default function JourneyMetadataDialog({
               
               {!summary && !summaryError && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  Click "Generate AI Summary" to create an AI-powered summary of this journey based on its nodes and metadata.
+                  Use the "Generate AI Summary" button in the main toolbar to create an AI-powered summary of this journey.
                 </p>
               )}
             </div>
