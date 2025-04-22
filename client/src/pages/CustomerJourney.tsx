@@ -14,17 +14,23 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  PanelPosition
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Plus, Trash2, Save, Map, Edit, Settings, LayoutGrid, 
-  PanelRight, RotateCw, Minus, Copy, Scissors, FileEdit
+  PanelRight, RotateCw, Minus, Copy, Scissors, FileEdit, X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import NewFlowDialog from "../components/NewFlowDialog";
 import EditableTitle from "../components/EditableTitle";
 
@@ -188,6 +194,103 @@ const initialNodes: Node[] = [
   }
 ];
 
+// Node Edit Dialog component
+function NodeEditDialog({
+  open,
+  onOpenChange,
+  node,
+  formData,
+  setFormData,
+  onSave,
+  onDelete,
+  onDuplicate
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  node: Node | null;
+  formData: { title: string; stepType: string; description: string };
+  setFormData: (data: { title: string; stepType: string; description: string }) => void;
+  onSave: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+}) {
+  const stepTypes = [
+    "Entry Point", "Awareness", "Research", "Consideration", 
+    "Evaluation", "Decision", "Purchase", "Support", 
+    "Contact", "Identification", "Resolution", "Follow-up"
+  ];
+  
+  if (!node) return null;
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit Node</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="nodeType" className="text-right">
+              Type
+            </Label>
+            <Select 
+              value={formData.stepType} 
+              onValueChange={(value) => setFormData({ ...formData, stepType: value })}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a node type" />
+              </SelectTrigger>
+              <SelectContent>
+                {stepTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="nodeTitle" className="text-right">
+              Title
+            </Label>
+            <Input
+              id="nodeTitle"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="nodeDescription" className="text-right">
+              Description
+            </Label>
+            <Textarea
+              id="nodeDescription"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
+        </div>
+        <Separator />
+        <DialogFooter className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onDuplicate}>
+              <Copy className="mr-2 h-4 w-4" />
+              Duplicate
+            </Button>
+            <Button variant="destructive" onClick={onDelete}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </div>
+          <Button onClick={onSave} type="submit">Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function CustomerJourney() {
   const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -196,7 +299,7 @@ export default function CustomerJourney() {
   const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
   const [nodeFormData, setNodeFormData] = useState<{
     title: string;
     stepType: string;
@@ -273,8 +376,8 @@ export default function CustomerJourney() {
       });
     }
     
-    // Open the edit panel
-    setIsEditPanelOpen(true);
+    // Open the edit dialog
+    setIsEditDialogOpen(true);
   }, []);
   
   // Update node data
@@ -319,8 +422,8 @@ export default function CustomerJourney() {
       edge.source !== selectedNode.id && edge.target !== selectedNode.id
     ));
     
-    // Close the edit panel
-    setIsEditPanelOpen(false);
+    // Close the edit dialog
+    setIsEditDialogOpen(false);
     setSelectedNode(null);
     
     toast({
@@ -358,7 +461,7 @@ export default function CustomerJourney() {
   }, [selectedNode, setNodes, autoSaveChanges, toast]);
   
   // Add node from right toolbar
-  const addNodeFromToolbar = useCallback((type: string, reactFlowInstance: any) => {
+  const addNodeFromToolbar = useCallback((type: string) => {
     // Get viewport center - fallback to center if viewport info not available
     const centerX = window.innerWidth / 2 - 200; // Adjust for panel width
     const centerY = window.innerHeight / 2;
@@ -760,7 +863,7 @@ export default function CustomerJourney() {
         </Panel>
         
         {/* Right side toolbar */}
-        <Panel position="right" className="bg-background/80 backdrop-blur-sm p-2 rounded-l-lg shadow-md mr-2 my-10">
+        <Panel position="top-right" className="bg-background/80 backdrop-blur-sm p-2 rounded-l-lg shadow-md mr-2 my-10">
           <div className="flex flex-col gap-3">
             <h3 className="text-sm font-semibold mb-2 text-center">Add Node</h3>
             
@@ -867,7 +970,7 @@ export default function CustomerJourney() {
               setNodes(initialNodes);
               setEdges([]);
               setSelectedNode(null);
-              setIsEditPanelOpen(false);
+              setIsEditDialogOpen(false);
             }}
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -886,6 +989,27 @@ export default function CustomerJourney() {
           <Flow />
         </ReactFlowProvider>
       </div>
+      
+      {/* Node Editor Dialog */}
+      <NodeEditDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        node={selectedNode}
+        formData={nodeFormData}
+        setFormData={setNodeFormData}
+        onSave={() => {
+          updateNodeData();
+          setIsEditDialogOpen(false);
+        }}
+        onDelete={() => {
+          deleteSelectedNode();
+          setIsEditDialogOpen(false);
+        }}
+        onDuplicate={() => {
+          duplicateNode();
+          setIsEditDialogOpen(false);
+        }}
+      />
     </div>
   );
 }
