@@ -199,6 +199,15 @@ export interface AppStatistics {
     tableCount: number;
     totalRowCount: number;
   };
+  fileSystem: {
+    totalFiles: number;
+    totalSizeMB: number;
+    byType: {
+      extension: string;
+      count: number;
+      sizeMB: number;
+    }[];
+  };
   timestamp: string;
 }
 

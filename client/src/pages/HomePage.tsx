@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3 } from 'lucide-react';
+import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree } from 'lucide-react';
 import { fetchAppStatistics, AppStatistics } from '../lib/api';
 
 // Define the structure for application pages
@@ -121,7 +121,7 @@ export default function HomePage() {
             <p>Unable to load application statistics. Please try again later.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* App Metrics Card */}
             <Card>
               <CardHeader>
@@ -160,6 +160,53 @@ export default function HomePage() {
               </CardContent>
             </Card>
             
+            {/* File System Stats Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <FolderTree className="h-5 w-5 mr-2" />
+                  File System
+                </CardTitle>
+                <CardDescription>
+                  Total files: {statistics?.fileSystem?.totalFiles || 0} ({statistics?.fileSystem?.totalSizeMB?.toFixed(2) || 0} MB)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {statistics?.fileSystem?.byType && statistics.fileSystem.byType.map((fileType) => (
+                    <div key={fileType.extension}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium flex items-center">
+                          <FileText className="h-3 w-3 mr-1" />
+                          {fileType.extension || 'unknown'}
+                        </span>
+                        <Badge variant="outline">{fileType.count} files</Badge>
+                      </div>
+                      <div className="flex items-center">
+                        <Progress 
+                          value={fileType.count / (statistics?.fileSystem?.totalFiles || 1) * 100} 
+                          className="h-2 flex-grow" 
+                        />
+                        <span className="text-xs text-muted-foreground ml-2 min-w-[45px] text-right">
+                          {fileType.sizeMB.toFixed(1)} MB
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {!statistics?.fileSystem?.byType && (
+                    <div className="py-4 text-center text-muted-foreground">
+                      No file system data available
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-xs text-muted-foreground">
+                      File types distribution
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
             {/* Database Stats Card */}
             <Card>
               <CardHeader>
@@ -168,14 +215,14 @@ export default function HomePage() {
                   Database Statistics
                 </CardTitle>
                 <CardDescription>
-                  Database size: {statistics?.database.totalSizeMB.toFixed(2) || 0} MB
+                  Database size: {statistics?.database?.totalSizeMB?.toFixed(2) || 0} MB
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableCaption>
-                    Total tables: {statistics?.database.tableCount || 0}, 
-                    Total records: {statistics?.database.totalRowCount || 0}
+                    Total tables: {statistics?.database?.tableCount || 0}, 
+                    Total records: {statistics?.database?.totalRowCount || 0}
                   </TableCaption>
                   <TableHeader>
                     <TableRow>
@@ -185,14 +232,14 @@ export default function HomePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {statistics?.database.tables.map((table) => (
+                    {statistics?.database?.tables && statistics.database.tables.map((table) => (
                       <TableRow key={table.name}>
                         <TableCell className="font-medium">{table.name}</TableCell>
                         <TableCell className="text-right">{table.sizeMB.toFixed(2)}</TableCell>
                         <TableCell className="text-right">{table.rowCount}</TableCell>
                       </TableRow>
                     ))}
-                    {(!statistics || statistics.database.tables.length === 0) && (
+                    {(!statistics?.database?.tables || statistics.database.tables.length === 0) && (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
                           No database tables found
