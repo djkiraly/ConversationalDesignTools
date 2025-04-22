@@ -18,6 +18,7 @@ function Router() {
         <Route path="/happy-path" component={Home} />
         <Route path="/use-case/:id" component={Home} />
         <Route path="/customer-journey" component={CustomerJourney} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
