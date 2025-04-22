@@ -626,10 +626,17 @@ export default function CustomerJourney() {
     
     // Save the journey with the updated summary
     if (currentJourneyId) {
+      // Need to include all required fields when updating
       updateJourneyMutation.mutate({
         id: currentJourneyId,
         journeyData: {
-          summary
+          title: journeyTitle,
+          customerName: journeyMetadata.customerName,
+          workflowIntent: journeyMetadata.workflowIntent,
+          notes: journeyMetadata.notes,
+          summary,
+          nodes,
+          edges
         }
       });
     }
@@ -639,7 +646,7 @@ export default function CustomerJourney() {
       description: "Your journey summary has been saved.",
       duration: 3000
     });
-  }, [currentJourneyId, updateJourneyMutation, toast]);
+  }, [currentJourneyId, updateJourneyMutation, toast, journeyTitle, journeyMetadata, nodes, edges]);
   
   // Handler for updating journey metadata
   const handleUpdateMetadata = useCallback((metadata: {
