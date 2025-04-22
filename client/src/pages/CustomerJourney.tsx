@@ -38,7 +38,6 @@ import {
   Search, 
   Check, 
   Loader2,
-  Sparkles,
   Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +49,7 @@ import EditableTitle from "../components/EditableTitle";
 import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
 import EditNodeDialog from "../components/EditNodeDialog";
 import JourneyMetadataDialog from "../components/JourneyMetadataDialog";
+import AISummaryDialog from "../components/AISummaryDialog";
 import { 
   fetchAllCustomerJourneys, 
   fetchCustomerJourney, 
@@ -249,6 +249,7 @@ export default function CustomerJourney() {
   const [currentJourneyId, setCurrentJourneyId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
   
   // State for node editing
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -611,7 +612,32 @@ export default function CustomerJourney() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentJourneyId, toast]);
+  }, [currentJourneyId, toast, generateJourneySummary]);
+  
+  // Handler for saving the summary
+  const handleSaveSummary = useCallback((summary: string) => {
+    // Update the local state
+    setJourneyMetadata(prev => ({
+      ...prev,
+      summary
+    }));
+    
+    // Save the journey with the updated summary
+    if (currentJourneyId) {
+      updateJourneyMutation.mutate({
+        id: currentJourneyId,
+        journeyData: {
+          summary
+        }
+      });
+    }
+    
+    toast({
+      title: "Summary Saved",
+      description: "Your journey summary has been saved.",
+      duration: 3000
+    });
+  }, [currentJourneyId, updateJourneyMutation, toast]);
   
   // Handler for updating journey metadata
   const handleUpdateMetadata = useCallback((metadata: {
@@ -1172,21 +1198,21 @@ export default function CustomerJourney() {
           <Button
             variant="outline"
             className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-            onClick={handleGenerateSummary}
-            disabled={isLoading || !currentJourneyId}
+            onClick={() => setSummaryDialogOpen(true)}
+            disabled={!currentJourneyId}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Summary...
-              </>
-            ) : (
-              <>
-                <Brain className="mr-2 h-4 w-4" />
-                Generate AI Summary
-              </>
-            )}
+            <Brain className="mr-2 h-4 w-4" />
+            AI Summary
           </Button>
+          
+          {/* AI Summary Dialog */}
+          <AISummaryDialog
+            open={summaryDialogOpen}
+            onOpenChange={setSummaryDialogOpen}
+            currentSummary={journeyMetadata.summary || null}
+            onSaveSummary={handleSaveSummary}
+            onGenerateSummary={handleGenerateSummary}
+          />
           
           <Button
             variant="outline"
