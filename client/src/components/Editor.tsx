@@ -394,6 +394,28 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
+              name="customer"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Customer</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter customer name or identifier" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <div className="text-xs text-neutral-dark/60 mt-1">
+                    Identify who the customer is in this conversation flow
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
@@ -584,28 +606,6 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                 </TooltipProvider>
               </div>
             </div>
-            
-            <FormField
-              control={form.control}
-              name="customer"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex justify-between items-center">
-                    <FormLabel>Customer</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Input 
-                      placeholder="Enter customer name or identifier" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  <div className="text-xs text-neutral-dark/60 mt-1">
-                    Identify who the customer is in this conversation flow
-                  </div>
-                </FormItem>
-              )}
-            />
             
             <FormField
               control={form.control}
