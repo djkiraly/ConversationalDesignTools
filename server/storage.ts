@@ -138,6 +138,7 @@ export class MemStorage implements IStorage {
       id,
       title: insertUseCase.title,
       description: insertUseCase.description ?? null,
+      customer: insertUseCase.customer ?? null,
       conversationFlow: insertUseCase.conversationFlow,
       nodePositions: insertUseCase.nodePositions ?? null,
       createdAt: now,
@@ -153,9 +154,15 @@ export class MemStorage implements IStorage {
       throw new Error(`Use case with id ${id} not found`);
     }
     
+    // Properly handle the customer field, preserving it if not provided in the update
+    const customer = updateData.customer !== undefined 
+      ? updateData.customer 
+      : existingUseCase.customer;
+    
     const updatedUseCase: UseCase = {
       ...existingUseCase,
       ...updateData,
+      customer,
       updatedAt: new Date()
     };
     
@@ -372,10 +379,36 @@ export class MemStorage implements IStorage {
   
   // Helper method to add sample data
   private addSampleUseCases() {
+    // First, make sure we have some sample customers
+    const acmeCustomer = this.createCustomer({
+      companyName: "Acme Corp",
+      companyWebsite: "https://acme.example.com",
+      primaryContactName: "John Smith",
+      primaryContactEmail: "john@acme.example.com",
+      primaryContactPhone: "555-123-4567"
+    });
+    
+    const techCorpCustomer = this.createCustomer({
+      companyName: "TechCorp Inc",
+      companyWebsite: "https://techcorp.example.com",
+      primaryContactName: "Jane Doe",
+      primaryContactEmail: "jane@techcorp.example.com",
+      primaryContactPhone: "555-987-6543"
+    });
+    
+    const globalCustomer = this.createCustomer({
+      companyName: "Global Enterprises",
+      companyWebsite: "https://global.example.com",
+      primaryContactName: "Robert Johnson",
+      primaryContactEmail: "robert@global.example.com",
+      primaryContactPhone: "555-456-7890"
+    });
+    
     // Sample use case 1: Customer Order Inquiry
     this.createUseCase({
       title: "Customer Order Inquiry",
       description: "Agent helps customer track their order status",
+      customer: "Acme Corp",
       conversationFlow: `Customer: I placed an order last week and haven't received a shipping confirmation yet.
 Agent: I'd be happy to help you with that. Could you please provide your order number?
 →
@@ -396,6 +429,7 @@ Agent: You'll receive an email with the tracking information as soon as your ord
     this.createUseCase({
       title: "Product Recommendation",
       description: "Agent helps customer find the right product based on customer needs",
+      customer: "TechCorp Inc",
       conversationFlow: `Customer: I'm looking for a new laptop for work.
 Agent: I'd be happy to help you find a laptop for work! Could you tell me what kind of work you'll be using it for?
 →
@@ -419,6 +453,7 @@ Agent: Perfect! I'll guide you through our quick checkout process. Would you pre
     this.createUseCase({
       title: "Account Setup",
       description: "Agent guides new customer through account creation and setup",
+      customer: "Global Enterprises",
       conversationFlow: `Customer: I'd like to set up a new account for your service.
 Agent: Welcome! I'd be happy to help you set up a new account. To get started, could you please provide your email address?
 →
