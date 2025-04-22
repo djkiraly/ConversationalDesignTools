@@ -76,6 +76,9 @@ export async function fetchAllCustomerJourneys(): Promise<CustomerJourney[]> {
   return response.data || [];
 }
 
+// Alias for fetchAllCustomerJourneys for better naming consistency
+export const getCustomerJourneys = fetchAllCustomerJourneys;
+
 export async function fetchCustomerJourney(id: number): Promise<CustomerJourney> {
   const response = await apiRequest<CustomerJourney>(`/api/customer-journeys/${id}`);
   if (response.error) {

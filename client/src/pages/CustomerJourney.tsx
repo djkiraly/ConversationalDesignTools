@@ -43,7 +43,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import NewFlowDialog from "../components/NewFlowDialog";
 import EditableTitle from "../components/EditableTitle";
 import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
@@ -56,7 +56,8 @@ import {
   updateCustomerJourney, 
   deleteCustomerJourney, 
   deleteAllCustomerJourneys,
-  CustomerJourney as CustomerJourneyType
+  CustomerJourney as CustomerJourneyType,
+  getCustomerJourneys
 } from "../lib/api";
 
 // Node component with edit functionality
@@ -237,6 +238,7 @@ interface SavedJourneyDisplay {
 
 export default function CustomerJourney() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
@@ -372,6 +374,27 @@ export default function CustomerJourney() {
   // Save journey to database - declare before usage
   const saveJourney = useCallback(async (isAutoSave = true) => {
     try {
+      // Check if a journey with this title already exists (excluding current journey)
+      const existingJourneys = await queryClient.fetchQuery({ 
+        queryKey: ['/api/customer-journeys'],
+        queryFn: () => getCustomerJourneys()
+      });
+      
+      const journeyWithSameTitle = existingJourneys.find((journey: CustomerJourneyType) => 
+        journey.title === journeyTitle && journey.id !== currentJourneyId
+      );
+      
+      // If a journey with the same title exists, alert the user and don't save
+      if (journeyWithSameTitle && !currentJourneyId) {
+        toast({
+          title: "Journey Name Already Exists",
+          description: "Please choose a different name for your journey.",
+          variant: "destructive",
+          duration: 5000
+        });
+        return;
+      }
+      
       const journeyData = {
         title: journeyTitle,
         customerName: journeyMetadata.customerName,
@@ -405,11 +428,21 @@ export default function CustomerJourney() {
       }
     } catch (error) {
       console.error("Failed to save journey:", error);
-      toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "There was an error saving your journey.",
-        variant: "destructive"
-      });
+      // Check if it's a unique constraint violation
+      if (error instanceof Error && error.message.includes("unique constraint")) {
+        toast({
+          title: "Journey Name Already Exists",
+          description: "Please choose a different name for your journey.",
+          variant: "destructive",
+          duration: 5000
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: error instanceof Error ? error.message : "There was an error saving your journey.",
+          variant: "destructive"
+        });
+      }
     }
   }, [
     nodes, 
@@ -419,7 +452,8 @@ export default function CustomerJourney() {
     currentJourneyId, 
     toast, 
     createJourneyMutation, 
-    updateJourneyMutation
+    updateJourneyMutation,
+    queryClient
   ]);
   
   // Auto-save functionality
