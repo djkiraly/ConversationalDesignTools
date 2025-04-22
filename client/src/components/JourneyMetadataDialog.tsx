@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -51,6 +51,13 @@ export default function JourneyMetadataDialog({
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery<any[]>({
     queryKey: ['/api/customers']
   });
+  
+  // Update form values when metadata changes (e.g., when selecting a different journey)
+  useEffect(() => {
+    setCustomerName(metadata.customerName || "");
+    setWorkflowIntent(metadata.workflowIntent || "");
+    setNotes(metadata.notes || "");
+  }, [metadata]);
 
 
   const handleSubmit = () => {
