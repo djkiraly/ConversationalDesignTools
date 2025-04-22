@@ -3,6 +3,7 @@ import {
   useCases, 
   flowNodes,
   settings,
+  customerJourneys,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -12,7 +13,10 @@ import {
   type InsertFlowNode,
   type Setting,
   type InsertSetting,
-  type UpdateSetting
+  type UpdateSetting,
+  type CustomerJourney,
+  type InsertCustomerJourney,
+  type UpdateCustomerJourney
 } from "@shared/schema";
 
 // Storage interface
@@ -41,6 +45,13 @@ export interface IStorage {
   createSetting(setting: InsertSetting): Promise<Setting>;
   updateSetting(key: string, setting: UpdateSetting): Promise<Setting>;
   deleteSetting(key: string): Promise<void>;
+  
+  // Customer Journey management
+  getAllCustomerJourneys(): Promise<CustomerJourney[]>;
+  getCustomerJourney(id: number): Promise<CustomerJourney | undefined>;
+  createCustomerJourney(journey: InsertCustomerJourney): Promise<CustomerJourney>;
+  updateCustomerJourney(id: number, journey: UpdateCustomerJourney): Promise<CustomerJourney>;
+  deleteCustomerJourney(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {

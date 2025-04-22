@@ -4,6 +4,7 @@ import {
   useCases, 
   flowNodes,
   settings,
+  customerJourneys,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -13,7 +14,10 @@ import {
   type InsertFlowNode,
   type Setting,
   type InsertSetting,
-  type UpdateSetting
+  type UpdateSetting,
+  type CustomerJourney,
+  type InsertCustomerJourney,
+  type UpdateCustomerJourney
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -164,6 +168,50 @@ export class DbStorage implements IStorage {
 
   async deleteSetting(key: string): Promise<void> {
     await db.delete(settings).where(eq(settings.key, key));
+  }
+  
+  // Customer Journey methods
+  async getAllCustomerJourneys(): Promise<CustomerJourney[]> {
+    const results = await db.select()
+      .from(customerJourneys)
+      .orderBy(customerJourneys.updatedAt);
+    return results;
+  }
+  
+  async getCustomerJourney(id: number): Promise<CustomerJourney | undefined> {
+    const results = await db.select().from(customerJourneys).where(eq(customerJourneys.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createCustomerJourney(journeyData: InsertCustomerJourney): Promise<CustomerJourney> {
+    const now = new Date();
+    const result = await db.insert(customerJourneys).values({
+      ...journeyData,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return result[0];
+  }
+  
+  async updateCustomerJourney(id: number, updateData: UpdateCustomerJourney): Promise<CustomerJourney> {
+    const existingJourney = await this.getCustomerJourney(id);
+    if (!existingJourney) {
+      throw new Error(`Customer journey with id ${id} not found`);
+    }
+    
+    const result = await db.update(customerJourneys)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(customerJourneys.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteCustomerJourney(id: number): Promise<void> {
+    await db.delete(customerJourneys).where(eq(customerJourneys.id, id));
   }
 
   // Function to seed initial data after migrations

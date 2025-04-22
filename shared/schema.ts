@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -81,6 +81,28 @@ export const updateSettingSchema = createInsertSchema(settings).pick({
   value: true,
 });
 
+// Customer Journey model
+export const customerJourneys = pgTable("customer_journeys", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  nodes: json("nodes").notNull(), // Storing ReactFlow nodes
+  edges: json("edges").notNull(), // Storing ReactFlow edges
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCustomerJourneySchema = createInsertSchema(customerJourneys).pick({
+  title: true,
+  nodes: true,
+  edges: true,
+});
+
+export const updateCustomerJourneySchema = createInsertSchema(customerJourneys).pick({
+  title: true,
+  nodes: true,
+  edges: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -95,6 +117,10 @@ export type FlowNode = typeof flowNodes.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type UpdateSetting = z.infer<typeof updateSettingSchema>;
 export type Setting = typeof settings.$inferSelect;
+
+export type InsertCustomerJourney = z.infer<typeof insertCustomerJourneySchema>;
+export type UpdateCustomerJourney = z.infer<typeof updateCustomerJourneySchema>;
+export type CustomerJourney = typeof customerJourneys.$inferSelect;
 
 // Flow and conversation types
 export interface Message {
