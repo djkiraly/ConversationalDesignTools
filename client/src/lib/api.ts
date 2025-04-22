@@ -169,7 +169,7 @@ export interface GeneratedJourney {
 
 export async function generateAIJourney(description: string): Promise<GeneratedJourney> {
   const response = await apiRequest<{ success: boolean; journey: GeneratedJourney }>(
-    '/api/customer-journeys/generate-ai-journey',
+    '/api/generate-ai-journey',
     'POST',
     { description }
   );

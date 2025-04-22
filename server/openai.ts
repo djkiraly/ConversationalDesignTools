@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import { Node, Edge, XYPosition, MarkerType } from 'reactflow';
 
 // Constants for the OpenAI integration
 export const OPENAI_API_KEY_SETTING = 'openai.apiKey';
@@ -262,8 +261,8 @@ export async function generateAIJourney(
 ): Promise<{
   success: boolean;
   journey?: {
-    nodes: Node[];
-    edges: Edge[];
+    nodes: any[];
+    edges: any[];
   };
   error?: string;
 }> {
@@ -324,9 +323,9 @@ Connections should form a logical flow from one step to the next.`;
     const journeyData = JSON.parse(content);
     
     // Transform the returned data into ReactFlow nodes and edges
-    const nodes: Node[] = journeyData.steps.map((step: any, index: number) => {
+    const nodes: any[] = journeyData.steps.map((step: any, index: number) => {
       // Calculate position - place nodes in a horizontal line
-      const position: XYPosition = {
+      const position = {
         x: 100 + (index * 250),
         y: 100
       };
@@ -343,7 +342,7 @@ Connections should form a logical flow from one step to the next.`;
       };
     });
     
-    const edges: Edge[] = journeyData.connections.map((connection: any, index: number) => ({
+    const edges: any[] = journeyData.connections.map((connection: any, index: number) => ({
       id: `e${connection.source}-${connection.target}`,
       source: connection.source,
       target: connection.target,
@@ -351,7 +350,7 @@ Connections should form a logical flow from one step to the next.`;
       animated: true,
       style: { stroke: '#2563eb' },
       markerEnd: {
-        type: MarkerType.ArrowClosed,
+        type: 'arrow',
         color: '#2563eb',
       }
     }));
