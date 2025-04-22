@@ -2,7 +2,14 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertUseCaseSchema, updateUseCaseSchema, insertSettingSchema, updateSettingSchema } from "@shared/schema";
+import { 
+  insertUseCaseSchema, 
+  updateUseCaseSchema, 
+  insertSettingSchema, 
+  updateSettingSchema,
+  insertCustomerJourneySchema,
+  updateCustomerJourneySchema
+} from "@shared/schema";
 import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, OPENAI_API_KEY_SETTING } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -311,6 +318,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         error: (error as Error).message || 'Failed to get conversation flow suggestion from OpenAI' 
       });
+    }
+  });
+
+  // Customer Journey APIs
+  app.get('/api/customer-journeys', async (_req, res) => {
+    try {
+      const journeys = await storage.getAllCustomerJourneys();
+      res.json(journeys);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/customer-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const journey = await storage.getCustomerJourney(id);
+      if (!journey) {
+        return res.status(404).json({ error: "Customer journey not found" });
+      }
+
+      res.json(journey);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/customer-journeys', async (req, res) => {
+    try {
+      const result = insertCustomerJourneySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const newJourney = await storage.createCustomerJourney(result.data);
+      res.status(201).json(newJourney);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.put('/api/customer-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourney = await storage.getCustomerJourney(id);
+      if (!existingJourney) {
+        return res.status(404).json({ error: "Customer journey not found" });
+      }
+
+      const result = updateCustomerJourneySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedJourney = await storage.updateCustomerJourney(id, result.data);
+      res.json(updatedJourney);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.delete('/api/customer-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourney = await storage.getCustomerJourney(id);
+      if (!existingJourney) {
+        return res.status(404).json({ error: "Customer journey not found" });
+      }
+
+      await storage.deleteCustomerJourney(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 

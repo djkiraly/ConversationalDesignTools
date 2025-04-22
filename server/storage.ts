@@ -59,22 +59,26 @@ export class MemStorage implements IStorage {
   private useCases: Map<number, UseCase>;
   private flowNodes: Map<number, FlowNode>;
   private settings: Map<string, Setting>;
+  private customerJourneys: Map<number, CustomerJourney>;
   
   private userCurrentId: number;
   private useCaseCurrentId: number;
   private flowNodeCurrentId: number;
   private settingCurrentId: number;
+  private customerJourneyCurrentId: number;
 
   constructor() {
     this.users = new Map();
     this.useCases = new Map();
     this.flowNodes = new Map();
     this.settings = new Map();
+    this.customerJourneys = new Map();
     
     this.userCurrentId = 1;
     this.useCaseCurrentId = 1;
     this.flowNodeCurrentId = 1;
     this.settingCurrentId = 1;
+    this.customerJourneyCurrentId = 1;
     
     // Add some sample use cases for testing
     this.addSampleUseCases();
@@ -238,6 +242,52 @@ export class MemStorage implements IStorage {
 
   async deleteSetting(key: string): Promise<void> {
     this.settings.delete(key);
+  }
+
+  // Customer Journey methods
+  async getAllCustomerJourneys(): Promise<CustomerJourney[]> {
+    return Array.from(this.customerJourneys.values()).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+
+  async getCustomerJourney(id: number): Promise<CustomerJourney | undefined> {
+    return this.customerJourneys.get(id);
+  }
+
+  async createCustomerJourney(insertJourney: InsertCustomerJourney): Promise<CustomerJourney> {
+    const id = this.customerJourneyCurrentId++;
+    const now = new Date();
+    const journey: CustomerJourney = {
+      id,
+      title: insertJourney.title,
+      nodes: insertJourney.nodes,
+      edges: insertJourney.edges,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.customerJourneys.set(id, journey);
+    return journey;
+  }
+
+  async updateCustomerJourney(id: number, updateData: UpdateCustomerJourney): Promise<CustomerJourney> {
+    const existingJourney = this.customerJourneys.get(id);
+    if (!existingJourney) {
+      throw new Error(`Customer journey with id ${id} not found`);
+    }
+    
+    const updatedJourney: CustomerJourney = {
+      ...existingJourney,
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    this.customerJourneys.set(id, updatedJourney);
+    return updatedJourney;
+  }
+
+  async deleteCustomerJourney(id: number): Promise<void> {
+    this.customerJourneys.delete(id);
   }
   
   // Helper method to add default settings
