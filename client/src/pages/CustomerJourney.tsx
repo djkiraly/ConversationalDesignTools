@@ -57,7 +57,8 @@ import {
   deleteCustomerJourney, 
   deleteAllCustomerJourneys,
   CustomerJourney as CustomerJourneyType,
-  getCustomerJourneys
+  getCustomerJourneys,
+  generateJourneySummary
 } from "../lib/api";
 
 // Node component with edit functionality
@@ -496,7 +497,8 @@ export default function CustomerJourney() {
         setJourneyMetadata({
           customerName: journey.customerName || '',
           workflowIntent: journey.workflowIntent || '',
-          notes: journey.notes || ''
+          notes: journey.notes || '',
+          summary: journey.summary || ''
         });
         
         toast({
@@ -562,6 +564,52 @@ export default function CustomerJourney() {
       }
     }
   }, [deleteAllJourneysMutation, setNodes, setEdges]);
+  
+  // Handler for generating a summary using AI
+  const handleGenerateSummary = useCallback(async (): Promise<string> => {
+    if (!currentJourneyId) {
+      toast({
+        title: "Save Required",
+        description: "Please save your journey first before generating a summary.",
+        variant: "destructive",
+        duration: 3000
+      });
+      return "";
+    }
+    
+    try {
+      setIsLoading(true);
+      const response = await generateJourneySummary(currentJourneyId);
+      if (response && response.summary) {
+        // Update local state with the new summary
+        setJourneyMetadata(prev => ({
+          ...prev,
+          summary: response.summary || ""
+        }));
+        
+        toast({
+          title: "Summary Generated",
+          description: "Journey summary has been generated successfully.",
+          duration: 3000
+        });
+        
+        return response.summary;
+      } else {
+        throw new Error("Failed to generate summary");
+      }
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+      toast({
+        title: "Summary Generation Failed",
+        description: error instanceof Error ? error.message : "There was an error generating the summary.",
+        variant: "destructive",
+        duration: 3000
+      });
+      return "";
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentJourneyId, toast]);
   
   // Handler for updating journey metadata
   const handleUpdateMetadata = useCallback((metadata: {
@@ -821,7 +869,8 @@ export default function CustomerJourney() {
     setJourneyMetadata({
       customerName: "",
       workflowIntent: "",
-      notes: ""
+      notes: "",
+      summary: ""
     });
     
     // If a template was selected, load it
@@ -1128,7 +1177,8 @@ export default function CustomerJourney() {
               setJourneyMetadata({
                 customerName: "",
                 workflowIntent: "",
-                notes: ""
+                notes: "",
+                summary: ""
               });
             }}
           >
