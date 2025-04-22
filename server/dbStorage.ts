@@ -5,6 +5,7 @@ import {
   flowNodes,
   settings,
   customerJourneys,
+  customers,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -17,7 +18,10 @@ import {
   type UpdateSetting,
   type CustomerJourney,
   type InsertCustomerJourney,
-  type UpdateCustomerJourney
+  type UpdateCustomerJourney,
+  type Customer,
+  type InsertCustomer,
+  type UpdateCustomer
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -212,6 +216,50 @@ export class DbStorage implements IStorage {
   
   async deleteCustomerJourney(id: number): Promise<void> {
     await db.delete(customerJourneys).where(eq(customerJourneys.id, id));
+  }
+  
+  // Customer methods
+  async getAllCustomers(): Promise<Customer[]> {
+    const results = await db.select()
+      .from(customers)
+      .orderBy(customers.companyName);
+    return results;
+  }
+  
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    const results = await db.select().from(customers).where(eq(customers.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createCustomer(customerData: InsertCustomer): Promise<Customer> {
+    const now = new Date();
+    const result = await db.insert(customers).values({
+      ...customerData,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return result[0];
+  }
+  
+  async updateCustomer(id: number, updateData: UpdateCustomer): Promise<Customer> {
+    const existingCustomer = await this.getCustomer(id);
+    if (!existingCustomer) {
+      throw new Error(`Customer with id ${id} not found`);
+    }
+    
+    const result = await db.update(customers)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(customers.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteCustomer(id: number): Promise<void> {
+    await db.delete(customers).where(eq(customers.id, id));
   }
 
   // Function to seed initial data after migrations

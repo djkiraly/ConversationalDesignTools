@@ -150,3 +150,35 @@ export interface ConversationStep {
 export interface ParsedFlow {
   steps: ConversationStep[];
 }
+
+// Customers model
+export const customers = pgTable("customers", {
+  id: serial("id").primaryKey(),
+  companyName: text("company_name").notNull(),
+  companyWebsite: text("company_website"),
+  primaryContactName: text("primary_contact_name").notNull(),
+  primaryContactPhone: text("primary_contact_phone"),
+  primaryContactEmail: text("primary_contact_email").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).pick({
+  companyName: true,
+  companyWebsite: true,
+  primaryContactName: true,
+  primaryContactPhone: true,
+  primaryContactEmail: true,
+});
+
+export const updateCustomerSchema = createInsertSchema(customers).pick({
+  companyName: true,
+  companyWebsite: true,
+  primaryContactName: true,
+  primaryContactPhone: true,
+  primaryContactEmail: true,
+});
+
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
+export type Customer = typeof customers.$inferSelect;

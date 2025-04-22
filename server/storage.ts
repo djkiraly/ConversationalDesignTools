@@ -4,6 +4,7 @@ import {
   flowNodes,
   settings,
   customerJourneys,
+  customers,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -16,7 +17,10 @@ import {
   type UpdateSetting,
   type CustomerJourney,
   type InsertCustomerJourney,
-  type UpdateCustomerJourney
+  type UpdateCustomerJourney,
+  type Customer,
+  type InsertCustomer,
+  type UpdateCustomer
 } from "@shared/schema";
 
 // Storage interface
@@ -52,6 +56,13 @@ export interface IStorage {
   createCustomerJourney(journey: InsertCustomerJourney): Promise<CustomerJourney>;
   updateCustomerJourney(id: number, journey: UpdateCustomerJourney): Promise<CustomerJourney>;
   deleteCustomerJourney(id: number): Promise<void>;
+  
+  // Customer management
+  getAllCustomers(): Promise<Customer[]>;
+  getCustomer(id: number): Promise<Customer | undefined>;
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: number, customer: UpdateCustomer): Promise<Customer>;
+  deleteCustomer(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -60,12 +71,14 @@ export class MemStorage implements IStorage {
   private flowNodes: Map<number, FlowNode>;
   private settings: Map<string, Setting>;
   private customerJourneys: Map<number, CustomerJourney>;
+  private customers: Map<number, Customer>;
   
   private userCurrentId: number;
   private useCaseCurrentId: number;
   private flowNodeCurrentId: number;
   private settingCurrentId: number;
   private customerJourneyCurrentId: number;
+  private customerCurrentId: number;
 
   constructor() {
     this.users = new Map();
