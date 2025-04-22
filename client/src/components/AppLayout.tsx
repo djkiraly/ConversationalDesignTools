@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, Settings, Map } from 'lucide-react';
+import { CheckCircle2, Settings, Map } from 'lucide-react';
 import SettingsDialog from './SettingsDialog';
 
 interface AppLayoutProps {
@@ -28,7 +28,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-center items-center gap-8 shadow-lg">
         <Link href="/">
           <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location.startsWith('/use-case/') ? 'text-primary' : 'text-muted-foreground'}`}>
-            <Home className="h-6 w-6" />
+            <CheckCircle2 className="h-6 w-6" />
             <span className="text-xs mt-1">Happy Path</span>
           </div>
         </Link>
