@@ -50,6 +50,7 @@ interface EditorProps {
 
 const formSchema = updateUseCaseSchema.extend({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  customer: z.string().optional(),
   conversationFlow: z.string().min(10, { message: "Please enter a valid conversation" }),
 });
 
@@ -209,11 +210,13 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     defaultValues: {
       title: useCase?.title || "",
       description: useCase?.description || "",
+      customer: "",
       conversationFlow: useCase?.conversationFlow || "",
     },
     values: {
       title: useCase?.title || "",
       description: useCase?.description || "",
+      customer: "",
       conversationFlow: useCase?.conversationFlow || "",
     }
   });
