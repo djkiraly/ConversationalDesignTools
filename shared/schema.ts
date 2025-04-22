@@ -85,6 +85,9 @@ export const updateSettingSchema = createInsertSchema(settings).pick({
 export const customerJourneys = pgTable("customer_journeys", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  customerName: text("customer_name"),
+  workflowIntent: text("workflow_intent"),
+  notes: text("notes"),
   nodes: json("nodes").notNull(), // Storing ReactFlow nodes
   edges: json("edges").notNull(), // Storing ReactFlow edges
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -93,12 +96,18 @@ export const customerJourneys = pgTable("customer_journeys", {
 
 export const insertCustomerJourneySchema = createInsertSchema(customerJourneys).pick({
   title: true,
+  customerName: true,
+  workflowIntent: true,
+  notes: true,
   nodes: true,
   edges: true,
 });
 
 export const updateCustomerJourneySchema = createInsertSchema(customerJourneys).pick({
   title: true,
+  customerName: true,
+  workflowIntent: true,
+  notes: true,
   nodes: true,
   edges: true,
 });

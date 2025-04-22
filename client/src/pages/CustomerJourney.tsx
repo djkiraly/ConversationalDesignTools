@@ -37,7 +37,8 @@ import {
   Star, 
   Search, 
   Check, 
-  Loader2
+  Loader2,
+  Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +48,7 @@ import NewFlowDialog from "../components/NewFlowDialog";
 import EditableTitle from "../components/EditableTitle";
 import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
 import EditNodeDialog from "../components/EditNodeDialog";
+import JourneyMetadataDialog from "../components/JourneyMetadataDialog";
 import { 
   fetchAllCustomerJourneys, 
   fetchCustomerJourney, 
@@ -258,6 +260,17 @@ export default function CustomerJourney() {
     description: ""
   });
   
+  // Journey metadata state
+  const [journeyMetadata, setJourneyMetadata] = useState<{
+    customerName: string;
+    workflowIntent: string;
+    notes: string;
+  }>({
+    customerName: "",
+    workflowIntent: "",
+    notes: ""
+  });
+  
   // React Query for fetching all journeys
   const { 
     data: journeysData, 
@@ -361,6 +374,9 @@ export default function CustomerJourney() {
     try {
       const journeyData = {
         title: journeyTitle,
+        customerName: journeyMetadata.customerName,
+        workflowIntent: journeyMetadata.workflowIntent,
+        notes: journeyMetadata.notes,
         nodes,
         edges,
       };
@@ -399,6 +415,7 @@ export default function CustomerJourney() {
     nodes, 
     edges, 
     journeyTitle, 
+    journeyMetadata,
     currentJourneyId, 
     toast, 
     createJourneyMutation, 
@@ -432,6 +449,13 @@ export default function CustomerJourney() {
         setEdges(journey.edges || []);
         setCurrentJourneyId(journey.id);
         
+        // Load metadata
+        setJourneyMetadata({
+          customerName: journey.customerName || '',
+          workflowIntent: journey.workflowIntent || '',
+          notes: journey.notes || ''
+        });
+        
         toast({
           title: "Journey Loaded",
           description: `Loaded "${journey.title || 'Untitled Journey'}"`,
@@ -461,6 +485,13 @@ export default function CustomerJourney() {
         setEdges([]);
         setJourneyTitle("New Customer Journey");
         setCurrentJourneyId(null);
+        
+        // Reset metadata
+        setJourneyMetadata({
+          customerName: "",
+          workflowIntent: "",
+          notes: ""
+        });
       }
     } catch (error) {
       console.error("Failed to delete journey:", error);
