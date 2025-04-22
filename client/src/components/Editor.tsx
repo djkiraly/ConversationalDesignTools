@@ -13,6 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormField,
@@ -82,6 +89,11 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
   // Fetch agent persona from settings
   const { data: settings, isLoading: isLoadingSettings } = useQuery<Setting[]>({
     queryKey: ['/api/settings']
+  });
+  
+  // Fetch customers for the dropdown
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery<any[]>({
+    queryKey: ['/api/customers']
   });
 
   // Check if OpenAI API key is available
@@ -210,13 +222,13 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     defaultValues: {
       title: useCase?.title || "",
       description: useCase?.description || "",
-      customer: "",
+      customer: useCase?.customer || "",
       conversationFlow: useCase?.conversationFlow || "",
     },
     values: {
       title: useCase?.title || "",
       description: useCase?.description || "",
-      customer: "",
+      customer: useCase?.customer || "",
       conversationFlow: useCase?.conversationFlow || "",
     }
   });
@@ -304,8 +316,8 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
     onSave({
       conversationFlow: suggestion,
       title: form.getValues().title,
-      description: form.getValues().description
-      // The customer field is stored locally in the form but not in the database schema
+      description: form.getValues().description,
+      customer: form.getValues().customer
     });
     
     toast({
@@ -399,16 +411,37 @@ export default function Editor({ useCase, isLoading, onSave }: EditorProps) {
                 <FormItem>
                   <div className="flex justify-between items-center">
                     <FormLabel>Customer</FormLabel>
+                    {isLoadingCustomers && (
+                      <span className="text-xs text-neutral-dark/60 flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </span>
+                    )}
                   </div>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter customer name or identifier" 
-                      {...field} 
-                    />
+                    <Select 
+                      disabled={isLoadingCustomers} 
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.companyName}>
+                            {customer.companyName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                   <div className="text-xs text-neutral-dark/60 mt-1">
-                    Identify who the customer is in this conversation flow
+                    Select a customer for this conversation flow
                   </div>
                 </FormItem>
               )}
