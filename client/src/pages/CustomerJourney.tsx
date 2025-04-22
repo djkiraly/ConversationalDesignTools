@@ -1146,7 +1146,6 @@ export default function CustomerJourney() {
             <JourneyMetadataDialog
               metadata={journeyMetadata}
               onUpdateMetadata={handleUpdateMetadata}
-              onGenerateSummary={handleGenerateSummary}
             />
             
             {/* Display metadata when available */}

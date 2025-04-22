@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertCircle, Pencil, RefreshCw, Sparkles } from "lucide-react";
+import { AlertCircle, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,20 +29,17 @@ interface JourneyMetadataDialogProps {
     notes: string;
     summary?: string;
   }) => void;
-  onGenerateSummary?: () => Promise<string>;
 }
 
 export default function JourneyMetadataDialog({
   metadata,
   onUpdateMetadata,
-  onGenerateSummary,
 }: JourneyMetadataDialogProps) {
   const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState(metadata.customerName || "");
   const [workflowIntent, setWorkflowIntent] = useState(metadata.workflowIntent || "");
   const [notes, setNotes] = useState(metadata.notes || "");
   const [summary, setSummary] = useState(metadata.summary || "");
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState("");
 
   const handleSubmit = () => {
