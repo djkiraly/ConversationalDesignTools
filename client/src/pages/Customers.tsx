@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, LoaderCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -42,7 +42,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { LoaderCircle } from "lucide-react";
 
 // Extended form schema with validation rules
 const formSchema = insertCustomerSchema.extend({
@@ -98,9 +97,9 @@ export default function Customers() {
     setCurrentCustomer(customer);
     form.reset({
       companyName: customer.companyName,
-      companyWebsite: customer.companyWebsite || "",
+      companyWebsite: customer.companyWebsite ?? "",
       primaryContactName: customer.primaryContactName,
-      primaryContactPhone: customer.primaryContactPhone || "",
+      primaryContactPhone: customer.primaryContactPhone ?? "",
       primaryContactEmail: customer.primaryContactEmail,
     });
     setIsEditDialogOpen(true);
@@ -254,9 +253,9 @@ export default function Customers() {
                   {customers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.companyName}</TableCell>
-                      <TableCell>{customer.companyWebsite}</TableCell>
+                      <TableCell>{customer.companyWebsite || ""}</TableCell>
                       <TableCell>{customer.primaryContactName}</TableCell>
-                      <TableCell>{customer.primaryContactPhone}</TableCell>
+                      <TableCell>{customer.primaryContactPhone || ""}</TableCell>
                       <TableCell>{customer.primaryContactEmail}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -312,11 +311,15 @@ export default function Customers() {
               <FormField
                 control={form.control}
                 name="companyWebsite"
-                render={({ field }) => (
+                render={({ field: { value, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Company Website</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="https://example.com" />
+                      <Input 
+                        {...fieldProps}
+                        value={value || ""}
+                        placeholder="https://example.com"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -338,11 +341,15 @@ export default function Customers() {
               <FormField
                 control={form.control}
                 name="primaryContactPhone"
-                render={({ field }) => (
+                render={({ field: { value, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Primary Contact Phone</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter phone number" />
+                      <Input 
+                        {...fieldProps}
+                        value={value || ""}
+                        placeholder="Enter phone number"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -416,11 +423,15 @@ export default function Customers() {
               <FormField
                 control={form.control}
                 name="companyWebsite"
-                render={({ field }) => (
+                render={({ field: { value, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Company Website</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="https://example.com" />
+                      <Input 
+                        {...fieldProps}
+                        value={value || ""}
+                        placeholder="https://example.com"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -442,11 +453,15 @@ export default function Customers() {
               <FormField
                 control={form.control}
                 name="primaryContactPhone"
-                render={({ field }) => (
+                render={({ field: { value, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Primary Contact Phone</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter phone number" />
+                      <Input 
+                        {...fieldProps}
+                        value={value || ""}
+                        placeholder="Enter phone number"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
