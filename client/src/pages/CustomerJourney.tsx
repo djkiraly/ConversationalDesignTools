@@ -410,6 +410,7 @@ export default function CustomerJourney() {
         customerName: journeyMetadata.customerName || "",
         workflowIntent: journeyMetadata.workflowIntent || "",
         notes: journeyMetadata.notes || "",
+        summary: journeyMetadata.summary || "",
         nodes,
         edges,
       };
@@ -1144,6 +1145,7 @@ export default function CustomerJourney() {
             <JourneyMetadataDialog
               metadata={journeyMetadata}
               onUpdateMetadata={handleUpdateMetadata}
+              onGenerateSummary={handleGenerateSummary}
             />
             
             {/* Display metadata when available */}
