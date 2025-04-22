@@ -771,6 +771,14 @@ export default function CustomerJourney() {
     // Clear current flow
     setNodes(initialNodes);
     setEdges([]);
+    setCurrentJourneyId(null);
+    
+    // Reset metadata
+    setJourneyMetadata({
+      customerName: "",
+      workflowIntent: "",
+      notes: ""
+    });
     
     // If a template was selected, load it
     if (templateType) {
@@ -1031,12 +1039,35 @@ export default function CustomerJourney() {
       />
 
       <div className="bg-background p-4 border-b flex justify-between items-center">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Map className="h-6 w-6" />
             Customer Journey Design
           </h1>
-          <p className="text-muted-foreground">Design AI-powered customer interaction flows</p>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">Design AI-powered customer interaction flows</p>
+            
+            {/* Journey metadata editor */}
+            <JourneyMetadataDialog
+              metadata={journeyMetadata}
+              onUpdateMetadata={handleUpdateMetadata}
+            />
+            
+            {/* Display metadata when available */}
+            {journeyMetadata.customerName && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>{journeyMetadata.customerName}</span>
+              </Badge>
+            )}
+            
+            {journeyMetadata.workflowIntent && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Info className="h-4 w-4" />
+                <span>{journeyMetadata.workflowIntent}</span>
+              </Badge>
+            )}
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
@@ -1049,6 +1080,12 @@ export default function CustomerJourney() {
               setEdges([]);
               setCurrentJourneyId(null);
               setJourneyTitle("New Customer Journey");
+              // Reset metadata
+              setJourneyMetadata({
+                customerName: "",
+                workflowIntent: "",
+                notes: ""
+              });
             }}
           >
             <Trash2 className="mr-2 h-4 w-4" />
