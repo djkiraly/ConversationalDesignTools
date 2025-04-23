@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -15,9 +15,13 @@ import ReactFlow, {
   useEdgesState,
   XYPosition,
   Position,
-  Handle
+  Handle,
+  getRectOfNodes,
+  getTransformForBounds
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -205,6 +209,7 @@ export default function CustomerJourney() {
   const queryClient = useQueryClient();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
