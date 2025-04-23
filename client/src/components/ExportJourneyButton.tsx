@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, AlignmentType, BorderStyle } from 'docx';
 
 interface ExportJourneyButtonProps {
   title: string;
@@ -36,106 +36,214 @@ export default function ExportJourneyButton({
       setIsExporting(true);
       toast({
         title: "Preparing Export",
-        description: "Generating PDF document...",
+        description: "Generating Word document...",
         duration: 3000
       });
       
-      // Create a new PDF document
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+      // Create a new docx Document
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // Document title
+            new Paragraph({
+              text: title,
+              heading: HeadingLevel.HEADING_1,
+              thematicBreak: true,
+              spacing: {
+                after: 300,
+              },
+            }),
+            
+            // Customer information and date
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: metadata.customerName ? `Customer: ${metadata.customerName}` : "",
+                  bold: true,
+                }),
+              ],
+              spacing: {
+                after: 200,
+              },
+            }),
+            
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Generated: ${new Date().toLocaleDateString()}`,
+                  italics: true,
+                }),
+              ],
+              spacing: {
+                after: 400,
+              },
+            }),
+            
+            // Journey Description section
+            ...(metadata.workflowIntent ? [
+              new Paragraph({
+                text: "Journey Description",
+                heading: HeadingLevel.HEADING_2,
+                spacing: {
+                  before: 300,
+                  after: 200,
+                },
+              }),
+              new Paragraph({
+                text: metadata.workflowIntent,
+                spacing: {
+                  after: 300,
+                },
+              }),
+            ] : []),
+            
+            // Notes section (if different from description)
+            ...(metadata.notes && metadata.notes !== metadata.workflowIntent ? [
+              new Paragraph({
+                text: "Notes",
+                heading: HeadingLevel.HEADING_2,
+                spacing: {
+                  before: 300,
+                  after: 200,
+                },
+              }),
+              new Paragraph({
+                text: metadata.notes,
+                spacing: {
+                  after: 300,
+                },
+              }),
+            ] : []),
+            
+            // Summary section
+            ...(metadata.summary ? [
+              new Paragraph({
+                text: "Journey Summary",
+                heading: HeadingLevel.HEADING_2,
+                spacing: {
+                  before: 300,
+                  after: 200,
+                },
+              }),
+              new Paragraph({
+                text: metadata.summary,
+                spacing: {
+                  after: 300,
+                },
+              }),
+            ] : []),
+            
+            // Journey Flow Stats
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Journey Flow (${nodes.length} nodes, ${edges.length} connections)`,
+                  bold: true,
+                  size: 28,
+                }),
+              ],
+              spacing: {
+                before: 400,
+                after: 200,
+              },
+              pageBreakBefore: true,
+            }),
+          ],
+        }],
       });
       
-      // Set title
-      pdf.setFontSize(18);
-      pdf.text(title, 20, 20);
-      
-      // Set customer information
-      pdf.setFontSize(12);
-      if (metadata.customerName) {
-        pdf.text(`Customer: ${metadata.customerName}`, 20, 30);
-      }
-      
-      // Add date
-      const currentDate = new Date().toLocaleDateString();
-      pdf.text(`Generated: ${currentDate}`, 20, 38);
-      
-      let yPosition = 48;
-      
-      // Add workflow intent/description
-      if (metadata.workflowIntent) {
-        pdf.setFontSize(14);
-        pdf.text("Journey Description", 20, yPosition);
-        pdf.setFontSize(10);
-        
-        // Split text into multiple lines to fit the page width
-        const splitWorkflowIntent = pdf.splitTextToSize(metadata.workflowIntent, 170);
-        pdf.text(splitWorkflowIntent, 20, yPosition + 8);
-        
-        yPosition += 8 + (splitWorkflowIntent.length * 5);
-      }
-      
-      // Add notes
-      if (metadata.notes && metadata.notes !== metadata.workflowIntent) {
-        pdf.setFontSize(14);
-        pdf.text("Notes", 20, yPosition + 10);
-        pdf.setFontSize(10);
-        
-        // Split text into multiple lines to fit the page width
-        const splitNotes = pdf.splitTextToSize(metadata.notes, 170);
-        pdf.text(splitNotes, 20, yPosition + 18);
-        
-        yPosition += 18 + (splitNotes.length * 5);
-      }
-      
-      // Add summary
-      if (metadata.summary) {
-        pdf.setFontSize(14);
-        pdf.text("Journey Summary", 20, yPosition + 10);
-        pdf.setFontSize(10);
-        
-        // Split text into multiple lines to fit the page width
-        const splitSummary = pdf.splitTextToSize(metadata.summary, 170);
-        pdf.text(splitSummary, 20, yPosition + 18);
-        
-        yPosition += 18 + (splitSummary.length * 5);
-      }
-      
-      // Add flow stats
-      pdf.setFontSize(14);
-      pdf.text(`Journey Flow (${nodes.length} nodes, ${edges.length} connections)`, 20, yPosition + 10);
-      
-      // Create a new page for the flow
-      pdf.addPage();
-      
-      // Capture flow as image
+      // Now add the flow diagram as an image
       if (flowRef.current) {
         const flowElement = flowRef.current.querySelector('.react-flow');
         if (flowElement) {
-          // Use html2canvas to capture the flow as an image
-          const canvas = await html2canvas(flowElement as HTMLElement, {
-            backgroundColor: '#ffffff',
-            scale: 2 // Higher quality
-          });
-          
-          // Calculate dimensions to fit it on the page
-          const imgData = canvas.toDataURL('image/png');
-          const imgProps = pdf.getImageProperties(imgData);
-          const pdfWidth = pdf.internal.pageSize.getWidth() - 40;
-          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-          
-          // Add the image to the PDF
-          pdf.addImage(imgData, 'PNG', 20, 20, pdfWidth, pdfHeight);
+          try {
+            // First fit the view to see all nodes
+            const reactFlowInstance = (flowRef.current as any).__reactFlowInstance;
+            if (reactFlowInstance) {
+              // Using fitView from the reactFlowInstance directly
+              reactFlowInstance.fitView({ padding: 0.2 });
+            }
+            
+            // Capture the flow as an image
+            const canvas = await html2canvas(flowElement as HTMLElement, {
+              backgroundColor: '#ffffff',
+              scale: 2, // Higher quality
+              width: flowElement.clientWidth,
+              height: flowElement.clientHeight,
+              useCORS: true,
+            });
+            
+            // Convert canvas to blob
+            const blob = await new Promise<Blob>((resolve) => {
+              canvas.toBlob((blob) => {
+                resolve(blob!);
+              }, 'image/png', 1);
+            });
+            
+            // Convert blob to base64
+            const base64Image = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            
+            // Extract the actual base64 data without the data URL prefix
+            const base64Data = base64Image.split(',')[1];
+            
+            // Add the image to the document
+            const flowImageParagraph = new Paragraph({
+              children: [
+                new ImageRun({
+                  data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
+                  transformation: {
+                    width: 550, // Width in EMUs (English Metric Units)
+                    height: 350, // Height in EMUs (maintain aspect ratio)
+                  },
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            });
+            
+            // Add the image paragraph to the document
+            doc.addSection({
+              children: [flowImageParagraph],
+            });
+          } catch (imageError) {
+            console.error("Failed to capture flow image:", imageError);
+            
+            // Add a paragraph indicating image capture failure
+            doc.addSection({
+              children: [
+                new Paragraph({
+                  text: "Flow diagram image could not be captured.",
+                  spacing: {
+                    before: 200,
+                  },
+                }),
+              ],
+            });
+          }
         }
       }
       
-      // Save the PDF
-      pdf.save(`${title.replace(/\s+/g, '_')}_Journey.pdf`);
+      // Generate and save the Word document
+      const buffer = await Packer.toBuffer(doc);
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title.replace(/\s+/g, '_')}_Journey.docx`;
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
       
       toast({
         title: "Export Complete",
-        description: "Journey exported as PDF successfully.",
+        description: "Journey exported as Word document successfully.",
         duration: 3000
       });
     } catch (error) {
