@@ -7,8 +7,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Pencil, Users } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,11 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Customer } from "../lib/api";
+import { useQuery } from "@tanstack/react-query";
+
 
 interface JourneyMetadataDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   metadata: {
     customerName: string;
     workflowIntent: string;
@@ -36,29 +36,30 @@ interface JourneyMetadataDialogProps {
     notes: string;
     summary?: string;
   }) => void;
-  customers: Customer[];
 }
 
 export default function JourneyMetadataDialog({
-  open,
-  onOpenChange,
   metadata,
   onUpdateMetadata,
-  customers = []
 }: JourneyMetadataDialogProps) {
+  const [open, setOpen] = useState(false);
   const [customerName, setCustomerName] = useState(metadata.customerName || "");
   const [workflowIntent, setWorkflowIntent] = useState(metadata.workflowIntent || "");
   const [notes, setNotes] = useState(metadata.notes || "");
   
-  // Update form values when metadata or open state changes
+  // Fetch customers for the dropdown
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery<any[]>({
+    queryKey: ['/api/customers']
+  });
+  
+  // Update form values when metadata changes (e.g., when selecting a different journey)
   useEffect(() => {
-    if (open) {
-      console.log("Metadata changed in dialog:", metadata);
-      setCustomerName(metadata.customerName || "");
-      setWorkflowIntent(metadata.workflowIntent || "");
-      setNotes(metadata.notes || "");
-    }
-  }, [metadata, open]);
+    console.log("Metadata changed in dialog:", metadata);
+    setCustomerName(metadata.customerName || "");
+    setWorkflowIntent(metadata.workflowIntent || "");
+    setNotes(metadata.notes || "");
+  }, [metadata]);
+
 
   const handleSubmit = () => {
     onUpdateMetadata({
@@ -67,11 +68,29 @@ export default function JourneyMetadataDialog({
       notes,
       summary: metadata.summary, // Keep existing summary
     });
-    onOpenChange(false);
+    setOpen(false);
   };
   
+
+
+  const handleOpen = (openState: boolean) => {
+    if (openState) {
+      // Reset form with current metadata when opening
+      setCustomerName(metadata.customerName || "");
+      setWorkflowIntent(metadata.workflowIntent || "");
+      setNotes(metadata.notes || "");
+    }
+    setOpen(openState);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1">
+          <Pencil className="h-4 w-4" />
+          Edit Metadata
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Journey Metadata</DialogTitle>
@@ -85,25 +104,39 @@ export default function JourneyMetadataDialog({
               Customer
             </Label>
             <div className="col-span-3">
-              <div className="flex-grow">
-                <Select 
-                  value={customerName || ""}
-                  onValueChange={setCustomerName}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.companyName}>
-                        {customer.companyName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center justify-between">
+                <div className="flex-grow">
+                  <Select 
+                    disabled={isLoadingCustomers} 
+                    value={customerName || ""}
+                    onValueChange={(value) => {
+                      console.log("Customer selected:", value);
+                      setCustomerName(value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.companyName}>
+                          {customer.companyName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isLoadingCustomers && (
+                  <span className="text-xs text-neutral-dark/60 flex items-center ml-2">
+                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading...
+                  </span>
+                )}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-xs text-neutral-dark/60 mt-1">
                 Select a customer for this journey
               </div>
             </div>

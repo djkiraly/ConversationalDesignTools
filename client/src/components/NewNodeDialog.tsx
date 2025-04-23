@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -16,9 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Plus } from "lucide-react";
 
 interface NewNodeDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAddNode: (nodeData: NodeCreationData) => void;
+  onCreateNode: (nodeData: NodeCreationData) => void;
 }
 
 export interface NodeCreationData {
@@ -27,24 +25,11 @@ export interface NodeCreationData {
   description: string;
 }
 
-export default function NewNodeDialog({ 
-  open, 
-  onOpenChange, 
-  onAddNode 
-}: NewNodeDialogProps) {
+export default function NewNodeDialog({ onCreateNode }: NewNodeDialogProps) {
+  const [open, setOpen] = useState(false);
   const [stepType, setStepType] = useState("Awareness");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-
-  // Reset form when dialog state changes
-  useEffect(() => {
-    if (open) {
-      // When opening, reset to defaults
-      setStepType("Awareness");
-      setTitle("");
-      setDescription("");
-    }
-  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,14 +45,22 @@ export default function NewNodeDialog({
       description
     };
     
-    onAddNode(nodeData);
+    onCreateNode(nodeData);
     
-    // Close dialog (form will reset on next open)
-    onOpenChange(false);
+    // Reset form and close dialog
+    setTitle("");
+    setDescription("");
+    setOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <Plus className="mr-1 h-4 w-4" />
+          Add Custom Node
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Journey Node</DialogTitle>
