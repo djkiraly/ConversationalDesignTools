@@ -118,6 +118,9 @@ export default function ActionPlan() {
     });
   };
   
+  // Fetch ROI parameters from settings
+  const { data: roiParams, isLoading: isLoadingROI } = useROIParameters();
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-8">
@@ -563,173 +566,194 @@ export default function ActionPlan() {
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                              <div>
-                                <div className="text-sm font-medium mb-1">Time saved per month</div>
-                                <div className="flex items-center">
-                                  <div className="text-2xl font-bold mr-2">
-                                    {formData.interactionVolume === '0-1000' ? '40-80' :
-                                     formData.interactionVolume === '1000-5000' ? '80-200' :
-                                     formData.interactionVolume === '5000-10000' ? '200-500' :
-                                     formData.interactionVolume === '10000-50000' ? '500-1,000' :
-                                     '1,000+'}
-                                  </div>
-                                  <div>hours</div>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Calculation: {formData.aiGoals.length} use cases × avg. handling time × 
-                                  {formData.interactionVolume === '0-1000' ? ' 5-10%' :
-                                   formData.interactionVolume === '1000-5000' ? ' 8-15%' :
-                                   formData.interactionVolume === '5000-10000' ? ' 12-20%' :
-                                   formData.interactionVolume === '10000-50000' ? ' 15-25%' :
-                                   ' 20-30%'} automation rate
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium mb-1">Est. agent replacement cost savings</div>
-                                <div className="text-2xl font-bold">
-                                  {formData.interactionVolume === '0-1000' ? '$5,000-$15,000' :
-                                   formData.interactionVolume === '1000-5000' ? '$15,000-$40,000' :
-                                   formData.interactionVolume === '5000-10000' ? '$40,000-$80,000' :
-                                   formData.interactionVolume === '10000-50000' ? '$80,000-$200,000' :
-                                   '$200,000+'}
-                                  <span className="text-sm ml-1 font-normal">per year</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Based on avg. $25/hr fully-loaded agent cost × {
-                                  formData.interactionVolume === '0-1000' ? '200-600' :
-                                  formData.interactionVolume === '1000-5000' ? '600-1,600' :
-                                  formData.interactionVolume === '5000-10000' ? '1,600-3,200' :
-                                  formData.interactionVolume === '10000-50000' ? '3,200-8,000' :
-                                  '8,000+'} hours saved annually
-                                </div>
-                              </div>
-                              
-                              <div className="bg-muted rounded-lg p-3 mt-2">
-                                <div className="text-sm font-medium">Cost-Benefit Analysis</div>
-                                <div className="text-xs mt-1">
-                                  <div className="flex justify-between">
-                                    <span>Avg. implementation cost:</span>
-                                    <span className="font-medium">{
-                                      formData.aiGoals.length <= 2 ? '$15,000-$30,000' :
-                                      formData.aiGoals.length <= 4 ? '$30,000-$60,000' :
-                                      '$60,000-$100,000'
-                                    }</span>
-                                  </div>
-                                  <div className="flex justify-between mt-1">
-                                    <span>Annual maintenance:</span>
-                                    <span className="font-medium">{
-                                      formData.interactionVolume === '0-1000' ? '$2,000-$5,000' :
-                                      formData.interactionVolume === '1000-5000' ? '$5,000-$10,000' :
-                                      formData.interactionVolume === '5000-10000' ? '$10,000-$20,000' :
-                                      formData.interactionVolume === '10000-50000' ? '$20,000-$40,000' :
-                                      '$40,000+'
-                                    }</span>
-                                  </div>
-                                </div>
-                              </div>
+                          {isLoadingROI ? (
+                            <div className="flex justify-center py-8">
+                              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                             </div>
-                            
-                            <div className="space-y-4">
-                              <div>
-                                <div className="text-sm font-medium mb-1">Est. increased customer satisfaction</div>
-                                <div className="text-2xl font-bold">
-                                  {formData.successMetrics.includes('csat-improvement') ? '15-25' :
-                                   formData.successMetrics.includes('faster-resolutions') ? '10-20' :
-                                   '5-15'}%
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Based on {
-                                    formData.successMetrics.includes('24-7-coverage') ? 'expanded availability, ' : ''
-                                  }{
-                                    formData.successMetrics.includes('faster-resolutions') ? 'response time reduction, ' : ''
-                                  }{
-                                    formData.successMetrics.includes('csat-improvement') ? 'consistency of service' : 'standard improvements'
-                                  }
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <div className="text-sm font-medium mb-1">Payback period</div>
-                                <div className="text-2xl font-bold">
-                                  {formData.aiGoals.length <= 2 ? '3-6' :
-                                   formData.aiGoals.length <= 4 ? '6-9' :
-                                   '9-12'}
-                                  <span className="text-sm ml-1 font-normal">months</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Implementation cost ÷ (monthly cost savings + revenue improvement)
-                                </div>
-                              </div>
-                              
-                              <div className="bg-muted rounded-lg p-3 mt-2">
-                                <div className="text-sm font-medium">Revenue Impact Potential</div>
-                                <div className="text-xs mt-1">
-                                  <div className="flex justify-between">
-                                    <span>Increased conversion rate:</span>
-                                    <span className="font-medium">{
-                                      formData.successMetrics.includes('increased-sales') ? '5-10%' : '2-5%'
-                                    }</span>
-                                  </div>
-                                  <div className="flex justify-between mt-1">
-                                    <span>Customer retention improvement:</span>
-                                    <span className="font-medium">{
-                                      formData.successMetrics.includes('csat-improvement') ? '10-15%' : '5-10%'
-                                    }</span>
-                                  </div>
-                                  <div className="flex justify-between mt-1">
-                                    <span>Customer lifetime value increase:</span>
-                                    <span className="font-medium">{
-                                      formData.primaryChannel === 'chat' || formData.primaryChannel === 'social' ? '15-25%' : '10-20%'
-                                    }</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-6 pt-6 border-t">
-                            <div className="text-sm font-medium mb-2">Performance Methodology</div>
-                            <p className="text-xs text-muted-foreground mb-3">
-                              Projections are calculated using industry benchmarks from {formData.industry || 'your industry'} and data from {
-                                formData.interactionVolume === '0-1000' ? 'small' : 
-                                formData.interactionVolume === '1000-5000' ? 'medium' : 
-                                'large'
-                              } businesses with similar automation initiatives. Implementation variables include:
-                              complexity of use cases ({formData.aiGoals.length}), 
-                              integration requirements ({formData.currentPlatforms ? 'custom' : 'standard'}), and 
-                              autonomy level ({formData.autonomyLevel || 'variable'}).
-                            </p>
-                            
-                            <div className="text-sm font-medium mb-2">Key Performance Impact Areas</div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {formData.successMetrics.map(metric => {
-                                const icon = {
-                                  'csat-improvement': <BarChart3 className="h-5 w-5" />,
-                                  'reduced-fte-cost': <FileText className="h-5 w-5" />,
-                                  'faster-resolutions': <CalendarClock className="h-5 w-5" />
-                                }[metric] || <BarChart3 className="h-5 w-5" />;
+                          ) : (
+                            <>
+                              {/* Calculate ROI values using our utility functions */}
+                              {(() => {
+                                // Calculate time saved
+                                const timeSaved = calculateTimeSaved(
+                                  formData.interactionVolume || '0-1000',
+                                  formData.aiGoals.length || 1,
+                                  roiParams
+                                );
                                 
-                                const label = {
-                                  'csat-improvement': 'CSAT Improvement', 
-                                  'reduced-fte-cost': 'FTE Cost Reduction',
-                                  'faster-resolutions': 'Faster Resolutions',
-                                  '24-7-coverage': '24/7 Coverage',
-                                  'deflection-rate': 'Higher Deflection',
-                                  'increased-sales': 'Sales Conversion Lift'
-                                }[metric];
+                                // Calculate cost savings
+                                const costSavings = calculateCostSavings(timeSaved, roiParams);
+                                
+                                // Calculate implementation costs
+                                const implementationCost = calculateImplementationCost(
+                                  formData.aiGoals.length || 1,
+                                  roiParams
+                                );
+                                
+                                // Calculate maintenance costs
+                                const maintenanceCost = calculateMaintenanceCost(implementationCost, roiParams);
+                                
+                                // Calculate CSAT improvement
+                                const csatImprovement = calculateCSATImprovement(
+                                  formData.successMetrics,
+                                  roiParams
+                                );
+                                
+                                // Calculate payback period
+                                const paybackPeriod = calculatePaybackPeriod(implementationCost, costSavings);
                                 
                                 return (
-                                  <div key={metric} className="bg-muted p-3 rounded flex items-center">
-                                    {icon}
-                                    <span className="ml-2">{label}</span>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                      <div>
+                                        <div className="text-sm font-medium mb-1">Time saved per month</div>
+                                        <div className="flex items-center">
+                                          <div className="text-2xl font-bold mr-2">
+                                            {formatRange(timeSaved.min, timeSaved.max)}
+                                          </div>
+                                          <div>hours</div>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          Calculation: {formData.aiGoals.length} use cases × avg. handling time × 
+                                          {roiParams.automation_rate_base}-{roiParams.automation_rate_scale}% automation rate
+                                        </div>
+                                      </div>
+                                      
+                                      <div>
+                                        <div className="text-sm font-medium mb-1">Est. agent replacement cost savings</div>
+                                        <div className="text-2xl font-bold">
+                                          {formatCurrency(costSavings.min)}-{formatCurrency(costSavings.max)}
+                                          <span className="text-sm ml-1 font-normal">per year</span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          Based on ${roiParams.agent_hourly_cost}/hr fully-loaded agent cost × 
+                                          {formatRange(timeSaved.min * 12, timeSaved.max * 12)} hours saved annually
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="bg-muted rounded-lg p-3 mt-2">
+                                        <div className="text-sm font-medium">Cost-Benefit Analysis</div>
+                                        <div className="text-xs mt-1">
+                                          <div className="flex justify-between">
+                                            <span>Avg. implementation cost:</span>
+                                            <span className="font-medium">
+                                              {formatCurrency(implementationCost.min)}-{formatCurrency(implementationCost.max)}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between mt-1">
+                                            <span>Annual maintenance ({roiParams.maintenance_pct}%):</span>
+                                            <span className="font-medium">
+                                              {formatCurrency(maintenanceCost.min)}-{formatCurrency(maintenanceCost.max)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                      <div>
+                                        <div className="text-sm font-medium mb-1">Est. increased customer satisfaction</div>
+                                        <div className="text-2xl font-bold">
+                                          {csatImprovement.min}-{csatImprovement.max}%
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          Based on {
+                                            formData.successMetrics.includes('24-7-coverage') ? 'expanded availability, ' : ''
+                                          }{
+                                            formData.successMetrics.includes('faster-resolutions') ? 'response time reduction, ' : ''
+                                          }{
+                                            formData.successMetrics.includes('csat-improvement') ? 'consistency of service' : 'standard improvements'
+                                          }
+                                        </div>
+                                      </div>
+                                      
+                                      <div>
+                                        <div className="text-sm font-medium mb-1">Payback period</div>
+                                        <div className="text-2xl font-bold">
+                                          {paybackPeriod.min}-{paybackPeriod.max}
+                                          <span className="text-sm ml-1 font-normal">months</span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          Implementation cost ÷ (monthly cost savings + revenue improvement)
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="bg-muted rounded-lg p-3 mt-2">
+                                        <div className="text-sm font-medium">Revenue Impact Potential</div>
+                                        <div className="text-xs mt-1">
+                                          <div className="flex justify-between">
+                                            <span>Increased conversion rate:</span>
+                                            <span className="font-medium">{
+                                              formData.successMetrics.includes('increased-sales') ? '5-10%' : '2-5%'
+                                            }</span>
+                                          </div>
+                                          <div className="flex justify-between mt-1">
+                                            <span>Customer retention improvement:</span>
+                                            <span className="font-medium">{
+                                              formData.successMetrics.includes('csat-improvement') ? '10-15%' : '5-10%'
+                                            }</span>
+                                          </div>
+                                          <div className="flex justify-between mt-1">
+                                            <span>Customer lifetime value increase:</span>
+                                            <span className="font-medium">{
+                                              formData.primaryChannel === 'chat' || formData.primaryChannel === 'social' ? '15-25%' : '10-20%'
+                                            }</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
                                 );
-                              })}
-                            </div>
-                          </div>
+                              })()}
+                              
+                              <div className="mt-6 pt-6 border-t">
+                                <div className="text-sm font-medium mb-2">Performance Methodology</div>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  Projections are calculated using industry benchmarks from {formData.industry || 'your industry'} and data from {
+                                    formData.interactionVolume === '0-1000' ? 'small' : 
+                                    formData.interactionVolume === '1000-5000' ? 'medium' : 
+                                    'large'
+                                  } businesses with similar automation initiatives. Implementation variables include:
+                                  complexity of use cases ({formData.aiGoals.length}), 
+                                  integration requirements ({formData.currentPlatforms ? 'custom' : 'standard'}), and 
+                                  autonomy level ({formData.autonomyLevel || 'variable'}).
+                                </p>
+                                
+                                <div className="text-sm font-medium mb-2">Configurable Parameters</div>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  All ROI calculations use configurable parameters that can be adjusted in the Settings page 
+                                  to match your organization's specific metrics and requirements.
+                                </p>
+                                
+                                <div className="text-sm font-medium mb-2">Key Performance Impact Areas</div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {formData.successMetrics.map(metric => {
+                                    const icon = {
+                                      'csat-improvement': <BarChart3 className="h-5 w-5" />,
+                                      'reduced-fte-cost': <FileText className="h-5 w-5" />,
+                                      'faster-resolutions': <CalendarClock className="h-5 w-5" />
+                                    }[metric] || <BarChart3 className="h-5 w-5" />;
+                                    
+                                    const label = {
+                                      'csat-improvement': 'CSAT Improvement', 
+                                      'reduced-fte-cost': 'FTE Cost Reduction',
+                                      'faster-resolutions': 'Faster Resolutions',
+                                      '24-7-coverage': '24/7 Coverage',
+                                      'deflection-rate': 'Higher Deflection',
+                                      'increased-sales': 'Sales Conversion Lift'
+                                    }[metric];
+                                    
+                                    return (
+                                      <div key={metric} className="bg-muted p-3 rounded flex items-center">
+                                        {icon}
+                                        <span className="ml-2">{label}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </CardContent>
                       </Card>
                     </TabsContent>
