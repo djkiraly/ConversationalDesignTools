@@ -8,6 +8,7 @@ import HomePage from "@/pages/HomePage";
 import CustomerJourney from "@/pages/CustomerJourney";
 import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
+import ActionPlan from "@/pages/ActionPlan";
 import AppLayout from "@/components/AppLayout";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/use-case/:id" component={Home} />
         <Route path="/customer-journey" component={CustomerJourney} />
         <Route path="/customers" component={Customers} />
+        <Route path="/action-plan" component={ActionPlan} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

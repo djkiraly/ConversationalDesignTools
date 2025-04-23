@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree } from 'lucide-react';
+import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList } from 'lucide-react';
 import { fetchAppStatistics, AppStatistics } from '../lib/api';
 
 // Define the structure for application pages
@@ -30,6 +30,14 @@ export default function HomePage() {
   
   // Define the list of application pages
   const appPages: AppPage[] = [
+    {
+      id: 'action-plan',
+      title: 'Action Plan',
+      description: 'Build a tailored Agentic AI deployment plan with emphasis on conversational automation and operational impact',
+      icon: <ClipboardList className="h-6 w-6" />,
+      path: '/action-plan',
+      color: 'bg-purple-50 text-purple-700 border-purple-200'
+    },
     {
       id: 'happy-path',
       title: 'Happy Path',

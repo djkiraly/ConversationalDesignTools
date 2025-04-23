@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
-import { CheckCircle2, Settings, Map, Home, Users } from 'lucide-react';
+import { CheckCircle2, Settings, Map, Home, Users, ClipboardList } from 'lucide-react';
 import SettingsDialog from './SettingsDialog';
 
 interface AppLayoutProps {
@@ -15,6 +15,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const menuItems = useMemo(() => {
     // Define all menu items (excluding Home and Settings which will be positioned separately)
     const items = [
+      {
+        name: "Action Plan",
+        path: "/action-plan",
+        icon: <ClipboardList className="h-6 w-6" />,
+        isActive: location === '/action-plan'
+      },
       {
         name: "Customer Journey",
         path: "/customer-journey",
