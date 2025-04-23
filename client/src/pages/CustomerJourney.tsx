@@ -1523,16 +1523,16 @@ export default function CustomerJourney() {
             edges={edges}
             onNodesChange={(changes) => {
               onNodesChange(changes);
-              // Auto-save after a brief delay
+              // Auto-save after 30 seconds
               if (saveTimeout) clearTimeout(saveTimeout);
-              const timeout = setTimeout(() => autoSaveChanges(), 2000);
+              const timeout = setTimeout(() => autoSaveChanges(), 30000);
               setSaveTimeout(timeout);
             }}
             onEdgesChange={(changes) => {
               onEdgesChange(changes);
-              // Auto-save after a brief delay
+              // Auto-save after 30 seconds
               if (saveTimeout) clearTimeout(saveTimeout);
-              const timeout = setTimeout(() => autoSaveChanges(), 2000);
+              const timeout = setTimeout(() => autoSaveChanges(), 30000);
               setSaveTimeout(timeout);
             }}
             onConnect={onConnect}
@@ -1542,9 +1542,9 @@ export default function CustomerJourney() {
                 description: "Deleted connection in the journey flow.",
                 duration: 2000
               });
-              // Auto-save after a brief delay
+              // Auto-save after 30 seconds
               if (saveTimeout) clearTimeout(saveTimeout);
-              const timeout = setTimeout(() => autoSaveChanges(), 2000);
+              const timeout = setTimeout(() => autoSaveChanges(), 30000);
               setSaveTimeout(timeout);
             }}
             nodeTypes={nodeTypes}
