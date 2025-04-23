@@ -53,12 +53,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
       />
       
       {/* Bottom toolbar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-between items-center shadow-lg">
-        {/* Create a single flex container with all items equally spaced */}
-        <div className="w-full flex justify-between items-center">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-center items-center shadow-lg">
+        {/* Center-aligned container with minimal spacing */}
+        <div className="flex items-center justify-center gap-3 max-w-xl mx-auto">
           {/* Home (Always leftmost) */}
           <Link href="/">
-            <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location === '/home' ? 'text-primary' : 'text-muted-foreground'}`}>
+            <div className={`flex flex-col items-center px-2 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location === '/home' ? 'text-primary' : 'text-muted-foreground'}`}>
               <Home className="h-6 w-6" />
               <span className="text-xs mt-1">Home</span>
             </div>
@@ -67,7 +67,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {/* Middle pages (alphabetically ordered) */}
           {menuItems.map((item) => (
             <Link href={item.path} key={item.path}>
-              <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${item.isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`flex flex-col items-center px-2 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${item.isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                 {item.icon}
                 <span className="text-xs mt-1">{item.name}</span>
               </div>
@@ -76,7 +76,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           
           {/* Settings (Always rightmost) */}
           <div 
-            className="flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
+            className="flex flex-col items-center px-2 py-2 hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
             onClick={() => setSettingsOpen(true)}
           >
             <Settings className="h-6 w-6" />
