@@ -776,16 +776,18 @@ export default function CustomerJourney() {
     }
   };
   
-  // Handler to open the edit dialog for a node
-  const handleNodeEdit = (nodeId: string, nodeData: any) => {
+  // This is a stable reference function for handling node editing
+  // It doesn't depend on any state so it can be declared once
+  // outside of React context and reused in the component
+  const handleNodeEditStable = useRef((nodeId: string, nodeData: any) => {
     setEditingNode({
       id: nodeId,
-      stepType: nodeData.stepType,
-      title: nodeData.title,
-      description: nodeData.description
+      stepType: nodeData.stepType || '',
+      title: nodeData.title || '',
+      description: nodeData.description || ''
     });
     setEditDialogOpen(true);
-  };
+  }).current;
   
   // Update all nodes to include the onNodeEdit callback
   useEffect(() => {
@@ -794,11 +796,11 @@ export default function CustomerJourney() {
         ...node,
         data: {
           ...node.data,
-          onNodeEdit: handleNodeEdit
+          onNodeEdit: handleNodeEditStable
         }
       }))
     );
-  }, [handleNodeEdit, setNodes]);
+  }, [handleNodeEditStable, setNodes]);
   
   // Update a node's data
   const updateNode = (id: string, data: { stepType: string; title: string; description: string }) => {
