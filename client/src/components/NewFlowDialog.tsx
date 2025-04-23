@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,52 +18,62 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Map, ShoppingCart, HelpCircle, Brain, Sparkles } from "lucide-react";
+import { PlusCircle, Map, ShoppingCart, HelpCircle, Brain, Sparkles, User, Users } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Customer } from "../lib/api";
+import { Separator } from '@/components/ui/separator';
 
 interface NewFlowDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onCreateFlow: (flowName: string, templateType: string | null) => void;
   onCreateAIFlow?: (flowName: string, description: string) => void;
+  customers: Customer[];
+  currentCustomerName: string;
+  isGeneratingAI?: boolean;
 }
 
-export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowDialogProps) {
+export default function NewFlowDialog({ 
+  open, 
+  onOpenChange, 
+  onCreateFlow, 
+  onCreateAIFlow, 
+  customers = [],
+  currentCustomerName = "",
+  isGeneratingAI = false
+}: NewFlowDialogProps) {
   const [flowName, setFlowName] = useState("New Customer Journey");
-  const [isOpen, setIsOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(currentCustomerName || "");
   const [aiTemplateDescription, setAiTemplateDescription] = useState("");
   const [isAiTabActive, setIsAiTabActive] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      // When opening, set default values
+      setFlowName("New Customer Journey");
+      setSelectedCustomer(currentCustomerName || "");
+      setAiTemplateDescription("");
+      setIsAiTabActive(false);
+    }
+  }, [open, currentCustomerName]);
   
   const handleCreateFlow = (templateType: string | null) => {
+    // Include the customer name when creating the flow
     onCreateFlow(flowName, templateType);
-    setIsOpen(false);
-    // Reset to default
-    setFlowName("New Customer Journey");
-    setAiTemplateDescription("");
-    setIsAiTabActive(false);
+    onOpenChange(false);
   };
   
   const handleCreateAIFlow = () => {
     if (onCreateAIFlow && aiTemplateDescription.trim()) {
-      setIsGenerating(true);
       onCreateAIFlow(flowName, aiTemplateDescription);
-      setIsOpen(false);
-      // Reset to default
-      setFlowName("New Customer Journey");
-      setAiTemplateDescription("");
-      setIsAiTabActive(false);
-      setIsGenerating(false);
+      onOpenChange(false);
     }
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="default" size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Flow
-        </Button>
-      </DialogTrigger>
-      
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create New Customer Journey</DialogTitle>
@@ -73,8 +82,9 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4">
-          <div className="mb-4">
+        <div className="py-4 space-y-4">
+          {/* Journey name input */}
+          <div>
             <Label htmlFor="flow-name">Journey Name</Label>
             <Input 
               id="flow-name" 
@@ -85,6 +95,30 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
             />
           </div>
           
+          {/* Customer selection dropdown */}
+          <div>
+            <Label htmlFor="customer-select">Customer</Label>
+            <Select
+              value={selectedCustomer}
+              onValueChange={setSelectedCustomer}
+            >
+              <SelectTrigger id="customer-select" className="mt-1">
+                <SelectValue placeholder="Select a customer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.name}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Separator />
+          
+          {/* Template selection tabs */}
           <div className="flex justify-between mb-4 border-b">
             <Button 
               variant={!isAiTabActive ? "default" : "ghost"}
@@ -103,9 +137,13 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
             </Button>
           </div>
           
+          {/* Template content */}
           {!isAiTabActive ? (
             <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-              <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md" onClick={() => handleCreateFlow(null)}>
+              <Card 
+                className="cursor-pointer transition-all hover:border-primary hover:shadow-md" 
+                onClick={() => handleCreateFlow(null)}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center">
                     <Map className="h-5 w-5 mr-2 text-primary" />
@@ -124,7 +162,10 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
                 </CardFooter>
               </Card>
               
-              <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md" onClick={() => handleCreateFlow('sales')}>
+              <Card 
+                className="cursor-pointer transition-all hover:border-primary hover:shadow-md" 
+                onClick={() => handleCreateFlow('sales')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center">
                     <ShoppingCart className="h-5 w-5 mr-2 text-green-600" />
@@ -143,7 +184,10 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
                 </CardFooter>
               </Card>
               
-              <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md" onClick={() => handleCreateFlow('support')}>
+              <Card 
+                className="cursor-pointer transition-all hover:border-primary hover:shadow-md" 
+                onClick={() => handleCreateFlow('support')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center">
                     <HelpCircle className="h-5 w-5 mr-2 text-blue-600" />
@@ -190,10 +234,10 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
                 <CardFooter>
                   <Button 
                     onClick={handleCreateAIFlow}
-                    disabled={!aiTemplateDescription.trim() || isGenerating || !onCreateAIFlow}
+                    disabled={!aiTemplateDescription.trim() || isGeneratingAI || !onCreateAIFlow}
                     className="w-full gap-2"
                   >
-                    {isGenerating ? (
+                    {isGeneratingAI ? (
                       <>
                         <Brain className="h-4 w-4 animate-pulse" />
                         Generating Journey...
@@ -212,9 +256,16 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+          
+          {/* Show create button only for template view */}
+          {!isAiTabActive && (
+            <Button onClick={() => handleCreateFlow(null)}>
+              Create Journey
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
