@@ -78,6 +78,9 @@ export default function Settings() {
   // Find matching settings from the array
   const getSettingValue = (key: string): string => {
     const setting = settings.find(s => s.key === key);
+    if (key.startsWith('roi_')) {
+      console.log(`Looking up setting ${key}: ${setting?.value || 'not found'}`);
+    }
     return setting?.value || '';
   };
 
@@ -207,6 +210,14 @@ export default function Settings() {
       </div>
     );
   }
+
+  // For debugging
+  useEffect(() => {
+    console.log('Loaded settings:', settings);
+    // Check if ROI settings are present
+    const roiSettings = settings.filter(s => s.key.startsWith('roi_'));
+    console.log('ROI settings:', roiSettings);
+  }, [settings]);
 
   return (
     <div className="container mx-auto py-10">
