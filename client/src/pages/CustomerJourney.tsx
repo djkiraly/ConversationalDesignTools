@@ -51,6 +51,7 @@ import EditNodeDialog from "../components/EditNodeDialog";
 import JourneyMetadataDialog from "../components/JourneyMetadataDialog";
 import AISummaryDialog from "../components/AISummaryDialog";
 import JourneyNode from "../components/JourneyNode";
+import MultiPathNode from "../components/MultiPathNode";
 import { 
   fetchAllCustomerJourneys, 
   fetchCustomerJourney, 
@@ -167,7 +168,8 @@ function getStepTypeStyles(stepType: string): {
 
 // Define custom node types
 const nodeTypes: NodeTypes = {
-  journeyNode: JourneyNode
+  journeyNode: JourneyNode,
+  multiPathNode: MultiPathNode
 };
 
 // Initial nodes - when we start with an empty journey
@@ -1437,6 +1439,15 @@ export default function CustomerJourney() {
                   <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Support
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800"
+                    onClick={() => addMultiPathNode()}
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Decision Split
                   </Button>
                 </div>
               </div>
