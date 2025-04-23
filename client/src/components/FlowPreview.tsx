@@ -134,7 +134,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     
     const timer = setTimeout(() => {
       setShouldSave(true);
-    }, 1500); // 1.5 seconds delay
+    }, 30000); // 30 seconds delay
     
     return () => clearTimeout(timer);
   }, [savedPositions, positionsModified]);

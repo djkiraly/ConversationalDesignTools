@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import html2canvas from 'html2canvas';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, AlignmentType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, AlignmentType, BorderStyle, SectionType } from 'docx';
 
 interface ExportJourneyButtonProps {
   title: string;
@@ -153,6 +153,20 @@ export default function ExportJourneyButton({
         }],
       });
       
+      // Create a separate section for the flow visualization
+      const flowVisualizationSection = {
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "Flow Visualization",
+            heading: HeadingLevel.HEADING_2,
+            spacing: {
+              after: 200,
+            },
+          })
+        ]
+      };
+      
       // Now add the flow diagram as an image
       if (flowRef.current) {
         const flowElement = flowRef.current.querySelector('.react-flow');
@@ -191,41 +205,42 @@ export default function ExportJourneyButton({
             // Extract the actual base64 data without the data URL prefix
             const base64Data = base64Image.split(',')[1];
             
-            // Add the image to the document
+            // Create the image paragraph and add it to the section's children
             const flowImageParagraph = new Paragraph({
               children: [
                 new ImageRun({
                   data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
                   transformation: {
-                    width: 550, // Width in EMUs (English Metric Units)
-                    height: 350, // Height in EMUs (maintain aspect ratio)
+                    width: 550,
+                    height: 350,
                   },
+                  type: "png",
                 }),
               ],
               alignment: AlignmentType.CENTER,
             });
             
-            // Add the image paragraph to the document
-            doc.addSection({
-              children: [flowImageParagraph],
-            });
+            // Add the image paragraph to the flow section
+            flowVisualizationSection.children.push(flowImageParagraph);
+            
           } catch (imageError) {
             console.error("Failed to capture flow image:", imageError);
             
             // Add a paragraph indicating image capture failure
-            doc.addSection({
-              children: [
-                new Paragraph({
-                  text: "Flow diagram image could not be captured.",
-                  spacing: {
-                    before: 200,
-                  },
-                }),
-              ],
-            });
+            flowVisualizationSection.children.push(
+              new Paragraph({
+                text: "Flow diagram image could not be captured.",
+                spacing: {
+                  before: 200,
+                },
+              })
+            );
           }
         }
       }
+      
+      // Add the flow visualization section to the document
+      doc.addSection(flowVisualizationSection);
       
       // Generate and save the Word document
       const buffer = await Packer.toBuffer(doc);

@@ -456,7 +456,7 @@ export default function CustomerJourney() {
       clearTimeout(saveTimeout);
     }
     
-    // Set a new timeout to save after 10 seconds of inactivity (increased from 5s)
+    // Set a new timeout to save after 30 seconds of inactivity
     const timeout = setTimeout(() => {
       // Only save if we have a journey ID and not in loading state
       if (currentJourneyId && !isLoading) {
@@ -482,7 +482,7 @@ export default function CustomerJourney() {
         // Only auto-create a journey if we've added nodes beyond the initial state
         saveJourney(true); // true = isAutoSave
       }
-    }, 10000); // Increased to 10 seconds for better performance
+    }, 30000); // Set to 30 seconds as requested
     
     setSaveTimeout(timeout);
   }, [saveTimeout, currentJourneyId, journeyMetadata, journeyTitle, nodes, edges, updateJourneyMutation, saveJourney, isLoading]);
@@ -755,9 +755,12 @@ export default function CustomerJourney() {
       });
       
       // Auto-save when a connection is created
-      setTimeout(() => autoSaveChanges(), 100); // Small delay to debounce
+      // Use same 30-second timeout for consistency
+      if (saveTimeout) clearTimeout(saveTimeout);
+      const timeout = setTimeout(() => autoSaveChanges(), 30000);
+      setSaveTimeout(timeout);
     },
-    [setEdges, toast, autoSaveChanges]
+    [setEdges, toast, autoSaveChanges, saveTimeout, setSaveTimeout]
   );
   
   // This section intentionally left empty after cleanup
