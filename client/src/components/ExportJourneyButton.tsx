@@ -234,11 +234,9 @@ export default function ExportJourneyButton({
         sections: sections,
       });
       
-      // Generate and save the Word document
-      const buffer = await Packer.toBuffer(doc);
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-      });
+      // Generate and save the Word document using blob instead of buffer
+      // This works in browser environments where 'nodebuffer' is not supported
+      const blob = await Packer.toBlob(doc);
       const url = window.URL.createObjectURL(blob);
       
       // Create a temporary link and trigger the download
@@ -257,10 +255,23 @@ export default function ExportJourneyButton({
       });
     } catch (error) {
       console.error("Failed to export journey:", error);
+      
+      // Enhanced error message to help with debugging
+      let errorMessage = "There was an error exporting the journey.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
+      }
+      
       toast({
         title: "Export Failed",
-        description: error instanceof Error ? error.message : "There was an error exporting the journey.",
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000
       });
     } finally {
       setIsExporting(false);
