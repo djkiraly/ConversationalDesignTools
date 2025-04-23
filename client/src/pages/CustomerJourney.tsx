@@ -838,6 +838,37 @@ export default function CustomerJourney() {
     // Auto-save when a node is added
     autoSaveChanges();
   };
+  
+  // Add a multi-path decision node to the journey
+  const addMultiPathNode = () => {
+    const newNodeId = `decision-split-${Date.now()}`;
+    const position = getNewNodePosition();
+    
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'multiPathNode',
+      data: { 
+        stepType: 'Decision Split',
+        title: 'Decision Point',
+        description: 'Customer journey splits based on decision',
+        outputPaths: 3, // Default to 3 output paths
+        onNodeEdit: handleNodeEdit // Pass the edit handler to the node
+      },
+      position
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    connectToLastNode(newNodeId);
+    
+    toast({
+      title: "Decision Split Added",
+      description: "Added a decision split node with multiple output paths.",
+      duration: 2000
+    });
+    
+    // Auto-save when a node is added
+    autoSaveChanges();
+  };
 
   // Handler for updating the journey title
   const handleTitleUpdate = (newTitle: string) => {

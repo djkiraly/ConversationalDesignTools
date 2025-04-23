@@ -22,11 +22,13 @@ interface EditNodeDialogProps {
     stepType: string;
     title: string;
     description: string;
+    outputPaths?: number; // For MultiPathNode
   };
   onUpdate: (id: string, data: {
     stepType: string;
     title: string;
     description: string;
+    outputPaths?: number; // For MultiPathNode
   }) => void;
   onDelete: (id: string) => void;
 }
@@ -41,12 +43,16 @@ export default function EditNodeDialog({
   const [stepType, setStepType] = useState(nodeData.stepType);
   const [title, setTitle] = useState(nodeData.title);
   const [description, setDescription] = useState(nodeData.description);
+  const [outputPaths, setOutputPaths] = useState(nodeData.outputPaths || 3);
+  const [isMultiPath, setIsMultiPath] = useState(nodeData.stepType === 'Decision Split');
 
   // Update form state when node data changes
   useEffect(() => {
     setStepType(nodeData.stepType);
     setTitle(nodeData.title);
     setDescription(nodeData.description);
+    setOutputPaths(nodeData.outputPaths || 3);
+    setIsMultiPath(nodeData.stepType === 'Decision Split');
   }, [nodeData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,12 +62,18 @@ export default function EditNodeDialog({
       return; // Simple validation - title cannot be empty
     }
     
-    onUpdate(nodeData.id, {
+    const updateData: any = {
       stepType,
       title,
       description
-    });
+    };
     
+    // Add outputPaths only if this is a multipath node
+    if (isMultiPath) {
+      updateData.outputPaths = outputPaths;
+    }
+    
+    onUpdate(nodeData.id, updateData);
     onOpenChange(false);
   };
   
@@ -138,6 +150,31 @@ export default function EditNodeDialog({
                 rows={3}
               />
             </div>
+            
+            {/* Only show output paths option for Decision Split nodes */}
+            {isMultiPath && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="outputPaths" className="text-right">
+                  Output Paths
+                </Label>
+                <div className="col-span-3">
+                  <Select
+                    value={outputPaths.toString()}
+                    onValueChange={(value) => setOutputPaths(parseInt(value))}
+                  >
+                    <SelectTrigger id="outputPaths">
+                      <SelectValue placeholder="Number of paths" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 paths</SelectItem>
+                      <SelectItem value="3">3 paths</SelectItem>
+                      <SelectItem value="4">4 paths</SelectItem>
+                      <SelectItem value="5">5 paths</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="flex justify-between">
             <Button 
