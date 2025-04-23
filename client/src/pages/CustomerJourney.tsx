@@ -1456,11 +1456,11 @@ export default function CustomerJourney() {
                   <div 
                     key={journey.id} 
                     className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${currentJourneyId === journey.id ? 'bg-primary/10 border-primary' : ''}`}
+                    onClick={() => loadJourney(journey.id)}
                   >
                     <div className="flex justify-between items-start">
                       <h4 
                         className="font-medium truncate w-44"
-                        onClick={() => loadJourney(journey.id)}
                       >
                         {journey.title}
                       </h4>
