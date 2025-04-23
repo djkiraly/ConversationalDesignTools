@@ -54,6 +54,7 @@ import NewNodeDialog, { NodeCreationData } from "../components/NewNodeDialog";
 import EditNodeDialog from "../components/EditNodeDialog";
 import JourneyMetadataDialog from "../components/JourneyMetadataDialog";
 import AISummaryDialog from "../components/AISummaryDialog";
+import ExportJourneyButton from "../components/ExportJourneyButton";
 import JourneyNode from "../components/JourneyNode";
 import MultiPathNode from "../components/MultiPathNode";
 import { 
