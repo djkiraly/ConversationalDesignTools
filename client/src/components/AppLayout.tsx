@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 import { CheckCircle2, Settings, Map, Home, Users } from 'lucide-react';
 import SettingsDialog from './SettingsDialog';
@@ -10,6 +10,34 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Define menu items with their properties
+  const menuItems = useMemo(() => {
+    // Define all menu items (excluding Home and Settings which will be positioned separately)
+    const items = [
+      {
+        name: "Customer Journey",
+        path: "/customer-journey",
+        icon: <Map className="h-6 w-6" />,
+        isActive: location === '/customer-journey'
+      },
+      {
+        name: "Customers",
+        path: "/customers",
+        icon: <Users className="h-6 w-6" />,
+        isActive: location === '/customers'
+      },
+      {
+        name: "Happy Path",
+        path: "/happy-path",
+        icon: <CheckCircle2 className="h-6 w-6" />,
+        isActive: location === '/happy-path' || location.startsWith('/use-case/')
+      }
+    ];
+    
+    // Sort alphabetically by name
+    return items.sort((a, b) => a.name.localeCompare(b.name));
+  }, [location]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -25,41 +53,38 @@ export default function AppLayout({ children }: AppLayoutProps) {
       />
       
       {/* Bottom toolbar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-center items-center gap-8 shadow-lg">
-        <Link href="/">
-          <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location === '/home' ? 'text-primary' : 'text-muted-foreground'}`}>
-            <Home className="h-6 w-6" />
-            <span className="text-xs mt-1">Home</span>
-          </div>
-        </Link>
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-between items-center shadow-lg">
+        {/* Home (Always leftmost) */}
+        <div className="flex items-center">
+          <Link href="/">
+            <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/' || location === '/home' ? 'text-primary' : 'text-muted-foreground'}`}>
+              <Home className="h-6 w-6" />
+              <span className="text-xs mt-1">Home</span>
+            </div>
+          </Link>
+        </div>
         
-        <Link href="/happy-path">
-          <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/happy-path' || location.startsWith('/use-case/') ? 'text-primary' : 'text-muted-foreground'}`}>
-            <CheckCircle2 className="h-6 w-6" />
-            <span className="text-xs mt-1">Happy Path</span>
-          </div>
-        </Link>
+        {/* Middle pages (alphabetically ordered) */}
+        <div className="flex items-center justify-center gap-6">
+          {menuItems.map((item) => (
+            <Link href={item.path} key={item.path}>
+              <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${item.isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                {item.icon}
+                <span className="text-xs mt-1">{item.name}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
         
-        <Link href="/customer-journey">
-          <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/customer-journey' ? 'text-primary' : 'text-muted-foreground'}`}>
-            <Map className="h-6 w-6" />
-            <span className="text-xs mt-1">Customer Journey</span>
+        {/* Settings (Always rightmost) */}
+        <div className="flex items-center">
+          <div 
+            className="flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="h-6 w-6" />
+            <span className="text-xs mt-1">Settings</span>
           </div>
-        </Link>
-        
-        <Link href="/customers">
-          <div className={`flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/customers' ? 'text-primary' : 'text-muted-foreground'}`}>
-            <Users className="h-6 w-6" />
-            <span className="text-xs mt-1">Customers</span>
-          </div>
-        </Link>
-        
-        <div 
-          className="flex flex-col items-center px-4 py-2 hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
-          onClick={() => setSettingsOpen(true)}
-        >
-          <Settings className="h-6 w-6" />
-          <span className="text-xs mt-1">Settings</span>
         </div>
       </div>
       
