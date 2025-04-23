@@ -1534,16 +1534,8 @@ export default function CustomerJourney() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={useCallback((changes: any) => {
-              onNodesChange(changes);
-              // Use a debounced auto-save to reduce constant updates
-              autoSaveChanges();
-            }, [onNodesChange, autoSaveChanges])}
-            onEdgesChange={useCallback((changes: any) => {
-              onEdgesChange(changes);
-              // Use a debounced auto-save to reduce constant updates
-              autoSaveChanges();
-            }, [onEdgesChange, autoSaveChanges])}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             connectionLineStyle={{ stroke: '#2563eb' }}
@@ -1551,14 +1543,7 @@ export default function CustomerJourney() {
             fitView
             elementsSelectable={true}
             deleteKeyCode={['Backspace', 'Delete']}
-            onEdgesDelete={useCallback((deletedEdges: Edge[]) => {
-              toast({
-                title: "Connection Deleted",
-                description: "Deleted connection in the journey flow.",
-                duration: 2000
-              });
-              autoSaveChanges();
-            }, [toast, autoSaveChanges])}
+            onEdgesDelete={handleEdgesDelete}
             snapToGrid={true}
             snapGrid={[15, 15]}
             onlyRenderVisibleElements={true}
