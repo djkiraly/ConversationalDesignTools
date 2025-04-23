@@ -99,20 +99,11 @@ function getStepTypeStyles(stepType: string): {
       bg: 'bg-amber-50',
       text: 'text-amber-700',
       borderColor: 'border-amber-200',
-      icon: <Brain className="h-4 w-4" />
-    };
-  }
-  
-  if (normalizedType.includes('decision')) {
-    return {
-      bg: 'bg-orange-50',
-      text: 'text-orange-700',
-      borderColor: 'border-orange-200',
       icon: <Star className="h-4 w-4" />
     };
   }
   
-  if (normalizedType.includes('purchase')) {
+  if (normalizedType.includes('purchase') || normalizedType.includes('conversion')) {
     return {
       bg: 'bg-green-50',
       text: 'text-green-700',
@@ -121,34 +112,25 @@ function getStepTypeStyles(stepType: string): {
     };
   }
   
-  if (normalizedType.includes('contact') || normalizedType.includes('support')) {
+  if (normalizedType.includes('decision')) {
     return {
-      bg: 'bg-indigo-50',
-      text: 'text-indigo-700',
-      borderColor: 'border-indigo-200',
+      bg: 'bg-orange-50',
+      text: 'text-orange-700',
+      borderColor: 'border-orange-200',
+      icon: <Brain className="h-4 w-4" />
+    };
+  }
+  
+  if (normalizedType.includes('support') || normalizedType.includes('service')) {
+    return {
+      bg: 'bg-teal-50',
+      text: 'text-teal-700',
+      borderColor: 'border-teal-200',
       icon: <HelpCircle className="h-4 w-4" />
     };
   }
   
-  if (normalizedType.includes('identification')) {
-    return {
-      bg: 'bg-cyan-50',
-      text: 'text-cyan-700',
-      borderColor: 'border-cyan-200',
-      icon: <Bot className="h-4 w-4" />
-    };
-  }
-  
-  if (normalizedType.includes('resolution')) {
-    return {
-      bg: 'bg-emerald-50',
-      text: 'text-emerald-700',
-      borderColor: 'border-emerald-200',
-      icon: <Check className="h-4 w-4" />
-    };
-  }
-  
-  if (normalizedType.includes('follow')) {
+  if (normalizedType.includes('retention') || normalizedType.includes('loyalty')) {
     return {
       bg: 'bg-pink-50',
       text: 'text-pink-700',
@@ -157,462 +139,445 @@ function getStepTypeStyles(stepType: string): {
     };
   }
   
-  // Default
+  // Default style
   return {
-    bg: 'bg-slate-50',
-    text: 'text-slate-700',
-    borderColor: 'border-slate-200',
-    icon: <Users className="h-4 w-4" />
+    bg: 'bg-gray-50',
+    text: 'text-gray-700',
+    borderColor: 'border-gray-200',
+    icon: <MapPin className="h-4 w-4" />
   };
 }
 
 // Define custom node types
 const nodeTypes: NodeTypes = {
   journeyNode: JourneyNode,
-  multiPathNode: MultiPathNode
+  multiPathNode: MultiPathNode,
 };
 
-// Initial nodes - when we start with an empty journey
-const initialNodes: Node[] = [
-  {
-    id: 'entry',
-    type: 'journeyNode',
-    data: { 
-      stepType: 'Entry Point',
-      title: 'Journey Start',
-      description: 'Customer begins their journey'
-      // onNodeEdit will be added via useEffect
-    },
-    position: { x: 100, y: 100 }
-  }
-];
-
-// Interface for our display of saved journeys in the sidebar
-interface SavedJourneyDisplay {
-  id: number;
-  title: string;
-  customerName?: string; // Added customer name
-  lastSaved: string;
-  preview?: {
-    nodeCount: number;
-    edgeCount: number;
-  };
-}
+// Initial nodes for a new journey
+const initialNodes: Node[] = [];
 
 export default function CustomerJourney() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
-  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [currentJourneyId, setCurrentJourneyId] = useState<number | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingAIJourney, setIsGeneratingAIJourney] = useState(false);
-  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
   
-  // State for node editing
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingNode, setEditingNode] = useState<{
-    id: string;
-    stepType: string;
-    title: string;
-    description: string;
-    outputPaths?: number; // For MultiPathNode
-  }>({
-    id: "",
-    stepType: "",
-    title: "",
-    description: ""
-  });
-  
-  // Journey metadata state
-  const [journeyMetadata, setJourneyMetadata] = useState<{
-    customerName: string;
-    workflowIntent: string;
-    notes: string;
-    summary?: string;
-  }>({
-    customerName: "",
-    workflowIntent: "",
-    notes: "",
-    summary: ""
-  });
-  
-  // We want to create a stable callback reference that won't recreate with each render
-  // Creating it with useRef to keep a stable reference
-  const handleNodeEditStable = useRef((nodeId: string, nodeData: any) => {
-    setEditingNode({
-      id: nodeId,
-      stepType: nodeData.stepType || '',
-      title: nodeData.title || '',
-      description: nodeData.description || '',
-      outputPaths: nodeData.outputPaths
-    });
-    setEditDialogOpen(true);
-  }).current;
-  
-  // React Query for fetching all journeys
+  // Queries
   const { 
-    data: journeysData, 
+    data: allJourneys,
     isLoading: isLoadingJourneys,
     isError: isJourneysError,
     error: journeysError
   } = useQuery({
     queryKey: ['/api/customer-journeys'],
-    queryFn: () => fetchAllCustomerJourneys(),
+    queryFn: getCustomerJourneys
   });
   
-  // Fetch all customers for the dropdown
   const { 
-    data: customersData, 
+    data: customersData,
     isLoading: isLoadingCustomers
   } = useQuery({
     queryKey: ['/api/customers'],
-    queryFn: () => getAllCustomers(),
+    queryFn: getAllCustomers
   });
   
-  // Format journeys for display
-  const savedJourneys: SavedJourneyDisplay[] = journeysData?.map(journey => ({
-    id: journey.id,
-    title: journey.title,
-    customerName: journey.customerName || "",
-    lastSaved: journey.updatedAt,
-    preview: {
-      nodeCount: journey.nodes?.length || 0,
-      edgeCount: journey.edges?.length || 0,
-    }
-  })) || [];
-  
-  // Mutations for creating, updating and deleting journeys
+  // Mutations
   const createJourneyMutation = useMutation({
-    mutationFn: (journeyData: { 
-      title: string, 
-      customerName: string, 
-      workflowIntent: string, 
-      notes: string, 
-      nodes: any[], 
-      edges: any[] 
-    }) => createCustomerJourney(journeyData),
+    mutationFn: createCustomerJourney,
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
       setCurrentJourneyId(data.id);
       toast({
         title: "Journey Created",
-        description: "Your journey has been created successfully.",
+        description: "Your new customer journey has been created.",
         duration: 3000
       });
     },
     onError: (error) => {
       toast({
-        title: "Create Failed",
-        description: error instanceof Error ? error.message : "There was an error creating your journey.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create journey",
         variant: "destructive"
       });
     }
   });
   
   const updateJourneyMutation = useMutation({
-    mutationFn: (params: { id: number, journeyData: Partial<CustomerJourneyType> }) => {
-      console.log("Updating journey with data:", params.journeyData);
-      return updateCustomerJourney(params.id, params.journeyData);
-    },
+    mutationFn: updateCustomerJourney,
     onSuccess: (data) => {
-      console.log("Journey updated successfully:", data);
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
       toast({
-        title: "Journey Updated",
-        description: "Your journey has been updated successfully.",
+        title: "Journey Saved",
+        description: "Your customer journey has been saved.",
         duration: 3000
       });
     },
     onError: (error) => {
       toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "There was an error updating your journey.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update journey",
         variant: "destructive"
       });
     }
   });
   
   const deleteJourneyMutation = useMutation({
-    mutationFn: (id: number) => deleteCustomerJourney(id),
+    mutationFn: deleteCustomerJourney,
     onSuccess: () => {
-      toast({
-        title: "Journey Deleted",
-        description: "The journey has been deleted successfully.",
-        duration: 3000
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
     },
     onError: (error) => {
       toast({
-        title: "Delete Failed",
-        description: error instanceof Error ? error.message : "There was an error deleting the journey.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete journey",
         variant: "destructive"
       });
     }
   });
   
   const deleteAllJourneysMutation = useMutation({
-    mutationFn: () => deleteAllCustomerJourneys(),
+    mutationFn: deleteAllCustomerJourneys,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
       toast({
         title: "All Journeys Deleted",
-        description: "All journeys have been deleted successfully.",
+        description: "All customer journeys have been deleted.",
         duration: 3000
       });
     },
     onError: (error) => {
       toast({
-        title: "Bulk Delete Failed",
-        description: error instanceof Error ? error.message : "There was an error deleting all journeys.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete all journeys",
         variant: "destructive"
       });
     }
   });
   
-  // Save journey to database - declare before usage
-  const saveJourney = useCallback(async (isAutoSave = true) => {
-    try {
-      // Check if a journey with this title already exists (excluding current journey)
-      const existingJourneys = await queryClient.fetchQuery({ 
-        queryKey: ['/api/customer-journeys'],
-        queryFn: () => getCustomerJourneys()
-      });
-      
-      const journeyWithSameTitle = existingJourneys.find((journey: CustomerJourneyType) => 
-        journey.title === journeyTitle && journey.id !== currentJourneyId
-      );
-      
-      // If a journey with the same title exists, alert the user and don't save
-      if (journeyWithSameTitle && !currentJourneyId) {
-        toast({
-          title: "Journey Name Already Exists",
-          description: "Please choose a different name for your journey.",
-          variant: "destructive",
-          duration: 5000
-        });
-        return;
-      }
-      
-      // Ensure metadata fields are included and properly set
-      const journeyData = {
-        title: journeyTitle,
-        customerName: journeyMetadata.customerName || "",
-        workflowIntent: journeyMetadata.workflowIntent || "",
-        notes: journeyMetadata.notes || "",
-        summary: journeyMetadata.summary || "",
-        nodes,
-        edges,
+  // State for the flow editor
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
+  // General state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [journeyTitle, setJourneyTitle] = useState("New Customer Journey");
+  const [currentJourneyId, setCurrentJourneyId] = useState<number | null>(null);
+  const [journeyMetadata, setJourneyMetadata] = useState({
+    customerName: "",
+    workflowIntent: "",
+    notes: "",
+    summary: ""
+  });
+  
+  // Dialog states
+  const [newFlowDialogOpen, setNewFlowDialogOpen] = useState(false);
+  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
+  const [newNodeDialogOpen, setNewNodeDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+  
+  // State for node editing
+  const [editingNode, setEditingNode] = useState<{
+    id: string;
+    stepType: string;
+    title: string;
+    description: string;
+    outputPaths?: number;
+  } | null>(null);
+  
+  // State for AI generation
+  const [isGeneratingAIJourney, setIsGeneratingAIJourney] = useState(false);
+  
+  // Computed values
+  const isLoading = createJourneyMutation.isPending || updateJourneyMutation.isPending;
+  const savedJourneys = allJourneys || [];
+  
+  // Create stable function references with useRef to prevent circular dependencies
+  const handleNodeEditStable = useRef<(id: string, data: any) => void>((id, data) => {
+    setEditingNode({
+      id,
+      stepType: data.stepType,
+      title: data.title,
+      description: data.description,
+      outputPaths: data.outputPaths
+    });
+    setEditDialogOpen(true);
+  }).current;
+  
+  // Auto-save changes with debounce
+  const autoSaveChanges = useCallback(() => {
+    if (currentJourneyId && nodes.length > 0) {
+      // Prepare a preview of the journey with node and edge counts
+      const preview = {
+        nodeCount: nodes.length,
+        edgeCount: edges.length
       };
       
-      // If we have a currentJourneyId, update the existing journey
-      if (currentJourneyId) {
-        await updateJourneyMutation.mutateAsync({
-          id: currentJourneyId,
-          journeyData
-        });
-      } else {
-        // Otherwise create a new journey
-        const data = await createJourneyMutation.mutateAsync(journeyData);
-        setCurrentJourneyId(data.id);
-      }
-      
-      // Refresh the journeys list
-      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
-      
-      if (!isAutoSave) {
-        toast({
-          title: "Journey Saved",
-          description: "Your journey has been saved successfully.",
-          duration: 3000
-        });
-      }
-    } catch (error) {
-      console.error("Failed to save journey:", error);
-      toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "There was an error saving your journey.",
-        variant: "destructive",
-        duration: 5000
+      // Update the journey in the database
+      updateJourneyMutation.mutate({
+        id: currentJourneyId,
+        title: journeyTitle,
+        customerName: journeyMetadata.customerName || undefined,
+        workflowIntent: journeyMetadata.workflowIntent || undefined,
+        notes: journeyMetadata.notes || undefined,
+        summary: journeyMetadata.summary || undefined,
+        nodes,
+        edges,
+        preview
       });
     }
   }, [
-    queryClient, journeyTitle, currentJourneyId, journeyMetadata, 
-    nodes, edges, updateJourneyMutation, createJourneyMutation, toast
+    currentJourneyId, 
+    nodes, 
+    edges, 
+    journeyTitle, 
+    journeyMetadata, 
+    updateJourneyMutation
   ]);
   
-  // Delete a journey
-  const deleteJourney = useCallback(async (journeyId: number, journeyName: string) => {
+  // Function to save the current journey
+  const saveJourney = (showToast = true) => {
+    if (currentJourneyId) {
+      // Update existing journey
+      const preview = {
+        nodeCount: nodes.length,
+        edgeCount: edges.length
+      };
+      
+      updateJourneyMutation.mutate({
+        id: currentJourneyId,
+        title: journeyTitle,
+        customerName: journeyMetadata.customerName || undefined,
+        workflowIntent: journeyMetadata.workflowIntent || undefined,
+        notes: journeyMetadata.notes || undefined,
+        summary: journeyMetadata.summary || undefined,
+        nodes,
+        edges,
+        preview
+      });
+    } else {
+      // Create new journey
+      const preview = {
+        nodeCount: nodes.length,
+        edgeCount: edges.length
+      };
+      
+      createJourneyMutation.mutate({
+        title: journeyTitle,
+        customerName: journeyMetadata.customerName || undefined,
+        workflowIntent: journeyMetadata.workflowIntent || undefined,
+        notes: journeyMetadata.notes || undefined,
+        summary: journeyMetadata.summary || undefined,
+        nodes,
+        edges,
+        preview
+      });
+    }
+    
+    if (showToast) {
+      toast({
+        title: "Journey Saved",
+        description: "Your customer journey has been saved.",
+        duration: 3000
+      });
+    }
+  };
+  
+  // Function to load a journey
+  const loadJourney = async (id: number) => {
     try {
-      await deleteJourneyMutation.mutateAsync(journeyId);
+      const journey = await fetchCustomerJourney(id);
       
-      // If we deleted the current journey, reset the form
-      if (currentJourneyId === journeyId) {
-        setCurrentJourneyId(null);
-        setJourneyTitle("New Customer Journey");
-        setNodes(initialNodes);
-        setEdges([]);
-        setJourneyMetadata({
-          customerName: journeyMetadata.customerName, // Preserve customer name
-          workflowIntent: "",
-          notes: "",
-          summary: ""
-        });
-      }
+      // Set the journey data
+      setCurrentJourneyId(id);
+      setJourneyTitle(journey.title);
+      setNodes(journey.nodes);
+      setEdges(journey.edges);
       
-      // Refresh the journeys list
-      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
+      // Set metadata
+      setJourneyMetadata({
+        customerName: journey.customerName || "",
+        workflowIntent: journey.workflowIntent || "",
+        notes: journey.notes || "",
+        summary: journey.summary || ""
+      });
       
       toast({
-        title: "Journey Deleted",
-        description: `"${journeyName}" has been deleted.`,
+        title: "Journey Loaded",
+        description: `Loaded "${journey.title}" journey.`,
         duration: 3000
       });
     } catch (error) {
-      console.error("Failed to delete journey:", error);
       toast({
-        title: "Delete Failed",
-        description: error instanceof Error ? error.message : "There was an error deleting the journey.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load journey",
         variant: "destructive"
       });
     }
-  }, [
-    deleteJourneyMutation, currentJourneyId, queryClient, 
-    journeyMetadata.customerName, toast
-  ]);
+  };
   
-  // Auto-save functionality
-  const autoSaveChanges = useCallback(() => {
-    // Clear any existing timeout
-    if (saveTimeout) {
-      clearTimeout(saveTimeout);
-    }
-    
-    // Set a new timeout to save after 5 seconds of inactivity
-    const timeout = setTimeout(() => {
-      // Before auto-saving, make sure we're using the most up-to-date metadata
-      // This is to fix the issue where the customer name gets lost during auto-save
-      if (currentJourneyId) {
-        console.log("Auto-saving journey with metadata:", journeyMetadata);
-        updateJourneyMutation.mutate({
-          id: currentJourneyId,
-          journeyData: {
-            title: journeyTitle,
-            customerName: journeyMetadata.customerName || "", 
-            workflowIntent: journeyMetadata.workflowIntent || "",
-            notes: journeyMetadata.notes || "",
-            summary: journeyMetadata.summary || "",
-            nodes,
-            edges
-          }
-        });
-        console.log("Auto-saved journey at", new Date().toISOString());
-      } else {
-        saveJourney();
-      }
-    }, 5000);
-    
-    setSaveTimeout(timeout);
-  }, [saveTimeout, currentJourneyId, journeyMetadata, journeyTitle, nodes, edges, updateJourneyMutation, saveJourney]);
-  
-  // Load a specific journey
-  const loadJourney = useCallback(async (journeyId: number) => {
-    try {
-      // Clear any existing auto-save timeout
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-        setSaveTimeout(null);
-      }
-      
-      setIsLoading(true);
-      console.log("Loading journey ID:", journeyId);
-      const journey = await fetchCustomerJourney(journeyId);
-      
-      if (journey) {
-        console.log("Journey loaded:", journey);
-        
-        // Set all the state at once to prevent auto-save issue
-        // Block any auto-saves during this process
-        const isAutoSaveEnabled = autoSaveChanges !== null;
-        
-        // First set the journey ID
-        setCurrentJourneyId(journey.id);
-        
-        // Then set the journey data
-        setJourneyTitle(journey.title || 'Untitled Journey');
-        
-        // Add the onNodeEdit handler to nodes
-        const processedNodes = (journey.nodes || initialNodes).map(node => ({
-          ...node,
-          data: {
-            ...node.data,
-            onNodeEdit: handleNodeEditStable // Use the stable reference
-          }
-        }));
-        
-        setNodes(processedNodes);
-        setEdges(journey.edges || []);
-        
-        // Load metadata
-        setJourneyMetadata({
-          customerName: journey.customerName || '',
-          workflowIntent: journey.workflowIntent || '',
-          notes: journey.notes || '',
-          summary: journey.summary || ''
-        });
+  // Function to delete a journey
+  const deleteJourney = (id: number, title: string) => {
+    deleteJourneyMutation.mutate(id, {
+      onSuccess: () => {
+        // If we're currently viewing this journey, reset the editor
+        if (currentJourneyId === id) {
+          setCurrentJourneyId(null);
+          setJourneyTitle("New Customer Journey");
+          setNodes(initialNodes);
+          setEdges([]);
+          
+          // Don't reset customer when deleting a journey
+          setJourneyMetadata({
+            customerName: journeyMetadata.customerName, // Preserve customer name
+            workflowIntent: "",
+            notes: "",
+            summary: ""
+          });
+        }
         
         toast({
-          title: "Journey Loaded",
-          description: `Loaded "${journey.title || 'Untitled Journey'}"`,
-          duration: 2000
+          title: "Journey Deleted",
+          description: `"${title}" has been deleted.`,
+          duration: 3000
         });
       }
+    });
+  };
+  
+  // Function to update the journey title
+  const handleTitleUpdate = (newTitle: string) => {
+    setJourneyTitle(newTitle);
+    
+    // Auto-save when the title is updated
+    if (currentJourneyId) {
+      autoSaveChanges();
+    }
+  };
+  
+  // Create a new journey
+  const handleCreateFlow = (name: string, customerName: string = "") => {
+    setCurrentJourneyId(null);
+    setJourneyTitle(name);
+    setNodes(initialNodes);
+    setEdges([]);
+    
+    // Update metadata with customer name
+    setJourneyMetadata({
+      customerName,
+      workflowIntent: "",
+      notes: "",
+      summary: ""
+    });
+    
+    saveJourney();
+    setNewFlowDialogOpen(false);
+  };
+  
+  // Create a journey with AI assistance
+  const handleCreateAIFlow = async (
+    name: string, 
+    customerName: string, 
+    intent: string
+  ) => {
+    setIsGeneratingAIJourney(true);
+    try {
+      const result = await generateAIJourney({
+        title: name,
+        customerName,
+        intent
+      });
+      
+      if (result.success && result.journey) {
+        setCurrentJourneyId(null);
+        setJourneyTitle(name);
+        
+        // Transform the generated nodes and edges
+        const generatedNodes = result.journey.nodes.map((node: any) => ({
+          id: `node_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          type: 'journeyNode',
+          data: {
+            stepType: node.stepType,
+            title: node.title,
+            description: node.description,
+            onNodeEdit: handleNodeEditStable
+          },
+          position: node.position,
+        }));
+        
+        // Create edges between sequential nodes
+        const generatedEdges: Edge[] = [];
+        for (let i = 0; i < generatedNodes.length - 1; i++) {
+          generatedEdges.push({
+            id: `e-${generatedNodes[i].id}-${generatedNodes[i+1].id}`,
+            source: generatedNodes[i].id,
+            target: generatedNodes[i+1].id,
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: '#2563eb' },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#2563eb',
+            }
+          });
+        }
+        
+        setNodes(generatedNodes);
+        setEdges(generatedEdges);
+        
+        // Update metadata
+        setJourneyMetadata({
+          customerName,
+          workflowIntent: intent,
+          notes: "",
+          summary: result.journey.summary || ""
+        });
+        
+        // Save the AI-generated journey
+        saveJourney();
+        
+        toast({
+          title: "AI Journey Created",
+          description: "Your AI-assisted customer journey has been created.",
+          duration: 3000
+        });
+      } else {
+        throw new Error(result.error || "Failed to generate journey");
+      }
     } catch (error) {
-      console.error("Failed to load journey:", error);
       toast({
-        title: "Load Failed",
-        description: error instanceof Error ? error.message : "There was an error loading the journey.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate journey with AI",
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setIsGeneratingAIJourney(false);
+      setNewFlowDialogOpen(false);
     }
-  }, [fetchCustomerJourney, saveTimeout, autoSaveChanges, toast, handleNodeEditStable]);
-  
-  // Update all nodes to include the onNodeEdit callback
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          onNodeEdit: handleNodeEditStable // Use the stable reference
-        }
-      }))
-    );
-  }, [handleNodeEditStable, setNodes]);
+  };
   
   // Update a node's data
-  const updateNode = (id: string, data: { 
-    stepType: string; 
-    title: string; 
-    description: string;
-    outputPaths?: number; // For MultiPathNode 
-  }) => {
-    setNodes((nds) => 
-      nds.map((node) => {
+  const updateNode = (id: string, data: any) => {
+    setNodes(nds => 
+      nds.map(node => {
         if (node.id === id) {
-          // Update the node data
+          // For MultiPathNode, handle the outputPaths property
+          if (node.type === 'multiPathNode' && typeof data.outputPaths === 'number') {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                ...data,
+                outputPaths: data.outputPaths
+              }
+            };
+          }
+          
+          // For regular nodes
           return {
             ...node,
             data: {
               ...node.data,
-              stepType: data.stepType,
-              title: data.title,
-              description: data.description,
-              outputPaths: data.outputPaths, // Include outputPaths for MultiPathNode
-              onNodeEdit: handleNodeEditStable // Use the stable reference
+              ...data
             }
           };
         }
@@ -620,114 +585,58 @@ export default function CustomerJourney() {
       })
     );
     
+    // Auto-save when a node is updated
+    autoSaveChanges();
+    
+    // Close the edit dialog
+    setEditDialogOpen(false);
+    
     toast({
       title: "Node Updated",
       description: `Updated "${data.title}" node.`,
       duration: 2000
     });
-    
-    // Auto-save when a node is updated
-    autoSaveChanges();
   };
   
-  // Delete a node from the flow
+  // Delete a node
   const deleteNode = (id: string) => {
     // Find the node to get its title for the toast message
     const nodeToDelete = nodes.find(node => node.id === id);
-    const nodeTitle = nodeToDelete?.data?.title || "Node";
+    const nodeTitle = nodeToDelete?.data.title || "Unknown";
     
     // Remove the node
-    setNodes((nds) => nds.filter((node) => node.id !== id));
+    setNodes(nds => nds.filter(node => node.id !== id));
     
-    // Remove any edges connected to the node
-    setEdges((eds) => 
-      eds.filter((edge) => edge.source !== id && edge.target !== id)
-    );
+    // Remove any edges connected to this node
+    setEdges(eds => eds.filter(edge => edge.source !== id && edge.target !== id));
+    
+    // Auto-save when a node is deleted
+    autoSaveChanges();
+    
+    // Close the edit dialog
+    setEditDialogOpen(false);
     
     toast({
       title: "Node Deleted",
-      description: `Deleted "${nodeTitle}" node from the flow.`,
+      description: `Deleted "${nodeTitle}" node from the journey.`,
       duration: 2000
     });
-    
-    // Auto-save after deleting a node
-    autoSaveChanges();
   };
   
-  // Add a custom node with specified characteristics
-  const addCustomNode = (nodeData: NodeCreationData) => {
-    const newNodeId = `node_${Date.now()}`;
-    const position = getNewNodePosition();
-    
-    const newNode: Node = {
-      id: newNodeId,
-      type: 'journeyNode',
-      data: { 
-        stepType: nodeData.stepType,
-        title: nodeData.title,
-        description: nodeData.description,
-        onNodeEdit: handleNodeEditStable // Use the stable reference
-      },
-      position
-    };
-    
-    setNodes((nds) => [...nds, newNode]);
-    connectToLastNode(newNodeId);
-    
-    toast({
-      title: "Node Added",
-      description: `Added "${nodeData.title}" node to the journey.`,
-      duration: 2000
-    });
-    
-    // Auto-save when a node is added
-    autoSaveChanges();
-  };
-  
-  // Add a quick node to the journey (for quick-add buttons)
-  const addNode = (type: string) => {
-    const newNodeId = `node_${Date.now()}`;
-    const position = getNewNodePosition();
-    
-    const newNode: Node = {
-      id: newNodeId,
-      type: 'journeyNode',
-      data: { 
-        stepType: type,
-        title: `${type} Node`,
-        description: `Description for ${type.toLowerCase()} node`,
-        onNodeEdit: handleNodeEditStable // Use the stable reference
-      },
-      position
-    };
-    
-    setNodes((nds) => [...nds, newNode]);
-    connectToLastNode(newNodeId);
-    
-    toast({
-      title: "Node Added",
-      description: `Added quick "${type}" node to the journey.`,
-      duration: 2000
-    });
-    
-    // Auto-save when a node is added
-    autoSaveChanges();
-  };
-  
-  // Add a multi-path decision node to the journey
+  // Add a specialized multi-path node
   const addMultiPathNode = () => {
-    const newNodeId = `decision-split-${Date.now()}`;
+    const newNodeId = `node_${Date.now()}`;
     const position = getNewNodePosition();
     
     const newNode: Node = {
       id: newNodeId,
       type: 'multiPathNode',
       data: { 
-        stepType: 'Decision Split',
-        title: 'Decision Point',
-        description: 'Customer journey splits based on decision',
-        outputPaths: 3, // Default to 3 output paths
-        onNodeEdit: handleNodeEditStable // Use the stable reference
+        stepType: 'decision',
+        title: "Decision Point",
+        description: "Customer makes a decision that leads to different paths",
+        outputPaths: 2, // Default to 2 output paths
+        onNodeEdit: handleNodeEditStable
       },
       position
     };
@@ -736,303 +645,70 @@ export default function CustomerJourney() {
     connectToLastNode(newNodeId);
     
     toast({
-      title: "Decision Split Added",
-      description: "Added a decision split node with multiple output paths.",
+      title: "Decision Node Added",
+      description: "Added a multi-path decision node to the journey.",
       duration: 2000
     });
     
     // Auto-save when a node is added
     autoSaveChanges();
   };
-
-  // Handler for updating the journey title
-  const handleTitleUpdate = (newTitle: string) => {
-    setJourneyTitle(newTitle);
-    
-    toast({
-      title: "Title Updated",
-      description: "Journey title has been updated.",
-      duration: 2000
-    });
-    
-    // Auto-save when title changes
-    autoSaveChanges();
-  };
   
-  // Handler for creating a new flow
-  const handleCreateFlow = (flowName: string, templateType: string | null) => {
-    // Set the journey title
-    setJourneyTitle(flowName);
-    
-    // Clear current flow
-    setNodes(initialNodes);
-    setEdges([]);
-    setCurrentJourneyId(null);
-    
-    // Reset metadata but preserve customer name
-    setJourneyMetadata({
-      customerName: journeyMetadata.customerName || "", // Preserve customer name
-      workflowIntent: "",
-      notes: "",
-      summary: ""
-    });
-    
-    // If a template was selected, load it
-    if (templateType) {
-      handleTemplateChange(templateType);
-    }
-    
-    toast({
-      title: "New Journey Created",
-      description: `Created new journey: ${flowName}`,
-      duration: 3000
-    });
-  };
-  
-  // Create a new journey using AI generation
-  const handleCreateAIFlow = async (flowName: string, description: string) => {
-    try {
-      setIsGeneratingAIJourney(true);
-      setJourneyTitle(flowName);
-      
-      // Reset metadata with journey description as notes, but preserve customer name
-      setJourneyMetadata({
-        customerName: journeyMetadata.customerName || "", // Preserve customer name
-        workflowIntent: description,
-        notes: description,
-        summary: ""
-      });
-      
-      toast({
-        title: "Generating AI Journey",
-        description: "Please wait while we generate your customer journey...",
-        duration: 5000
-      });
-      
-      // Call the AI journey generation API
-      const generatedJourney = await generateAIJourney(description);
-      
-      if (generatedJourney && generatedJourney.nodes && generatedJourney.edges) {
-        // Set the nodes and edges from the AI-generated journey
-        setNodes(generatedJourney.nodes.map(node => ({
-          ...node,
-          data: {
-            ...node.data,
-            onNodeEdit: handleNodeEditStable // Use the stable reference
-          }
-        })));
-        setEdges(generatedJourney.edges);
-        setCurrentJourneyId(null);
-        
-        toast({
-          title: "AI Journey Created",
-          description: `Created new AI journey: ${flowName}`,
-          duration: 3000
-        });
-      }
-    } catch (error) {
-      console.error("Failed to generate AI journey:", error);
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate AI journey",
-        variant: "destructive",
-        duration: 5000
-      });
-      
-      // Reset to default initial nodes
-      setNodes(initialNodes);
-      setEdges([]);
-    } finally {
-      setIsGeneratingAIJourney(false);
-    }
-  };
-
-  // Template selection handler
-  const handleTemplateChange = (value: string) => {
-    setSelectedTemplate(value);
-    
-    if (value === 'sales') {
-      // Create a sales journey template
-      const salesNodes: Node[] = [
-        {
-          id: 'entry',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Entry Point',
-            title: 'Awareness',
-            description: 'Customer discovers product/service',
-            onNodeEdit: handleNodeEditStable // Use the stable reference
-          },
-          position: { x: 100, y: 100 }
-        },
-        {
-          id: 'research',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Research',
-            title: 'Research',
-            description: 'Customer researches options'
-          },
-          position: { x: 350, y: 100 }
-        },
-        {
-          id: 'evaluation',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Evaluation',
-            title: 'Evaluation',
-            description: 'Customer evaluates different options'
-          },
-          position: { x: 600, y: 100 }
-        },
-        {
-          id: 'decision',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Decision',
-            title: 'Decision',
-            description: 'Customer makes purchase decision'
-          },
-          position: { x: 850, y: 100 }
-        },
-        {
-          id: 'purchase',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Purchase',
-            title: 'Purchase',
-            description: 'Customer completes purchase'
-          },
-          position: { x: 1100, y: 100 }
-        }
-      ];
-      
-      const salesEdges: Edge[] = [
-        {
-          id: 'e-entry-research',
-          source: 'entry',
-          target: 'research',
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#2563eb' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#2563eb',
-          }
-        },
-        {
-          id: 'e-research-evaluation',
-          source: 'research',
-          target: 'evaluation',
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#2563eb' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#2563eb',
-          }
-        },
-        {
-          id: 'e-evaluation-decision',
-          source: 'evaluation',
-          target: 'decision',
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#2563eb' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#2563eb',
-          }
-        },
-        {
-          id: 'e-decision-purchase',
-          source: 'decision',
-          target: 'purchase',
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#2563eb' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#2563eb',
-          }
-        }
-      ];
-      
-      setNodes(salesNodes);
-      setEdges(salesEdges);
-    } 
-    else if (value === 'support') {
-      // Create a support journey template
+  // Create a sample customer journey from a template
+  const createSampleJourney = (template: string) => {
+    if (template === 'support') {
+      // Customer Support Journey
       const supportNodes: Node[] = [
         {
           id: 'entry',
           type: 'journeyNode',
           data: { 
-            stepType: 'Entry Point',
-            title: 'Issue Occurs',
-            description: 'Customer experiences an issue',
-            onNodeEdit: handleNodeEditStable // Use the stable reference
+            stepType: 'entry',
+            title: "Customer Inquiry",
+            description: "Customer contacts support with an issue or question",
+            onNodeEdit: handleNodeEditStable
           },
-          position: { x: 100, y: 100 }
-        },
-        {
-          id: 'contact',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Contact',
-            title: 'Contact Support',
-            description: 'Customer reaches out for help'
-          },
-          position: { x: 350, y: 100 }
+          position: { x: 100, y: 150 }
         },
         {
           id: 'identification',
           type: 'journeyNode',
           data: { 
-            stepType: 'Identification',
-            title: 'Issue Identification',
-            description: 'Support identifies the problem'
+            stepType: 'evaluation',
+            title: "Issue Identification",
+            description: "Agent works with customer to identify the specific issue",
+            onNodeEdit: handleNodeEditStable
           },
-          position: { x: 600, y: 100 }
+          position: { x: 350, y: 150 }
         },
         {
           id: 'resolution',
           type: 'journeyNode',
           data: { 
-            stepType: 'Resolution',
-            title: 'Problem Resolution',
-            description: 'Issue is resolved for customer'
+            stepType: 'support',
+            title: "Resolution Process",
+            description: "Agent provides solution or escalates if needed",
+            onNodeEdit: handleNodeEditStable
           },
-          position: { x: 850, y: 100 }
+          position: { x: 600, y: 150 }
         },
         {
           id: 'followup',
           type: 'journeyNode',
           data: { 
-            stepType: 'Follow Up',
-            title: 'Follow Up',
-            description: 'Post-resolution follow-up'
+            stepType: 'retention',
+            title: "Follow-up",
+            description: "Agent confirms resolution and checks for additional needs",
+            onNodeEdit: handleNodeEditStable
           },
-          position: { x: 1100, y: 100 }
+          position: { x: 850, y: 150 }
         }
       ];
       
       const supportEdges: Edge[] = [
         {
-          id: 'e-entry-contact',
+          id: 'e-entry-identification',
           source: 'entry',
-          target: 'contact',
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#2563eb' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#2563eb',
-          }
-        },
-        {
-          id: 'e-contact-identification',
-          source: 'contact',
           target: 'identification',
           type: 'smoothstep',
           animated: true,
@@ -1076,20 +752,59 @@ export default function CustomerJourney() {
     autoSaveChanges();
   };
   
+  // Add a custom node from the dialog
+  const addCustomNode = (nodeData: NodeCreationData) => {
+    const newNodeId = `node_${Date.now()}`;
+    const position = getNewNodePosition();
+    
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'journeyNode',
+      data: { 
+        stepType: nodeData.stepType,
+        title: nodeData.title,
+        description: nodeData.description,
+        onNodeEdit: handleNodeEditStable // Use the stable reference
+      },
+      position
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    connectToLastNode(newNodeId);
+    
+    toast({
+      title: "Node Added",
+      description: `Added "${nodeData.title}" node to the journey.`,
+      duration: 2000
+    });
+    
+    // Auto-save when a node is added
+    autoSaveChanges();
+  };
+  
   // Function to get a new node position
   const getNewNodePosition = (): XYPosition => {
-    // Find the rightmost node to place the new node to its right
-    const rightmostNode = nodes.reduce(
-      (rightmost, node) => {
-        const x = node.position.x;
-        return x > rightmost.x ? { x, node } : rightmost;
-      },
-      { x: 0, node: null }
-    );
+    // If we have nodes, position new node to the right of the rightmost node
+    if (nodes.length > 0) {
+      // Find the rightmost node
+      const rightmostNode = nodes.reduce(
+        (rightmost, node) => {
+          return node.position.x > rightmost.x 
+            ? { x: node.position.x, y: node.position.y } 
+            : rightmost;
+        },
+        { x: 0, y: 100 }
+      );
+      
+      // Position the new node to the right of the rightmost node
+      return { 
+        x: rightmostNode.x + 250, 
+        y: rightmostNode.y 
+      };
+    }
     
-    return rightmostNode.node
-      ? { x: rightmostNode.x + 250, y: rightmostNode.node.position.y }
-      : { x: 100, y: 100 };
+    // If no nodes, position at the start
+    return { x: 100, y: 100 };
   };
   
   // Function to connect a node to the previous "last" node
@@ -1259,11 +974,6 @@ export default function CustomerJourney() {
       duration: 3000
     });
   };
-  
-  // State for dialogs
-  const [newFlowDialogOpen, setNewFlowDialogOpen] = useState(false);
-  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
-  const [newNodeDialogOpen, setNewNodeDialogOpen] = useState(false);
   
   return (
     <div className="flex min-h-screen bg-background">
