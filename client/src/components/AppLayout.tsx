@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 import { CheckCircle2, Settings, Map, Home, Users, ClipboardList } from 'lucide-react';
-import SettingsDialog from './SettingsDialog';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -9,7 +8,6 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Define menu items with their properties
   const menuItems = useMemo(() => {
@@ -52,12 +50,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       
-      {/* Settings Dialog */}
-      <SettingsDialog 
-        open={settingsOpen} 
-        onOpenChange={setSettingsOpen} 
-      />
-      
       {/* Bottom toolbar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 flex justify-center items-center shadow-lg">
         {/* Center-aligned container with minimal spacing */}
@@ -81,13 +73,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
           ))}
           
           {/* Settings (Always rightmost) */}
-          <div 
-            className="flex flex-col items-center px-2 py-2 hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Settings className="h-6 w-6" />
-            <span className="text-xs mt-1">Settings</span>
-          </div>
+          <Link href="/settings">
+            <div className={`flex flex-col items-center px-2 py-2 hover:text-primary rounded-md transition-colors cursor-pointer ${location === '/settings' ? 'text-primary' : 'text-muted-foreground'}`}>
+              <Settings className="h-6 w-6" />
+              <span className="text-xs mt-1">Settings</span>
+            </div>
+          </Link>
         </div>
       </div>
       
