@@ -555,6 +555,9 @@ export default function ActionPlan() {
                       <Card>
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg">ROI Projection</CardTitle>
+                          <CardDescription>
+                            Based on industry benchmarks and your input data
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -571,6 +574,14 @@ export default function ActionPlan() {
                                   </div>
                                   <div>hours</div>
                                 </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Calculation: {formData.aiGoals.length} use cases × avg. handling time × 
+                                  {formData.interactionVolume === '0-1000' ? ' 5-10%' :
+                                   formData.interactionVolume === '1000-5000' ? ' 8-15%' :
+                                   formData.interactionVolume === '5000-10000' ? ' 12-20%' :
+                                   formData.interactionVolume === '10000-50000' ? ' 15-25%' :
+                                   ' 20-30%'} automation rate
+                                </div>
                               </div>
                               
                               <div>
@@ -583,6 +594,38 @@ export default function ActionPlan() {
                                    '$200,000+'}
                                   <span className="text-sm ml-1 font-normal">per year</span>
                                 </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Based on avg. $25/hr fully-loaded agent cost × {
+                                  formData.interactionVolume === '0-1000' ? '200-600' :
+                                  formData.interactionVolume === '1000-5000' ? '600-1,600' :
+                                  formData.interactionVolume === '5000-10000' ? '1,600-3,200' :
+                                  formData.interactionVolume === '10000-50000' ? '3,200-8,000' :
+                                  '8,000+'} hours saved annually
+                                </div>
+                              </div>
+                              
+                              <div className="bg-muted rounded-lg p-3 mt-2">
+                                <div className="text-sm font-medium">Cost-Benefit Analysis</div>
+                                <div className="text-xs mt-1">
+                                  <div className="flex justify-between">
+                                    <span>Avg. implementation cost:</span>
+                                    <span className="font-medium">{
+                                      formData.aiGoals.length <= 2 ? '$15,000-$30,000' :
+                                      formData.aiGoals.length <= 4 ? '$30,000-$60,000' :
+                                      '$60,000-$100,000'
+                                    }</span>
+                                  </div>
+                                  <div className="flex justify-between mt-1">
+                                    <span>Annual maintenance:</span>
+                                    <span className="font-medium">{
+                                      formData.interactionVolume === '0-1000' ? '$2,000-$5,000' :
+                                      formData.interactionVolume === '1000-5000' ? '$5,000-$10,000' :
+                                      formData.interactionVolume === '5000-10000' ? '$10,000-$20,000' :
+                                      formData.interactionVolume === '10000-50000' ? '$20,000-$40,000' :
+                                      '$40,000+'
+                                    }</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                             
@@ -594,6 +637,15 @@ export default function ActionPlan() {
                                    formData.successMetrics.includes('faster-resolutions') ? '10-20' :
                                    '5-15'}%
                                 </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Based on {
+                                    formData.successMetrics.includes('24-7-coverage') ? 'expanded availability, ' : ''
+                                  }{
+                                    formData.successMetrics.includes('faster-resolutions') ? 'response time reduction, ' : ''
+                                  }{
+                                    formData.successMetrics.includes('csat-improvement') ? 'consistency of service' : 'standard improvements'
+                                  }
+                                </div>
                               </div>
                               
                               <div>
@@ -604,12 +656,51 @@ export default function ActionPlan() {
                                    '9-12'}
                                   <span className="text-sm ml-1 font-normal">months</span>
                                 </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Implementation cost ÷ (monthly cost savings + revenue improvement)
+                                </div>
+                              </div>
+                              
+                              <div className="bg-muted rounded-lg p-3 mt-2">
+                                <div className="text-sm font-medium">Revenue Impact Potential</div>
+                                <div className="text-xs mt-1">
+                                  <div className="flex justify-between">
+                                    <span>Increased conversion rate:</span>
+                                    <span className="font-medium">{
+                                      formData.successMetrics.includes('increased-sales') ? '5-10%' : '2-5%'
+                                    }</span>
+                                  </div>
+                                  <div className="flex justify-between mt-1">
+                                    <span>Customer retention improvement:</span>
+                                    <span className="font-medium">{
+                                      formData.successMetrics.includes('csat-improvement') ? '10-15%' : '5-10%'
+                                    }</span>
+                                  </div>
+                                  <div className="flex justify-between mt-1">
+                                    <span>Customer lifetime value increase:</span>
+                                    <span className="font-medium">{
+                                      formData.primaryChannel === 'chat' || formData.primaryChannel === 'social' ? '15-25%' : '10-20%'
+                                    }</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
                           
                           <div className="mt-6 pt-6 border-t">
-                            <div className="text-sm font-medium mb-2">Key performance impact</div>
+                            <div className="text-sm font-medium mb-2">Performance Methodology</div>
+                            <p className="text-xs text-muted-foreground mb-3">
+                              Projections are calculated using industry benchmarks from {formData.industry || 'your industry'} and data from {
+                                formData.interactionVolume === '0-1000' ? 'small' : 
+                                formData.interactionVolume === '1000-5000' ? 'medium' : 
+                                'large'
+                              } businesses with similar automation initiatives. Implementation variables include:
+                              complexity of use cases ({formData.aiGoals.length}), 
+                              integration requirements ({formData.currentPlatforms ? 'custom' : 'standard'}), and 
+                              autonomy level ({formData.autonomyLevel || 'variable'}).
+                            </p>
+                            
+                            <div className="text-sm font-medium mb-2">Key Performance Impact Areas</div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               {formData.successMetrics.map(metric => {
                                 const icon = {
