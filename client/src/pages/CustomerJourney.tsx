@@ -1434,89 +1434,56 @@ export default function CustomerJourney() {
               </div>
             ) : (
               <div className="space-y-3">
-                {(() => {
-                  // Create a memoized component for journey items
-                  const JourneyItem = React.memo(({ 
-                    journey,
-                    isActive,
-                    onLoad,
-                    onDelete
-                  }: { 
-                    journey: SavedJourneyDisplay, 
-                    isActive: boolean, 
-                    onLoad: (id: number) => void,
-                    onDelete: (id: number, title: string) => void
-                  }) => (
-                    <div 
-                      key={journey.id} 
-                      className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${isActive ? 'bg-primary/10 border-primary' : ''}`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <h4 
-                          className="font-medium truncate w-44"
-                          onClick={() => onLoad(journey.id)}
-                        >
-                          {journey.title}
-                        </h4>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
-                              onDelete(journey.id, journey.title);
-                            }
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                      
-                      {/* Customer Name */}
-                      {journey.customerName && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Users className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {journey.customerName}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Last modified: {formatDateTime(journey.lastSaved)}
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {journey.preview?.nodeCount || 0} nodes
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {journey.preview?.edgeCount || 0} connections
-                        </Badge>
-                      </div>
+                {savedJourneys.map(journey => (
+                  <div 
+                    key={journey.id} 
+                    className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${currentJourneyId === journey.id ? 'bg-primary/10 border-primary' : ''}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 
+                        className="font-medium truncate w-44"
+                        onClick={() => loadJourney(journey.id)}
+                      >
+                        {journey.title}
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
+                            deleteJourney(journey.id, journey.title);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     </div>
-                  ));
-                  
-                  // Memoized handler functions to prevent unnecessary re-renders
-                  const handleLoadJourney = useCallback((id: number) => {
-                    loadJourney(id);
-                  }, [loadJourney]);
-                  
-                  const handleDeleteJourney = useCallback((id: number, title: string) => {
-                    deleteJourney(id, title);
-                  }, [deleteJourney]);
-                  
-                  // Return the list of journey items
-                  return savedJourneys.map(journey => (
-                    <JourneyItem 
-                      key={journey.id} 
-                      journey={journey} 
-                      isActive={currentJourneyId === journey.id}
-                      onLoad={handleLoadJourney}
-                      onDelete={handleDeleteJourney}
-                    />
-                  ));
-                })()}
+                    
+                    {/* Customer Name */}
+                    {journey.customerName && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <Users className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {journey.customerName}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Last modified: {formatDateTime(journey.lastSaved)}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {journey.preview?.nodeCount || 0} nodes
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {journey.preview?.edgeCount || 0} connections
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
