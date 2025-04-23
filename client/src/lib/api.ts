@@ -140,10 +140,16 @@ export async function deleteAllCustomerJourneys(): Promise<void> {
 }
 
 // Generate a summary for a customer journey using AI
-export async function generateJourneySummary(journeyId: number): Promise<CustomerJourney> {
-  const response = await apiRequest<{ success: boolean; journey: CustomerJourney }>(
-    `/api/customer-journeys/${journeyId}/generate-summary`,
-    'POST'
+export async function generateJourneySummary(
+  journeyTitle: string,
+  customerName: string,
+  workflowIntent: string,
+  nodes: { stepType: string; title: string; description: string }[]
+): Promise<string> {
+  const response = await apiRequest<{ success: boolean; summary: string }>(
+    `/api/generate-journey-summary`,
+    'POST',
+    { journeyTitle, customerName, workflowIntent, nodes }
   );
   
   if (response.error) {
@@ -154,11 +160,7 @@ export async function generateJourneySummary(journeyId: number): Promise<Custome
     throw new Error('Failed to generate journey summary');
   }
   
-  // Invalidate queries to refresh data
-  queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
-  queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys', journeyId] });
-  
-  return response.data.journey;
+  return response.data.summary;
 }
 
 // Generate a customer journey using AI
@@ -223,4 +225,71 @@ export async function fetchAppStatistics(): Promise<AppStatistics> {
   }
   
   return response.data;
+}
+
+// Customer API functions
+export interface Customer {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getAllCustomers(): Promise<Customer[]> {
+  const response = await apiRequest<Customer[]>('/api/customers');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  return response.data || [];
+}
+
+export async function getCustomer(id: number): Promise<Customer> {
+  const response = await apiRequest<Customer>(`/api/customers/${id}`);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Customer with id ${id} not found`);
+  }
+  return response.data;
+}
+
+export async function createCustomer(customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
+  const response = await apiRequest<Customer>('/api/customers', 'POST', customer);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error('Failed to create customer');
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+  return response.data;
+}
+
+export async function updateCustomer(id: number, customer: Partial<Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Customer> {
+  const response = await apiRequest<Customer>(`/api/customers/${id}`, 'PUT', customer);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Failed to update customer with id ${id}`);
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+  queryClient.invalidateQueries({ queryKey: ['/api/customers', id] });
+  return response.data;
+}
+
+export async function deleteCustomer(id: number): Promise<void> {
+  const response = await apiRequest(`/api/customers/${id}`, 'DELETE');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
 }

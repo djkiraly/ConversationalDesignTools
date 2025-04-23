@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -62,10 +62,10 @@ import {
   CustomerJourney as CustomerJourneyType,
   getCustomerJourneys,
   generateJourneySummary,
-  generateAIJourney
+  generateAIJourney,
+  getAllCustomers,
+  Customer
 } from "../lib/api";
-
-
 
 // Get appropriate icon and style for each step type
 function getStepTypeStyles(stepType: string): { 
@@ -220,6 +220,7 @@ export default function CustomerJourney() {
     stepType: string;
     title: string;
     description: string;
+    outputPaths?: number; // For MultiPathNode
   }>({
     id: "",
     stepType: "",
@@ -240,6 +241,19 @@ export default function CustomerJourney() {
     summary: ""
   });
   
+  // We want to create a stable callback reference that won't recreate with each render
+  // Creating it with useRef to keep a stable reference
+  const handleNodeEditStable = useRef((nodeId: string, nodeData: any) => {
+    setEditingNode({
+      id: nodeId,
+      stepType: nodeData.stepType || '',
+      title: nodeData.title || '',
+      description: nodeData.description || '',
+      outputPaths: nodeData.outputPaths
+    });
+    setEditDialogOpen(true);
+  }).current;
+  
   // React Query for fetching all journeys
   const { 
     data: journeysData, 
@@ -249,6 +263,15 @@ export default function CustomerJourney() {
   } = useQuery({
     queryKey: ['/api/customer-journeys'],
     queryFn: () => fetchAllCustomerJourneys(),
+  });
+  
+  // Fetch all customers for the dropdown
+  const { 
+    data: customersData, 
+    isLoading: isLoadingCustomers
+  } = useQuery({
+    queryKey: ['/api/customers'],
+    queryFn: () => getAllCustomers(),
   });
   
   // Format journeys for display
@@ -391,51 +414,73 @@ export default function CustomerJourney() {
         });
       } else {
         // Otherwise create a new journey
-        const newJourney = await createJourneyMutation.mutateAsync(journeyData);
-        setCurrentJourneyId(newJourney.id);
+        const data = await createJourneyMutation.mutateAsync(journeyData);
+        setCurrentJourneyId(data.id);
       }
       
-      // Only show toast for manual saves
+      // Refresh the journeys list
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
+      
       if (!isAutoSave) {
         toast({
           title: "Journey Saved",
           description: "Your journey has been saved successfully.",
           duration: 3000
         });
-      } else {
-        console.log("Auto-saved journey at", new Date().toISOString());
       }
     } catch (error) {
       console.error("Failed to save journey:", error);
-      // Check if it's a unique constraint violation
-      if (error instanceof Error && error.message.includes("unique constraint")) {
-        toast({
-          title: "Journey Name Already Exists",
-          description: "Please choose a different name for your journey.",
-          variant: "destructive",
-          duration: 5000
-        });
-      } else {
-        toast({
-          title: "Save Failed",
-          description: error instanceof Error ? error.message : "There was an error saving your journey.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "There was an error saving your journey.",
+        variant: "destructive",
+        duration: 5000
+      });
     }
   }, [
-    nodes, 
-    edges, 
-    journeyTitle, 
-    journeyMetadata,
-    currentJourneyId, 
-    toast, 
-    createJourneyMutation, 
-    updateJourneyMutation,
-    queryClient
+    queryClient, journeyTitle, currentJourneyId, journeyMetadata, 
+    nodes, edges, updateJourneyMutation, createJourneyMutation, toast
   ]);
   
-
+  // Delete a journey
+  const deleteJourney = useCallback(async (journeyId: number, journeyName: string) => {
+    try {
+      await deleteJourneyMutation.mutateAsync(journeyId);
+      
+      // If we deleted the current journey, reset the form
+      if (currentJourneyId === journeyId) {
+        setCurrentJourneyId(null);
+        setJourneyTitle("New Customer Journey");
+        setNodes(initialNodes);
+        setEdges([]);
+        setJourneyMetadata({
+          customerName: journeyMetadata.customerName, // Preserve customer name
+          workflowIntent: "",
+          notes: "",
+          summary: ""
+        });
+      }
+      
+      // Refresh the journeys list
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-journeys'] });
+      
+      toast({
+        title: "Journey Deleted",
+        description: `"${journeyName}" has been deleted.`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error("Failed to delete journey:", error);
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "There was an error deleting the journey.",
+        variant: "destructive"
+      });
+    }
+  }, [
+    deleteJourneyMutation, currentJourneyId, queryClient, 
+    journeyMetadata.customerName, toast
+  ]);
   
   // Auto-save functionality
   const autoSaveChanges = useCallback(() => {
@@ -502,7 +547,7 @@ export default function CustomerJourney() {
           ...node,
           data: {
             ...node.data,
-            onNodeEdit: handleNodeEdit
+            onNodeEdit: handleNodeEditStable // Use the stable reference
           }
         }));
         
@@ -533,261 +578,7 @@ export default function CustomerJourney() {
     } finally {
       setIsLoading(false);
     }
-  }, [setNodes, setEdges, toast, saveTimeout, handleNodeEdit]);
-  
-  // Delete a saved journey
-  const deleteJourney = useCallback(async (journeyId: number, journeyTitle: string) => {
-    try {
-      await deleteJourneyMutation.mutateAsync(journeyId);
-      
-      // If the current journey was deleted, reset to a new journey
-      if (journeyId === currentJourneyId) {
-        setNodes(initialNodes);
-        setEdges([]);
-        setJourneyTitle("New Customer Journey");
-        setCurrentJourneyId(null);
-        
-        // Reset metadata but preserve customer name
-        setJourneyMetadata({
-          customerName: journeyMetadata.customerName || "", // Preserve customer name
-          workflowIntent: "",
-          notes: ""
-        });
-      }
-    } catch (error) {
-      console.error("Failed to delete journey:", error);
-    }
-  }, [currentJourneyId, setNodes, setEdges, deleteJourneyMutation]);
-  
-  // Delete all journeys
-  const handlePurgeAllJourneys = useCallback(async () => {
-    if (window.confirm("Are you sure you want to delete ALL saved Customer Journey Maps? This cannot be undone.")) {
-      try {
-        await deleteAllJourneysMutation.mutateAsync();
-        setNodes(initialNodes);
-        setEdges([]);
-        setJourneyTitle("New Customer Journey");
-        setCurrentJourneyId(null);
-        
-        // Reset metadata but preserve customer name
-        setJourneyMetadata({
-          customerName: journeyMetadata.customerName || "", // Preserve customer name
-          workflowIntent: "",
-          notes: ""
-        });
-      } catch (error) {
-        console.error("Failed to delete all journeys:", error);
-      }
-    }
-  }, [deleteAllJourneysMutation, setNodes, setEdges]);
-  
-  // Handler for generating a summary using AI
-  const handleGenerateSummary = useCallback(async (): Promise<string> => {
-    if (!currentJourneyId) {
-      toast({
-        title: "Save Required",
-        description: "Please save your journey first before generating a summary.",
-        variant: "destructive",
-        duration: 3000
-      });
-      return "";
-    }
-    
-    try {
-      setIsLoading(true);
-      const response = await generateJourneySummary(currentJourneyId);
-      if (response && response.summary) {
-        // Update local state with the new summary
-        setJourneyMetadata(prev => ({
-          ...prev,
-          summary: response.summary || ""
-        }));
-        
-        toast({
-          title: "Summary Generated",
-          description: "Journey summary has been generated successfully.",
-          duration: 3000
-        });
-        
-        return response.summary;
-      } else {
-        throw new Error("Failed to generate summary");
-      }
-    } catch (error) {
-      console.error("Failed to generate summary:", error);
-      toast({
-        title: "Summary Generation Failed",
-        description: error instanceof Error ? error.message : "There was an error generating the summary.",
-        variant: "destructive",
-        duration: 3000
-      });
-      return "";
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentJourneyId, toast, generateJourneySummary]);
-  
-  // Handler for saving the summary
-  const handleSaveSummary = useCallback((summary: string) => {
-    // Update the local state
-    setJourneyMetadata(prev => ({
-      ...prev,
-      summary
-    }));
-    
-    // Save the journey with the updated summary
-    if (currentJourneyId) {
-      // Need to include all required fields when updating
-      updateJourneyMutation.mutate({
-        id: currentJourneyId,
-        journeyData: {
-          title: journeyTitle,
-          customerName: journeyMetadata.customerName,
-          workflowIntent: journeyMetadata.workflowIntent,
-          notes: journeyMetadata.notes,
-          summary,
-          nodes,
-          edges
-        }
-      });
-    }
-    
-    toast({
-      title: "Summary Saved",
-      description: "Your journey summary has been saved.",
-      duration: 3000
-    });
-  }, [currentJourneyId, updateJourneyMutation, toast, journeyTitle, journeyMetadata, nodes, edges]);
-  
-  // Handler for updating journey metadata
-  const handleUpdateMetadata = useCallback((metadata: {
-    customerName: string;
-    workflowIntent: string;
-    notes: string;
-    summary?: string;
-  }) => {
-    console.log("Update metadata called with:", metadata);
-    setJourneyMetadata(metadata);
-    
-    toast({
-      title: "Metadata Updated",
-      description: "Journey metadata has been updated.",
-      duration: 2000
-    });
-    
-    // Auto-save when metadata changes
-    // Do not auto-save here as it might be causing the issues
-    // Instead manually save to preserve metadata
-    if (currentJourneyId) {
-      updateJourneyMutation.mutate({
-        id: currentJourneyId,
-        journeyData: {
-          title: journeyTitle,
-          customerName: metadata.customerName,
-          workflowIntent: metadata.workflowIntent,
-          notes: metadata.notes,
-          summary: metadata.summary,
-          nodes,
-          edges
-        }
-      });
-    }
-  }, [currentJourneyId, updateJourneyMutation, journeyTitle, nodes, edges, toast]);
-  
-  // Cleanup effect
-  useEffect(() => {
-    // Cleanup function to clear timeout when component unmounts
-    return () => {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-      }
-    };
-  }, [saveTimeout]);
-
-  // Handle new connections between nodes
-  const onConnect = useCallback(
-    (params: Connection) => {
-      // Create a unique ID for the edge
-      const edgeId = `e${params.source}-${params.target}-${Date.now()}`;
-      
-      // Create edge with animated line
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            id: edgeId,
-            type: 'smoothstep',
-            animated: true,
-            style: { stroke: '#2563eb' },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#2563eb',
-            }
-          },
-          eds
-        )
-      );
-      
-      toast({
-        title: "Connection Created",
-        description: "Connected nodes in the journey flow.",
-        duration: 2000
-      });
-    },
-    [setEdges, toast]
-  );
-
-  // Get a position for a new node
-  const getNewNodePosition = (): XYPosition => {
-    if (nodes.length === 0) {
-      return { x: 100, y: 100 };
-    }
-    
-    // Calculate a position based on the existing nodes
-    // Option 1: Continue the flow horizontally from the last node
-    const lastNode = nodes[nodes.length - 1];
-    return { 
-      x: lastNode.position.x + 250, 
-      y: lastNode.position.y 
-    };
-  };
-  
-  // Create a connection between a new node and the last node in the flow
-  const connectToLastNode = (newNodeId: string) => {
-    if (nodes.length > 0) {
-      const lastNodeId = nodes[nodes.length - 1].id;
-      setEdges((eds) => 
-        addEdge(
-          {
-            id: `e${lastNodeId}-${newNodeId}`,
-            source: lastNodeId,
-            target: newNodeId,
-            type: 'smoothstep',
-            animated: true,
-            style: { stroke: '#2563eb' },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#2563eb',
-            }
-          },
-          eds
-        )
-      );
-    }
-  };
-  
-  // This is a stable reference function for handling node editing
-  // It doesn't depend on any state so it can be declared once
-  // outside of React context and reused in the component
-  const handleNodeEditStable = useRef((nodeId: string, nodeData: any) => {
-    setEditingNode({
-      id: nodeId,
-      stepType: nodeData.stepType || '',
-      title: nodeData.title || '',
-      description: nodeData.description || ''
-    });
-    setEditDialogOpen(true);
-  }).current;
+  }, [fetchCustomerJourney, saveTimeout, autoSaveChanges, toast, handleNodeEditStable]);
   
   // Update all nodes to include the onNodeEdit callback
   useEffect(() => {
@@ -796,14 +587,19 @@ export default function CustomerJourney() {
         ...node,
         data: {
           ...node.data,
-          onNodeEdit: handleNodeEditStable
+          onNodeEdit: handleNodeEditStable // Use the stable reference
         }
       }))
     );
   }, [handleNodeEditStable, setNodes]);
   
   // Update a node's data
-  const updateNode = (id: string, data: { stepType: string; title: string; description: string }) => {
+  const updateNode = (id: string, data: { 
+    stepType: string; 
+    title: string; 
+    description: string;
+    outputPaths?: number; // For MultiPathNode 
+  }) => {
     setNodes((nds) => 
       nds.map((node) => {
         if (node.id === id) {
@@ -815,7 +611,8 @@ export default function CustomerJourney() {
               stepType: data.stepType,
               title: data.title,
               description: data.description,
-              onNodeEdit: handleNodeEdit
+              outputPaths: data.outputPaths, // Include outputPaths for MultiPathNode
+              onNodeEdit: handleNodeEditStable // Use the stable reference
             }
           };
         }
@@ -869,7 +666,7 @@ export default function CustomerJourney() {
         stepType: nodeData.stepType,
         title: nodeData.title,
         description: nodeData.description,
-        onNodeEdit: handleNodeEdit // Pass the edit handler to the node
+        onNodeEdit: handleNodeEditStable // Use the stable reference
       },
       position
     };
@@ -899,7 +696,7 @@ export default function CustomerJourney() {
         stepType: type,
         title: `${type} Node`,
         description: `Description for ${type.toLowerCase()} node`,
-        onNodeEdit: handleNodeEdit // Pass the edit handler to the node
+        onNodeEdit: handleNodeEditStable // Use the stable reference
       },
       position
     };
@@ -930,7 +727,7 @@ export default function CustomerJourney() {
         title: 'Decision Point',
         description: 'Customer journey splits based on decision',
         outputPaths: 3, // Default to 3 output paths
-        onNodeEdit: handleNodeEdit // Pass the edit handler to the node
+        onNodeEdit: handleNodeEditStable // Use the stable reference
       },
       position
     };
@@ -1021,7 +818,7 @@ export default function CustomerJourney() {
           ...node,
           data: {
             ...node.data,
-            onNodeEdit: handleNodeEdit
+            onNodeEdit: handleNodeEditStable // Use the stable reference
           }
         })));
         setEdges(generatedJourney.edges);
@@ -1064,7 +861,7 @@ export default function CustomerJourney() {
             stepType: 'Entry Point',
             title: 'Awareness',
             description: 'Customer discovers product/service',
-            onNodeEdit: handleNodeEdit
+            onNodeEdit: handleNodeEditStable // Use the stable reference
           },
           position: { x: 100, y: 100 }
         },
@@ -1174,7 +971,7 @@ export default function CustomerJourney() {
             stepType: 'Entry Point',
             title: 'Issue Occurs',
             description: 'Customer experiences an issue',
-            onNodeEdit: handleNodeEdit
+            onNodeEdit: handleNodeEditStable // Use the stable reference
           },
           position: { x: 100, y: 100 }
         },
@@ -1194,7 +991,7 @@ export default function CustomerJourney() {
           data: { 
             stepType: 'Identification',
             title: 'Issue Identification',
-            description: 'Support identifies the issue'
+            description: 'Support identifies the problem'
           },
           position: { x: 600, y: 100 }
         },
@@ -1203,8 +1000,8 @@ export default function CustomerJourney() {
           type: 'journeyNode',
           data: { 
             stepType: 'Resolution',
-            title: 'Resolution',
-            description: 'Issue is resolved'
+            title: 'Problem Resolution',
+            description: 'Issue is resolved for customer'
           },
           position: { x: 850, y: 100 }
         },
@@ -1212,9 +1009,9 @@ export default function CustomerJourney() {
           id: 'followup',
           type: 'journeyNode',
           data: { 
-            stepType: 'Follow-up',
-            title: 'Follow-up',
-            description: 'Follow-up with customer'
+            stepType: 'Follow Up',
+            title: 'Follow Up',
+            description: 'Post-resolution follow-up'
           },
           position: { x: 1100, y: 100 }
         }
@@ -1274,306 +1071,520 @@ export default function CustomerJourney() {
       setNodes(supportNodes);
       setEdges(supportEdges);
     }
+    
+    // Auto-save when a template is selected
+    autoSaveChanges();
   };
-
-  // Format date/time for display
-  const formatDateTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date);
+  
+  // Function to get a new node position
+  const getNewNodePosition = (): XYPosition => {
+    // Find the rightmost node to place the new node to its right
+    const rightmostNode = nodes.reduce(
+      (rightmost, node) => {
+        const x = node.position.x;
+        return x > rightmost.x ? { x, node } : rightmost;
+      },
+      { x: 0, node: null }
+    );
+    
+    return rightmostNode.node
+      ? { x: rightmostNode.x + 250, y: rightmostNode.node.position.y }
+      : { x: 100, y: 100 };
   };
-
+  
+  // Function to connect a node to the previous "last" node
+  const connectToLastNode = (targetNodeId: string) => {
+    // Find the rightmost node (excluding the target node) to make it the source
+    const excludeTarget = nodes.filter(node => node.id !== targetNodeId);
+    if (excludeTarget.length === 0) return;
+    
+    const rightmostNode = excludeTarget.reduce(
+      (rightmost, node) => {
+        const x = node.position.x;
+        return x > rightmost.x ? { x, id: node.id } : rightmost;
+      },
+      { x: 0, id: '' }
+    );
+    
+    if (rightmostNode.id) {
+      // Create a new edge from the rightmost node to the target node
+      const newEdge: Edge = {
+        id: `e-${rightmostNode.id}-${targetNodeId}`,
+        source: rightmostNode.id,
+        target: targetNodeId,
+        type: 'smoothstep',
+        animated: true,
+        deletable: true, // Make the edge deletable
+        style: { stroke: '#2563eb' },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#2563eb',
+        }
+      };
+      
+      setEdges(eds => [...eds, newEdge]);
+    }
+  };
+  
+  // Connection handler for when nodes are connected
+  const onConnect = useCallback((params: Connection) => {
+    // Create a new edge with the connection parameters
+    setEdges((eds) => 
+      addEdge({
+        ...params,
+        type: 'smoothstep',
+        animated: true,
+        deletable: true, // Make the edge deletable
+        style: { stroke: '#2563eb' },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#2563eb',
+        }
+      }, eds)
+    );
+    
+    // Auto-save when nodes are connected
+    autoSaveChanges();
+  }, [autoSaveChanges]);
+  
+  // Handler for clearing the flow
+  const clearFlow = () => {
+    if (window.confirm("Are you sure you want to clear all nodes and connections?")) {
+      // Reset to the default nodes and edges
+      setNodes(initialNodes);
+      setEdges([]);
+      
+      toast({
+        title: "Flow Cleared",
+        description: "All nodes and connections have been removed.",
+        duration: 3000
+      });
+      
+      // Don't reset the customer name when clearing the flow
+      setJourneyMetadata({
+        customerName: journeyMetadata.customerName || "", // Preserve customer name
+        workflowIntent: "",
+        notes: "",
+        summary: ""
+      });
+      
+      // Auto-save when the flow is cleared
+      autoSaveChanges();
+    }
+  };
+  
+  // Handle key press events (for deleting edges)
+  const handleKeyPress = useCallback(
+    (event: React.KeyboardEvent) => {
+      // Check if Delete or Backspace key is pressed
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedEdges = edges.filter(edge => edge.selected);
+        
+        // If there are selected edges, remove them
+        if (selectedEdges.length > 0) {
+          setEdges(edges => edges.filter(edge => !edge.selected));
+          
+          toast({
+            title: "Connection Removed",
+            description: `${selectedEdges.length} connection(s) removed from the journey.`,
+            duration: 2000
+          });
+          
+          // Auto-save after deleting edges
+          autoSaveChanges();
+        }
+      }
+    },
+    [edges, autoSaveChanges, toast]
+  );
+  
+  // Generate a journey summary using AI
+  const handleGenerateSummary = async () => {
+    // Get all the node titles and descriptions
+    try {
+      setSummaryDialogOpen(true);
+      return await generateJourneySummary(
+        journeyTitle,
+        journeyMetadata.customerName || "Unknown Customer",
+        journeyMetadata.workflowIntent || "",
+        nodes.map(node => ({
+          stepType: node.data.stepType,
+          title: node.data.title,
+          description: node.data.description
+        }))
+      );
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+      toast({
+        title: "Summary Generation Failed",
+        description: error instanceof Error ? error.message : "There was an error generating the summary.",
+        variant: "destructive"
+      });
+      return "Failed to generate summary.";
+    }
+  };
+  
+  // Handler for saving the generated summary
+  const handleSaveSummary = (summary: string) => {
+    setJourneyMetadata(prev => ({
+      ...prev,
+      summary
+    }));
+    
+    // Auto-save after updating the summary
+    autoSaveChanges();
+    
+    toast({
+      title: "Summary Saved",
+      description: "The journey summary has been saved.",
+      duration: 3000
+    });
+  };
+  
+  // Update the metadata
+  const handleUpdateMetadata = (metadata: {
+    customerName: string;
+    workflowIntent: string;
+    notes: string;
+    summary?: string;
+  }) => {
+    setJourneyMetadata(metadata);
+    
+    // Auto-save after updating metadata
+    autoSaveChanges();
+    
+    toast({
+      title: "Metadata Updated",
+      description: "Journey metadata has been updated.",
+      duration: 3000
+    });
+  };
+  
+  // State for dialogs
+  const [newFlowDialogOpen, setNewFlowDialogOpen] = useState(false);
+  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
+  const [newNodeDialogOpen, setNewNodeDialogOpen] = useState(false);
+  
   return (
-    <div className="flex flex-col h-screen">
-      {/* Node Edit Dialog */}
-      <EditNodeDialog
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar */}
+      <div 
+        className={`border-r bg-card transition-all duration-300 p-4 flex flex-col h-screen ${
+          sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Saved Journeys</h2>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="space-y-1 mb-6">
+          <Button 
+            variant="default" 
+            className="w-full flex items-center gap-2"
+            onClick={() => setNewFlowDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            New Journey
+          </Button>
+          
+          {/* Only show if you have saved journeys */}
+          {savedJourneys.length > 0 && (
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center gap-2 mt-2"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to delete ALL saved journeys? This cannot be undone.")) {
+                  deleteAllJourneysMutation.mutate();
+                  // Reset the current journey
+                  setCurrentJourneyId(null);
+                  setJourneyTitle("New Customer Journey");
+                  setNodes(initialNodes);
+                  setEdges([]);
+                  
+                  // Don't reset customer when deleting all journeys
+                  setJourneyMetadata({
+                    customerName: journeyMetadata.customerName, // Preserve customer name
+                    workflowIntent: "",
+                    notes: "",
+                    summary: ""
+                  });
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Delete All
+            </Button>
+          )}
+        </div>
+        
+        {isLoadingJourneys ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : isJourneysError ? (
+          <div className="text-center py-8 text-destructive">
+            <p>Failed to load journeys.</p>
+            <p className="text-xs">{journeysError instanceof Error ? journeysError.message : "Unknown error"}</p>
+          </div>
+        ) : savedJourneys.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No saved journeys yet.</p>
+            <p className="text-xs">Create a new journey to get started.</p>
+          </div>
+        ) : (
+          <div className="space-y-3 overflow-y-auto flex-grow">
+            {savedJourneys.map((journey) => (
+              <div 
+                key={journey.id} 
+                className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${currentJourneyId === journey.id ? 'bg-primary/10 border-primary' : ''}`}
+              >
+                <div className="flex justify-between items-start">
+                  <h4 
+                    className="font-medium truncate w-44"
+                    onClick={() => loadJourney(journey.id)}
+                  >
+                    {journey.title}
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
+                        deleteJourney(journey.id, journey.title);
+                      }
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+                
+                {/* Customer Name */}
+                {journey.customerName && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Users className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{journey.customerName}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(journey.lastSaved).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  {journey.preview && (
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">
+                        {journey.preview.nodeCount} nodes
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col h-screen">
+        {/* Top Bar */}
+        <div className="border-b bg-card p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {!sidebarOpen && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <div className="flex flex-col">
+              <EditableTitle 
+                title={journeyTitle} 
+                onSave={handleTitleUpdate}
+                className="text-xl font-semibold" 
+              />
+              
+              {/* Show customer name in the header if it exists */}
+              {journeyMetadata.customerName && (
+                <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                  <Users className="h-3 w-3" />
+                  {journeyMetadata.customerName}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMetadataDialogOpen(true)}
+            >
+              <Info className="h-4 w-4 mr-1" />
+              Metadata
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSummaryDialogOpen(true)}
+            >
+              <Bot className="h-4 w-4 mr-1" />
+              Summary
+            </Button>
+            
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => saveJourney(false)}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-1" />
+              )}
+              Save
+            </Button>
+          </div>
+        </div>
+        
+        {/* Flow Editor */}
+        <div className="flex-1 relative" onKeyDown={handleKeyPress}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            nodeTypes={nodeTypes}
+            snapToGrid={true}
+            snapGrid={[10, 10]}
+            fitView
+            attributionPosition="bottom-right"
+            connectionLineStyle={{ stroke: '#2563eb' }}
+            connectionLineType={ConnectionLineType.SmoothStep}
+            deleteKeyCode={['Backspace', 'Delete']}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background gap={16} size={1} color="#f3f4f6" />
+            <Controls showInteractive={false} position="bottom-right" />
+            <MiniMap 
+              nodeStrokeColor="#aaa" 
+              nodeColor="#ffffff"
+              nodeBorderRadius={2}
+              position="bottom-left"
+            />
+            
+            <Panel position="top-center">
+              <div className="bg-white border px-4 py-2 rounded-lg shadow-sm flex items-center gap-2">
+                <Select defaultValue="interaction" disabled>
+                  <SelectTrigger className="w-32 bg-muted/30">
+                    <SelectValue placeholder="Node type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="interaction">Interaction</SelectItem>
+                    <SelectItem value="touchpoint">Touchpoint</SelectItem>
+                    <SelectItem value="decision">Decision</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <div className="h-8 w-px bg-border"></div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setNewNodeDialogOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Node
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => addMultiPathNode()}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Decision Split
+                </Button>
+                
+                <div className="h-8 w-px bg-border"></div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={clearFlow}
+                >
+                  <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                  Clear
+                </Button>
+              </div>
+            </Panel>
+            
+            <Panel position="top-right">
+              <div className="bg-white/50 backdrop-blur border rounded p-2 text-xs text-muted-foreground">
+                <div>Press <kbd className="px-1 bg-muted rounded">Delete</kbd> to remove selected connections</div>
+                <div>Drag between handles to create connections</div>
+              </div>
+            </Panel>
+          </ReactFlow>
+        </div>
+      </div>
+      
+      {/* Dialogs */}
+      <NewFlowDialog 
+        open={newFlowDialogOpen} 
+        onOpenChange={setNewFlowDialogOpen} 
+        onCreateFlow={handleCreateFlow}
+        onCreateAIFlow={handleCreateAIFlow} 
+        customers={customersData || []}
+        currentCustomerName={journeyMetadata.customerName || ""}
+        isGeneratingAI={isGeneratingAIJourney}
+      />
+      
+      <JourneyMetadataDialog 
+        open={metadataDialogOpen}
+        onOpenChange={setMetadataDialogOpen}
+        metadata={journeyMetadata}
+        onUpdateMetadata={handleUpdateMetadata}
+        customers={customersData || []}
+      />
+      
+      <NewNodeDialog 
+        open={newNodeDialogOpen}
+        onOpenChange={setNewNodeDialogOpen}
+        onAddNode={addCustomNode}
+      />
+      
+      <EditNodeDialog 
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         nodeData={editingNode}
         onUpdate={updateNode}
         onDelete={deleteNode}
       />
-
-      <div className="bg-background p-4 border-b flex justify-between items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Map className="h-6 w-6" />
-            Customer Journey Design
-          </h1>
-          <div className="flex items-center gap-4">
-            <p className="text-muted-foreground">Design AI-powered customer interaction flows</p>
-            
-            {/* Journey metadata editor */}
-            <JourneyMetadataDialog
-              metadata={journeyMetadata}
-              onUpdateMetadata={handleUpdateMetadata}
-            />
-            
-            {/* Display metadata when available */}
-            {journeyMetadata.customerName && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span>{journeyMetadata.customerName}</span>
-              </Badge>
-            )}
-            
-            {journeyMetadata.workflowIntent && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Info className="h-4 w-4" />
-                <span>{journeyMetadata.workflowIntent}</span>
-              </Badge>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <NewFlowDialog 
-            onCreateFlow={handleCreateFlow} 
-            onCreateAIFlow={handleCreateAIFlow}
-          />
-          
-          {/* AI Summary Button */}
-          <Button
-            variant="outline"
-            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-            onClick={() => setSummaryDialogOpen(true)}
-            disabled={!currentJourneyId}
-          >
-            <Brain className="mr-2 h-4 w-4" />
-            AI Summary
-          </Button>
-          
-          {/* AI Summary Dialog */}
-          <AISummaryDialog
-            open={summaryDialogOpen}
-            onOpenChange={setSummaryDialogOpen}
-            currentSummary={journeyMetadata.summary || null}
-            onSaveSummary={handleSaveSummary}
-            onGenerateSummary={handleGenerateSummary}
-          />
-          
-          <Button
-            variant="outline"
-            onClick={() => {
-              setNodes(initialNodes);
-              setEdges([]);
-              setCurrentJourneyId(null);
-              setJourneyTitle("New Customer Journey");
-              // Reset metadata but preserve customer name
-              setJourneyMetadata({
-                customerName: journeyMetadata.customerName || "", // Preserve customer name
-                workflowIntent: "",
-                notes: "",
-                summary: ""
-              });
-            }}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Clear
-          </Button>
-          
-          <Button 
-            variant="destructive"
-            onClick={handlePurgeAllJourneys}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Purge All Journeys
-          </Button>
-          
-          <Button onClick={() => saveJourney(false)}>
-            <Save className="mr-2 h-4 w-4" />
-            Save Journey
-          </Button>
-        </div>
-      </div>
-    
-      <div className="flex flex-1 h-full overflow-hidden">
-        {/* Sidebar for saved journeys */}
-        <div className={`border-r bg-background transition-all duration-300 overflow-y-auto ${sidebarOpen ? 'w-80' : 'w-0'}`}>
-          <div className="p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Saved Journeys</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setSidebarOpen(false)}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft size={16} />
-              </Button>
-            </div>
-            
-            {isLoadingJourneys ? (
-              <div className="text-center text-muted-foreground p-4">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                <p>Loading journeys...</p>
-              </div>
-            ) : savedJourneys.length === 0 ? (
-              <div className="text-center text-muted-foreground p-4">
-                <p>No saved journeys yet.</p>
-                <p className="text-sm mt-2">Create and save a journey to see it here.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {savedJourneys.map((journey) => (
-                  <div 
-                    key={journey.id} 
-                    className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${currentJourneyId === journey.id ? 'bg-primary/10 border-primary' : ''}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <h4 
-                        className="font-medium truncate w-44"
-                        onClick={() => loadJourney(journey.id)}
-                      >
-                        {journey.title}
-                      </h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
-                            deleteJourney(journey.id, journey.title);
-                          }
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                    
-                    {/* Customer Name */}
-                    {journey.customerName && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {journey.customerName}
-                        </span>
-                      </div>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Last modified: {formatDateTime(journey.lastSaved)}
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">
-                        {journey.preview?.nodeCount || 0} nodes
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {journey.preview?.edgeCount || 0} connections
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Toggle sidebar button - appears when sidebar is closed */}
-        {!sidebarOpen && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setSidebarOpen(true)}
-            className="absolute top-20 left-0 z-10 h-8 rounded-r-full rounded-l-none bg-background border border-l-0"
-          >
-            <ChevronRight size={16} />
-          </Button>
-        )}
-        
-        {/* Main flow area */}
-        <div className="flex-1">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={(changes) => {
-              onNodesChange(changes);
-              autoSaveChanges();
-            }}
-            onEdgesChange={(changes) => {
-              onEdgesChange(changes);
-              autoSaveChanges();
-            }}
-            onConnect={(params) => {
-              onConnect(params);
-              autoSaveChanges();
-            }}
-            nodeTypes={nodeTypes}
-            connectionLineStyle={{ stroke: '#2563eb' }}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            fitView
-            elementsSelectable={true}
-            deleteKeyCode={['Backspace', 'Delete']}
-            onEdgesDelete={(edges) => {
-              toast({
-                title: "Connection Deleted",
-                description: "Deleted connection in the journey flow.",
-                duration: 2000
-              });
-              autoSaveChanges();
-            }}
-          >
-            <Controls />
-            <MiniMap nodeBorderRadius={2} />
-            <Background size={1} gap={16} color="#f1f5f9" />
-            
-            {/* Journey Title Panel - Positioned at the top */}
-            <Panel position="top-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-b-lg shadow-md mt-2">
-              <EditableTitle 
-                title={journeyTitle} 
-                onSave={handleTitleUpdate} 
-                className="min-w-[200px]"
-              />
-            </Panel>
-            
-            <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between">
-                  <div className="text-sm font-medium mb-1">Quick Add</div>
-                  <NewNodeDialog onCreateNode={addCustomNode} />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Awareness
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Research
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Consideration
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Decision
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Purchase
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Support
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800"
-                    onClick={addMultiPathNode}
-                  >
-                    <Plus className="mr-1 h-3 w-3" />
-                    Decision Split
-                  </Button>
-                </div>
-              </div>
-            </Panel>
-          </ReactFlow>
-        </div>
-      </div>
+      
+      <AISummaryDialog 
+        open={summaryDialogOpen}
+        onOpenChange={setSummaryDialogOpen}
+        currentSummary={journeyMetadata.summary || null}
+        onSaveSummary={handleSaveSummary}
+        onGenerateSummary={handleGenerateSummary}
+      />
     </div>
   );
 }
