@@ -29,8 +29,6 @@ export default function ExportConversationDocButton({
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
-    if (!flowRef.current) return;
-    
     try {
       setIsExporting(true);
       toast({
@@ -39,29 +37,43 @@ export default function ExportConversationDocButton({
         duration: 2000
       });
       
-      const flowElement = flowRef.current.querySelector('.react-flow');
+      // Find the flow element even if flowRef isn't valid
+      const flowElement = (flowRef.current?.querySelector('.react-flow')) || 
+                        document.querySelector('.flow-preview-container .react-flow');
       
       if (!flowElement) {
-        throw new Error("Could not find flow element to export");
+        // Continue without the diagram if we can't find it
+        console.warn("Could not find flow element to export, continuing without diagram");
       }
       
-      // First fit the view to see all nodes
-      const reactFlowInstance = (flowRef.current as any).__reactFlowInstance;
-      if (reactFlowInstance) {
-        reactFlowInstance.fitView({ padding: 0.2 });
+      // First fit the view to see all nodes if we have a valid flow ref
+      if (flowRef.current) {
+        const reactFlowInstance = (flowRef.current as any).__reactFlowInstance;
+        if (reactFlowInstance) {
+          reactFlowInstance.fitView({ padding: 0.2 });
+        }
       }
       
-      // Capture the flow as an image
-      const canvas = await html2canvas(flowElement as HTMLElement, {
-        backgroundColor: '#fff',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-      });
+      // Capture the flow as an image if we have a flow element
+      let imageData = '';
       
-      const imageDataUrl = canvas.toDataURL('image/png');
-      const imageData = imageDataUrl.replace('data:image/png;base64,', '');
+      if (flowElement) {
+        try {
+          const canvas = await html2canvas(flowElement as HTMLElement, {
+            backgroundColor: '#fff',
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+          });
+          
+          const imageDataUrl = canvas.toDataURL('image/png');
+          imageData = imageDataUrl.replace('data:image/png;base64,', '');
+        } catch (error) {
+          console.warn("Could not capture flow image:", error);
+          // Continue without the image if there's an error
+        }
+      }
       
       // Create document sections
       const doc = new Document({
@@ -231,31 +243,33 @@ export default function ExportConversationDocButton({
                 }
               }),
               
-              // Flow Diagram Section
-              new Paragraph({
-                text: "Flow Diagram",
-                heading: HeadingLevel.HEADING_1,
-                spacing: {
-                  after: 200,
-                  before: 400
-                }
-              }),
-              new Paragraph({
-                children: [
-                  new ImageRun({
-                    data: imageData,
-                    transformation: {
-                      width: 550,
-                      height: 350,
-                    },
-                    type: 'png',
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-                spacing: {
-                  after: 200
-                }
-              }),
+              // Flow Diagram Section (only if we have image data)
+              ...(imageData ? [
+                new Paragraph({
+                  text: "Flow Diagram",
+                  heading: HeadingLevel.HEADING_1,
+                  spacing: {
+                    after: 200,
+                    before: 400
+                  }
+                }),
+                new Paragraph({
+                  children: [
+                    new ImageRun({
+                      data: imageData,
+                      transformation: {
+                        width: 550,
+                        height: 350,
+                      },
+                      type: 'png',
+                    }),
+                  ],
+                  alignment: AlignmentType.CENTER,
+                  spacing: {
+                    after: 200
+                  }
+                })
+              ] : []),
             ].filter(Boolean),
           },
         ],

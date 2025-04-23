@@ -996,7 +996,7 @@ Great! I'll recommend our high-performance models.
               summary: ""
             }}
             conversationFlow={form.getValues().conversationFlow || useCase.conversationFlow}
-            flowRef={document.querySelector(".flow-preview-container") ? { current: document.querySelector(".flow-preview-container") as HTMLDivElement } : { current: null }}
+            flowRef={{ current: document.querySelector(".flow-preview-container") }}
             disabled={isLoading}
           />
         </div>

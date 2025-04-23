@@ -257,7 +257,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
         </div>
       </div>
       
-      <div className="flex-1 overflow-hidden bg-neutral-light/50" ref={flowRef}>
+      <div className="flex-1 overflow-hidden bg-neutral-light/50 flow-preview-container" ref={flowRef}>
         {parsedFlow.steps.length === 0 ? (
           <div className="h-full flex items-center justify-center text-neutral-dark/60">
             <div className="text-center">
