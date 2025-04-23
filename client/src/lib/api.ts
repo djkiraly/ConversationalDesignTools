@@ -167,13 +167,20 @@ export async function generateJourneySummary(
 export interface GeneratedJourney {
   nodes: any[];
   edges: any[];
+  summary?: string;
 }
 
-export async function generateAIJourney(description: string): Promise<GeneratedJourney> {
-  const response = await apiRequest<{ success: boolean; journey: GeneratedJourney }>(
+export interface GenerateJourneyRequest {
+  title: string;
+  customerName: string;
+  intent: string;
+}
+
+export async function generateAIJourney(request: GenerateJourneyRequest): Promise<GeneratedJourney> {
+  const response = await apiRequest<{ success: boolean; journey: GeneratedJourney; error?: string }>(
     '/api/generate-ai-journey',
     'POST',
-    { description }
+    request
   );
   
   if (response.error) {
@@ -181,7 +188,7 @@ export async function generateAIJourney(description: string): Promise<GeneratedJ
   }
   
   if (!response.data || !response.data.success) {
-    throw new Error('Failed to generate AI journey');
+    throw new Error(response.data?.error || 'Failed to generate AI journey');
   }
   
   return response.data.journey;
@@ -230,11 +237,11 @@ export async function fetchAppStatistics(): Promise<AppStatistics> {
 // Customer API functions
 export interface Customer {
   id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  notes?: string;
+  companyName: string;
+  companyWebsite?: string;
+  primaryContactName: string;
+  primaryContactPhone?: string;
+  primaryContactEmail: string;
   createdAt: string;
   updatedAt: string;
 }

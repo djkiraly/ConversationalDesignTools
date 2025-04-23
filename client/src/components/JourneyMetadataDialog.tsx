@@ -96,8 +96,8 @@ export default function JourneyMetadataDialog({
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>
                     {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.name}>
-                        {customer.name}
+                      <SelectItem key={customer.id} value={customer.companyName}>
+                        {customer.companyName}
                       </SelectItem>
                     ))}
                   </SelectContent>
