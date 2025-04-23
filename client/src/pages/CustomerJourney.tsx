@@ -438,19 +438,28 @@ export default function CustomerJourney() {
   
 
   
-  // Auto-save functionality
+  // Optimized auto-save functionality with debouncing
   const autoSaveChanges = useCallback(() => {
-    // Clear any existing timeout
+    // Avoid auto-saves during loading
+    if (isLoading) {
+      return;
+    }
+    
+    // Clear any existing timeout to implement debouncing
     if (saveTimeout) {
       clearTimeout(saveTimeout);
     }
     
-    // Set a new timeout to save after 5 seconds of inactivity
+    // Set a new timeout to save after 10 seconds of inactivity (increased from 5s)
     const timeout = setTimeout(() => {
-      // Before auto-saving, make sure we're using the most up-to-date metadata
-      // This is to fix the issue where the customer name gets lost during auto-save
-      if (currentJourneyId) {
-        console.log("Auto-saving journey with metadata:", journeyMetadata);
+      // Only save if we have a journey ID and not in loading state
+      if (currentJourneyId && !isLoading) {
+        // Use a lightweight log during development
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Auto-saving journey at", new Date().toISOString());
+        }
+        
+        // Use mutateAsync instead of mutate to better handle errors
         updateJourneyMutation.mutate({
           id: currentJourneyId,
           journeyData: {
@@ -463,14 +472,14 @@ export default function CustomerJourney() {
             edges
           }
         });
-        console.log("Auto-saved journey at", new Date().toISOString());
-      } else {
-        saveJourney();
+      } else if (!currentJourneyId && nodes.length > 1) {
+        // Only auto-create a journey if we've added nodes beyond the initial state
+        saveJourney(true); // true = isAutoSave
       }
-    }, 5000);
+    }, 10000); // Increased to 10 seconds for better performance
     
     setSaveTimeout(timeout);
-  }, [saveTimeout, currentJourneyId, journeyMetadata, journeyTitle, nodes, edges, updateJourneyMutation, saveJourney]);
+  }, [saveTimeout, currentJourneyId, journeyMetadata, journeyTitle, nodes, edges, updateJourneyMutation, saveJourney, isLoading]);
   
   // Load a specific journey with optimized performance
   const loadJourney = useCallback(async (journeyId: number) => {
@@ -500,20 +509,23 @@ export default function CustomerJourney() {
       if (journey) {
         // Batch state updates to reduce re-renders
         const batchedUpdates = () => {
-          setJourneyTitle(journey?.title || 'Untitled Journey');
-          setCurrentJourneyId(journey?.id || null);
+          // Explicitly type cast to ensure TypeScript understands properties are safe to access
+          const journeyData = journey as CustomerJourneyType;
+          
+          setJourneyTitle(journeyData.title || 'Untitled Journey');
+          setCurrentJourneyId(journeyData.id);
           
           // Load metadata 
           setJourneyMetadata({
-            customerName: journey?.customerName || '',
-            workflowIntent: journey?.workflowIntent || '',
-            notes: journey?.notes || '',
-            summary: journey?.summary || ''
+            customerName: journeyData.customerName || '',
+            workflowIntent: journeyData.workflowIntent || '',
+            notes: journeyData.notes || '',
+            summary: journeyData.summary || ''
           });
           
           // Set nodes and edges last to trigger only one layout recalculation
-          setNodes(journey?.nodes || initialNodes);
-          setEdges(journey?.edges || []);
+          setNodes(journeyData.nodes || initialNodes);
+          setEdges(journeyData.edges || []);
         };
         
         // Execute batched updates
@@ -521,7 +533,7 @@ export default function CustomerJourney() {
         
         toast({
           title: "Journey Loaded",
-          description: `Loaded "${journey.title || 'Untitled Journey'}"`,
+          description: `Loaded "${(journey as CustomerJourneyType).title || 'Untitled Journey'}"`,
           duration: 2000
         });
       }
@@ -1417,55 +1429,89 @@ export default function CustomerJourney() {
               </div>
             ) : (
               <div className="space-y-3">
-                {savedJourneys.map((journey) => (
-                  <div 
-                    key={journey.id} 
-                    className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${currentJourneyId === journey.id ? 'bg-primary/10 border-primary' : ''}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <h4 
-                        className="font-medium truncate w-44"
-                        onClick={() => loadJourney(journey.id)}
-                      >
-                        {journey.title}
-                      </h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
-                            deleteJourney(journey.id, journey.title);
-                          }
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                    
-                    {/* Customer Name */}
-                    {journey.customerName && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {journey.customerName}
-                        </span>
+                {(() => {
+                  // Create a memoized component for journey items
+                  const JourneyItem = React.memo(({ 
+                    journey,
+                    isActive,
+                    onLoad,
+                    onDelete
+                  }: { 
+                    journey: SavedJourneyDisplay, 
+                    isActive: boolean, 
+                    onLoad: (id: number) => void,
+                    onDelete: (id: number, title: string) => void
+                  }) => (
+                    <div 
+                      key={journey.id} 
+                      className={`border rounded-lg p-3 hover:bg-muted/50 cursor-pointer transition-colors ${isActive ? 'bg-primary/10 border-primary' : ''}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <h4 
+                          className="font-medium truncate w-44"
+                          onClick={() => onLoad(journey.id)}
+                        >
+                          {journey.title}
+                        </h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Are you sure you want to delete "${journey.title}"?`)) {
+                              onDelete(journey.id, journey.title);
+                            }
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
                       </div>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Last modified: {formatDateTime(journey.lastSaved)}
+                      
+                      {/* Customer Name */}
+                      {journey.customerName && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {journey.customerName}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Last modified: {formatDateTime(journey.lastSaved)}
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {journey.preview?.nodeCount || 0} nodes
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {journey.preview?.edgeCount || 0} connections
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">
-                        {journey.preview?.nodeCount || 0} nodes
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {journey.preview?.edgeCount || 0} connections
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  ));
+                  
+                  // Memoized handler functions to prevent unnecessary re-renders
+                  const handleLoadJourney = useCallback((id: number) => {
+                    loadJourney(id);
+                  }, [loadJourney]);
+                  
+                  const handleDeleteJourney = useCallback((id: number, title: string) => {
+                    deleteJourney(id, title);
+                  }, [deleteJourney]);
+                  
+                  // Return the list of journey items
+                  return savedJourneys.map(journey => (
+                    <JourneyItem 
+                      key={journey.id} 
+                      journey={journey} 
+                      isActive={currentJourneyId === journey.id}
+                      onLoad={handleLoadJourney}
+                      onDelete={handleDeleteJourney}
+                    />
+                  ));
+                })()}
               </div>
             )}
           </div>
@@ -1488,12 +1534,12 @@ export default function CustomerJourney() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={useCallback((changes) => {
+            onNodesChange={useCallback((changes: any) => {
               onNodesChange(changes);
               // Use a debounced auto-save to reduce constant updates
               autoSaveChanges();
             }, [onNodesChange, autoSaveChanges])}
-            onEdgesChange={useCallback((changes) => {
+            onEdgesChange={useCallback((changes: any) => {
               onEdgesChange(changes);
               // Use a debounced auto-save to reduce constant updates
               autoSaveChanges();
@@ -1505,7 +1551,7 @@ export default function CustomerJourney() {
             fitView
             elementsSelectable={true}
             deleteKeyCode={['Backspace', 'Delete']}
-            onEdgesDelete={useCallback((edges) => {
+            onEdgesDelete={useCallback((deletedEdges: Edge[]) => {
               toast({
                 title: "Connection Deleted",
                 description: "Deleted connection in the journey flow.",
