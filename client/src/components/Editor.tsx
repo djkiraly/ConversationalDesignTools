@@ -976,14 +976,30 @@ Great! I'll recommend our high-performance models.
       </div>
       
       <div className="p-4 border-t border-neutral-medium flex justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleExport}
-          className="flex items-center"
-        >
-          <Download className="mr-2 h-4 w-4" /> Export
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExport}
+            className="flex items-center"
+          >
+            <Download className="mr-2 h-4 w-4" /> Export Text
+          </Button>
+          
+          <ExportConversationDocButton
+            title={form.getValues().title || useCase.title}
+            metadata={{
+              agentPersona: agentPersona || "",
+              customerName: form.getValues().customer || useCase.customer || "",
+              workflowIntent: form.getValues().description || useCase.description || "",
+              notes: "",
+              summary: ""
+            }}
+            conversationFlow={form.getValues().conversationFlow || useCase.conversationFlow}
+            flowRef={document.querySelector(".flow-preview-container") ? { current: document.querySelector(".flow-preview-container") as HTMLDivElement } : { current: null }}
+            disabled={isLoading}
+          />
+        </div>
         <div>
           <Button
             type="button"
