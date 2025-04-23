@@ -55,6 +55,7 @@ import EditNodeDialog from "../components/EditNodeDialog";
 import JourneyMetadataDialog from "../components/JourneyMetadataDialog";
 import AISummaryDialog from "../components/AISummaryDialog";
 import ExportJourneyButton from "../components/ExportJourneyButton";
+import ExportFlowImageButton from "../components/ExportFlowImageButton";
 import JourneyNode from "../components/JourneyNode";
 import MultiPathNode from "../components/MultiPathNode";
 import { 
@@ -1413,6 +1414,12 @@ export default function CustomerJourney() {
             metadata={journeyMetadata}
             nodes={nodes}
             edges={edges}
+            flowRef={reactFlowWrapper}
+            disabled={isLoading || nodes.length <= 1}
+          />
+          
+          <ExportFlowImageButton
+            title={journeyTitle}
             flowRef={reactFlowWrapper}
             disabled={isLoading || nodes.length <= 1}
           />
