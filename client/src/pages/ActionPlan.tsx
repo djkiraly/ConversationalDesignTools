@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useROIParameters, calculateTimeSaved, calculateCostSavings, calculateImplementationCost, 
+         calculateMaintenanceCost, calculateCSATImprovement, calculatePaybackPeriod, 
+         formatCurrency, formatRange } from '../lib/roiCalculator';
 
 interface FormSection {
   id: string;

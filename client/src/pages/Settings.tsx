@@ -34,6 +34,31 @@ const formSchema = z.object({
   openai_api_key: z.string().optional(),
   openai_system_prompt: z.string().min(1, "System prompt is required"),
   openai_user_prompt: z.string().min(1, "User prompt is required"),
+  // ROI calculation parameters
+  roi_agent_hourly_cost: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount (e.g., 25.50)"
+  }),
+  roi_implementation_cost_min: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount"
+  }),
+  roi_implementation_cost_max: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount"
+  }),
+  roi_maintenance_pct: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage (e.g., 15)"
+  }),
+  roi_automation_rate_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_automation_rate_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_csat_improvement_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_csat_improvement_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -63,11 +88,29 @@ export default function Settings() {
       openai_api_key: '',
       openai_system_prompt: '',
       openai_user_prompt: '',
+      // Default ROI parameters
+      roi_agent_hourly_cost: '25',
+      roi_implementation_cost_min: '15000',
+      roi_implementation_cost_max: '100000',
+      roi_maintenance_pct: '15',
+      roi_automation_rate_base: '5',
+      roi_automation_rate_scale: '25',
+      roi_csat_improvement_base: '5',
+      roi_csat_improvement_scale: '20',
     },
     values: {
       openai_api_key: getSettingValue('openai_api_key'),
       openai_system_prompt: getSettingValue('openai_system_prompt'),
       openai_user_prompt: getSettingValue('openai_user_prompt'),
+      // ROI calculation parameters
+      roi_agent_hourly_cost: getSettingValue('roi_agent_hourly_cost') || '25',
+      roi_implementation_cost_min: getSettingValue('roi_implementation_cost_min') || '15000',
+      roi_implementation_cost_max: getSettingValue('roi_implementation_cost_max') || '100000',
+      roi_maintenance_pct: getSettingValue('roi_maintenance_pct') || '15',
+      roi_automation_rate_base: getSettingValue('roi_automation_rate_base') || '5',
+      roi_automation_rate_scale: getSettingValue('roi_automation_rate_scale') || '25',
+      roi_csat_improvement_base: getSettingValue('roi_csat_improvement_base') || '5',
+      roi_csat_improvement_scale: getSettingValue('roi_csat_improvement_scale') || '20',
     }
   });
 
@@ -91,7 +134,7 @@ export default function Settings() {
   // Form submit handler
   async function onSubmit(values: FormValues) {
     try {
-      // Update each setting one by one
+      // Update OpenAI settings
       await updateSetting.mutateAsync({ 
         key: 'openai_api_key', 
         value: values.openai_api_key || '' 
@@ -103,6 +146,40 @@ export default function Settings() {
       await updateSetting.mutateAsync({ 
         key: 'openai_user_prompt', 
         value: values.openai_user_prompt 
+      });
+      
+      // Update ROI calculation parameters
+      await updateSetting.mutateAsync({
+        key: 'roi_agent_hourly_cost',
+        value: values.roi_agent_hourly_cost
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_implementation_cost_min',
+        value: values.roi_implementation_cost_min
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_implementation_cost_max',
+        value: values.roi_implementation_cost_max
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_maintenance_pct',
+        value: values.roi_maintenance_pct
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_automation_rate_base',
+        value: values.roi_automation_rate_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_automation_rate_scale',
+        value: values.roi_automation_rate_scale
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_csat_improvement_base',
+        value: values.roi_csat_improvement_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_csat_improvement_scale',
+        value: values.roi_csat_improvement_scale
       });
       
       toast({
@@ -137,7 +214,7 @@ export default function Settings() {
         <CardHeader>
           <CardTitle>Settings</CardTitle>
           <CardDescription>
-            Configure your OpenAI integration settings.
+            Configure your OpenAI integration and ROI calculation parameters.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,69 +224,265 @@ export default function Settings() {
             </div>
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="openai_api_key"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>OpenAI API Key</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter your OpenAI API key"
-                          {...field} 
-                          type="text"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Your OpenAI API key used for AI-powered features.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* OpenAI Settings Section */}
+                <div className="space-y-6">
+                  <div className="border-b pb-2">
+                    <h3 className="text-lg font-medium">OpenAI Integration</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure AI features that use OpenAI
+                    </p>
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="openai_api_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>OpenAI API Key</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter your OpenAI API key"
+                            {...field} 
+                            type="text"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Your OpenAI API key used for AI-powered features.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="openai_system_prompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>System Prompt</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enter the system prompt for OpenAI"
+                            {...field} 
+                            rows={5}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This system prompt defines how the AI assistant should behave.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="openai_user_prompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>User Prompt</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enter the user prompt template"
+                            {...field} 
+                            rows={3}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This prompt is used to format the user's message before sending to the AI.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
-                <FormField
-                  control={form.control}
-                  name="openai_system_prompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>System Prompt</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter the system prompt for OpenAI"
-                          {...field} 
-                          rows={5}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        This system prompt defines how the AI assistant should behave.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="openai_user_prompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>User Prompt</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter the user prompt template"
-                          {...field} 
-                          rows={3}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        This prompt is used to format the user's message before sending to the AI.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* ROI Calculation Parameters Section */}
+                <div className="space-y-6">
+                  <div className="border-b pb-2 pt-4">
+                    <h3 className="text-lg font-medium">ROI Calculation Parameters</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure the parameters used for ROI projections in the Action Plan
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="roi_agent_hourly_cost"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Agent Hourly Cost ($)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="25.00"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Average fully-loaded hourly cost of a human agent
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_maintenance_pct"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Annual Maintenance (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="15"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Percentage of implementation cost for annual maintenance
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_implementation_cost_min"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Min Implementation Cost ($)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="15000"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Minimum implementation cost for simple use cases
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_implementation_cost_max"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Implementation Cost ($)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="100000"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Maximum implementation cost for complex use cases
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="border-t pt-4 pb-2">
+                    <h4 className="text-md font-medium">Automation & Efficiency Parameters</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="roi_automation_rate_base"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base Automation Rate (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="5"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Minimum percentage of tasks that can be automated
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_automation_rate_scale"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Automation Rate (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="25"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Maximum percentage of tasks that can be automated
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_csat_improvement_base"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base CSAT Improvement (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="5"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Minimum customer satisfaction improvement
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_csat_improvement_scale"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max CSAT Improvement (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="20"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Maximum customer satisfaction improvement
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
                 
                 <Button 
                   type="submit"
