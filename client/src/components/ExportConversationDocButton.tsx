@@ -19,6 +19,199 @@ interface ExportConversationDocButtonProps {
   disabled?: boolean;
 }
 
+// Helper function to format conversation flow text into properly formatted paragraphs
+function formatConversationFlow(flowText: string): Paragraph[] {
+  if (!flowText) return [];
+  
+  // First, split by newlines to handle each line
+  const lines = flowText.split(/\r?\n/);
+  const paragraphs: Paragraph[] = [];
+  
+  let currentStep: string | null = null;
+  let currentMessage: string[] = [];
+  
+  // Process the conversation flow line by line
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Skip empty lines
+    if (!line) {
+      if (currentMessage.length > 0) {
+        // Add the accumulated message as a paragraph before continuing
+        const messageText = currentMessage.join('\n');
+        
+        if (messageText.startsWith("Customer:")) {
+          paragraphs.push(
+            new Paragraph({
+              text: messageText,
+              spacing: {
+                before: 200,
+                after: 100,
+              },
+              style: "Quote"
+            })
+          );
+        } else if (messageText.startsWith("Agent:")) {
+          paragraphs.push(
+            new Paragraph({
+              text: messageText,
+              spacing: {
+                before: 100,
+                after: 200,
+              },
+              indent: {
+                left: 720 // 0.5 inch indent (720 twips)
+              }
+            })
+          );
+        } else {
+          paragraphs.push(
+            new Paragraph({
+              text: messageText,
+              spacing: {
+                after: 200
+              }
+            })
+          );
+        }
+        
+        currentMessage = [];
+      }
+      continue;
+    }
+    
+    // Check for new step
+    const stepMatch = line.match(/^Step\s+(\d+):/i);
+    if (stepMatch) {
+      // If we have a current message, add it first
+      if (currentMessage.length > 0) {
+        const messageText = currentMessage.join('\n');
+        paragraphs.push(
+          new Paragraph({
+            text: messageText,
+            spacing: {
+              after: 200
+            }
+          })
+        );
+        currentMessage = [];
+      }
+      
+      // Add the step header
+      currentStep = stepMatch[0];
+      paragraphs.push(
+        new Paragraph({
+          text: line,
+          heading: HeadingLevel.HEADING_2,
+          spacing: {
+            before: 400,
+            after: 200
+          }
+        })
+      );
+      continue;
+    }
+    
+    // Check for Customer or Agent prefix
+    if (line.startsWith("Customer:") || line.startsWith("Agent:")) {
+      // If we have a current message, add it first
+      if (currentMessage.length > 0) {
+        const messageText = currentMessage.join('\n');
+        
+        if (messageText.startsWith("Customer:")) {
+          paragraphs.push(
+            new Paragraph({
+              text: messageText,
+              spacing: {
+                before: 200,
+                after: 100,
+              },
+              style: "Quote"
+            })
+          );
+        } else if (messageText.startsWith("Agent:")) {
+          paragraphs.push(
+            new Paragraph({
+              text: messageText,
+              spacing: {
+                before: 100,
+                after: 200,
+              },
+              indent: {
+                left: 720 // 0.5 inch indent (720 twips)
+              }
+            })
+          );
+        } else {
+          paragraphs.push(
+            new Paragraph({
+              text: messageText,
+              spacing: {
+                after: 200
+              }
+            })
+          );
+        }
+        
+        currentMessage = [];
+      }
+      
+      // Start a new message
+      currentMessage.push(line);
+    } else {
+      // Continue current message or start a new one for other content
+      currentMessage.push(line);
+    }
+  }
+  
+  // Add any remaining message
+  if (currentMessage.length > 0) {
+    const messageText = currentMessage.join('\n');
+    
+    if (messageText.startsWith("Customer:")) {
+      paragraphs.push(
+        new Paragraph({
+          text: messageText,
+          spacing: {
+            before: 200,
+            after: 100,
+          },
+          style: "Quote"
+        })
+      );
+    } else if (messageText.startsWith("Agent:")) {
+      paragraphs.push(
+        new Paragraph({
+          text: messageText,
+          spacing: {
+            before: 100,
+            after: 200,
+          },
+          indent: {
+            left: 720 // 0.5 inch indent (720 twips)
+          }
+        })
+      );
+    } else {
+      paragraphs.push(
+        new Paragraph({
+          text: messageText,
+          spacing: {
+            after: 200
+          }
+        })
+      );
+    }
+  }
+  
+  // Add some final spacing
+  if (paragraphs.length > 0) {
+    paragraphs[paragraphs.length - 1].spacing = { after: 400 };
+  }
+  
+  return paragraphs;
+}
+
 export default function ExportConversationDocButton({
   title,
   metadata,
@@ -236,12 +429,15 @@ export default function ExportConversationDocButton({
                   before: 400
                 }
               }),
-              new Paragraph({
-                text: conversationFlow || "No conversation flow provided",
-                spacing: {
-                  after: 400
-                }
-              }),
+              // Replace single conversation flow paragraph with multiple paragraphs
+              ...(conversationFlow ? formatConversationFlow(conversationFlow) : [
+                new Paragraph({
+                  text: "No conversation flow provided",
+                  spacing: {
+                    after: 400
+                  }
+                })
+              ]),
               
               // Flow Diagram Section (only if we have image data)
               ...(imageData ? [
