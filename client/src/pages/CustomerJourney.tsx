@@ -1475,7 +1475,7 @@ export default function CustomerJourney() {
                     size="sm" 
                     variant="outline" 
                     className="bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800"
-                    onClick={() => addMultiPathNode()}
+                    onClick={addMultiPathNode}
                   >
                     <Plus className="mr-1 h-3 w-3" />
                     Decision Split
