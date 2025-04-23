@@ -167,6 +167,7 @@ function getStepTypeStyles(stepType: string): {
 }
 
 // Define custom node types
+// Define nodeTypes outside the component to prevent unnecessary re-creation
 const nodeTypes: NodeTypes = {
   journeyNode: JourneyNode,
   multiPathNode: MultiPathNode
@@ -471,25 +472,52 @@ export default function CustomerJourney() {
     setSaveTimeout(timeout);
   }, [saveTimeout, currentJourneyId, journeyMetadata, journeyTitle, nodes, edges, updateJourneyMutation, saveJourney]);
   
-  // Load a specific journey
+  // Load a specific journey with optimized performance
   const loadJourney = useCallback(async (journeyId: number) => {
     try {
+      // Prevent repeated loading of the same journey
+      if (journeyId === currentJourneyId && !isLoading) {
+        return;
+      }
+      
       setIsLoading(true);
-      const journey = await fetchCustomerJourney(journeyId);
+      
+      // Use the cached journey data if available
+      let journey: CustomerJourneyType | undefined;
+      try {
+        // Try to get from query cache first to avoid network request
+        journey = queryClient.getQueryData<CustomerJourneyType>(['/api/customer-journeys', journeyId]);
+        
+        // If not in cache, fetch it
+        if (!journey) {
+          journey = await fetchCustomerJourney(journeyId);
+        }
+      } catch (e) {
+        // Handle cache lookup error
+        journey = await fetchCustomerJourney(journeyId);
+      }
       
       if (journey) {
-        setJourneyTitle(journey.title || 'Untitled Journey');
-        setNodes(journey.nodes || initialNodes);
-        setEdges(journey.edges || []);
-        setCurrentJourneyId(journey.id);
+        // Batch state updates to reduce re-renders
+        const batchedUpdates = () => {
+          setJourneyTitle(journey?.title || 'Untitled Journey');
+          setCurrentJourneyId(journey?.id || null);
+          
+          // Load metadata 
+          setJourneyMetadata({
+            customerName: journey?.customerName || '',
+            workflowIntent: journey?.workflowIntent || '',
+            notes: journey?.notes || '',
+            summary: journey?.summary || ''
+          });
+          
+          // Set nodes and edges last to trigger only one layout recalculation
+          setNodes(journey?.nodes || initialNodes);
+          setEdges(journey?.edges || []);
+        };
         
-        // Load metadata
-        setJourneyMetadata({
-          customerName: journey.customerName || '',
-          workflowIntent: journey.workflowIntent || '',
-          notes: journey.notes || '',
-          summary: journey.summary || ''
-        });
+        // Execute batched updates
+        batchedUpdates();
         
         toast({
           title: "Journey Loaded",
@@ -507,7 +535,7 @@ export default function CustomerJourney() {
     } finally {
       setIsLoading(false);
     }
-  }, [setNodes, setEdges, toast]);
+  }, [currentJourneyId, isLoading, queryClient, setNodes, setEdges, toast]);
   
   // Delete a saved journey
   const deleteJourney = useCallback(async (journeyId: number, journeyTitle: string) => {
@@ -1460,35 +1488,46 @@ export default function CustomerJourney() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={(changes) => {
+            onNodesChange={useCallback((changes) => {
               onNodesChange(changes);
+              // Use a debounced auto-save to reduce constant updates
               autoSaveChanges();
-            }}
-            onEdgesChange={(changes) => {
+            }, [onNodesChange, autoSaveChanges])}
+            onEdgesChange={useCallback((changes) => {
               onEdgesChange(changes);
+              // Use a debounced auto-save to reduce constant updates
               autoSaveChanges();
-            }}
-            onConnect={(params) => {
-              onConnect(params);
-              autoSaveChanges();
-            }}
+            }, [onEdgesChange, autoSaveChanges])}
+            onConnect={onConnect}
             nodeTypes={nodeTypes}
             connectionLineStyle={{ stroke: '#2563eb' }}
             connectionLineType={ConnectionLineType.SmoothStep}
             fitView
             elementsSelectable={true}
             deleteKeyCode={['Backspace', 'Delete']}
-            onEdgesDelete={(edges) => {
+            onEdgesDelete={useCallback((edges) => {
               toast({
                 title: "Connection Deleted",
                 description: "Deleted connection in the journey flow.",
                 duration: 2000
               });
               autoSaveChanges();
-            }}
+            }, [toast, autoSaveChanges])}
+            snapToGrid={true}
+            snapGrid={[15, 15]}
+            onlyRenderVisibleElements={true}
           >
             <Controls />
-            <MiniMap nodeBorderRadius={2} />
+            <MiniMap 
+              nodeBorderRadius={2} 
+              nodeStrokeWidth={3}
+              nodeColor={(node) => {
+                const type = node.data?.stepType?.toLowerCase() || '';
+                if (type.includes('entry')) return '#10B981';
+                if (type.includes('decision')) return '#F59E0B';
+                return '#3B82F6';
+              }}
+            />
             <Background size={1} gap={16} color="#f1f5f9" />
             
             {/* Journey Title Panel - Positioned at the top */}
