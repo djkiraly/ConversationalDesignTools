@@ -646,7 +646,7 @@ export default function CustomerJourney() {
       // Create a unique ID for the edge
       const edgeId = `e${params.source}-${params.target}-${Date.now()}`;
       
-      // Create edge with animated line and make it deletable
+      // Create edge with animated line
       setEdges((eds) =>
         addEdge(
           {
@@ -658,9 +658,7 @@ export default function CustomerJourney() {
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: '#2563eb',
-            },
-            // Make the edge deletable
-            deletable: true
+            }
           },
           eds
         )
@@ -706,7 +704,7 @@ export default function CustomerJourney() {
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: '#2563eb',
-            },
+            }
           },
           eds
         )
@@ -1057,7 +1055,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         },
         {
           id: 'e-research-evaluation',
@@ -1069,7 +1067,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         },
         {
           id: 'e-evaluation-decision',
@@ -1081,7 +1079,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         },
         {
           id: 'e-decision-purchase',
@@ -1093,7 +1091,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         }
       ];
       
@@ -1167,7 +1165,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         },
         {
           id: 'e-contact-identification',
@@ -1179,7 +1177,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         },
         {
           id: 'e-identification-resolution',
@@ -1191,7 +1189,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         },
         {
           id: 'e-resolution-followup',
@@ -1203,7 +1201,7 @@ export default function CustomerJourney() {
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#2563eb',
-          },
+          }
         }
       ];
       
@@ -1440,6 +1438,16 @@ export default function CustomerJourney() {
             connectionLineStyle={{ stroke: '#2563eb' }}
             connectionLineType={ConnectionLineType.SmoothStep}
             fitView
+            elementsSelectable={true}
+            deleteKeyCode={['Backspace', 'Delete']}
+            onEdgesDelete={(edges) => {
+              toast({
+                title: "Connection Deleted",
+                description: "Deleted connection in the journey flow.",
+                duration: 2000
+              });
+              autoSaveChanges();
+            }}
           >
             <Controls />
             <MiniMap nodeBorderRadius={2} />
