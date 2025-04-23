@@ -1405,6 +1405,15 @@ export default function CustomerJourney() {
             Purge All Journeys
           </Button>
           
+          <ExportJourneyButton
+            title={journeyTitle}
+            metadata={journeyMetadata}
+            nodes={nodes}
+            edges={edges}
+            flowRef={reactFlowWrapper}
+            disabled={isLoading || nodes.length <= 1}
+          />
+          
           <Button onClick={() => saveJourney(false)}>
             <Save className="mr-2 h-4 w-4" />
             Save Journey
@@ -1508,7 +1517,7 @@ export default function CustomerJourney() {
         )}
         
         {/* Main flow area */}
-        <div className="flex-1">
+        <div className="flex-1" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
