@@ -8,6 +8,7 @@ import { Expand, Save, Download, Wand2, MessageSquare, CornerDownRight, LogIn, L
 import SuggestionsDialog from "./SuggestionsDialog";
 import AgentPersonaSuggestionDialog from "./AgentPersonaSuggestionDialog";
 import ConversationFlowSuggestionDialog from "./ConversationFlowSuggestionDialog";
+import ExportConversationDocButton from "./ExportConversationDocButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
