@@ -446,11 +446,30 @@ export default function CustomerJourney() {
     
     // Set a new timeout to save after 5 seconds of inactivity
     const timeout = setTimeout(() => {
-      saveJourney();
+      // Before auto-saving, make sure we're using the most up-to-date metadata
+      // This is to fix the issue where the customer name gets lost during auto-save
+      if (currentJourneyId) {
+        console.log("Auto-saving journey with metadata:", journeyMetadata);
+        updateJourneyMutation.mutate({
+          id: currentJourneyId,
+          journeyData: {
+            title: journeyTitle,
+            customerName: journeyMetadata.customerName || "", 
+            workflowIntent: journeyMetadata.workflowIntent || "",
+            notes: journeyMetadata.notes || "",
+            summary: journeyMetadata.summary || "",
+            nodes,
+            edges
+          }
+        });
+        console.log("Auto-saved journey at", new Date().toISOString());
+      } else {
+        saveJourney();
+      }
     }, 5000);
     
     setSaveTimeout(timeout);
-  }, [saveTimeout, saveJourney]);
+  }, [saveTimeout, currentJourneyId, journeyMetadata, journeyTitle, nodes, edges, updateJourneyMutation, saveJourney]);
   
   // Load a specific journey
   const loadJourney = useCallback(async (journeyId: number) => {
@@ -621,6 +640,7 @@ export default function CustomerJourney() {
     notes: string;
     summary?: string;
   }) => {
+    console.log("Update metadata called with:", metadata);
     setJourneyMetadata(metadata);
     
     toast({
@@ -630,8 +650,23 @@ export default function CustomerJourney() {
     });
     
     // Auto-save when metadata changes
-    autoSaveChanges();
-  }, [autoSaveChanges, toast]);
+    // Do not auto-save here as it might be causing the issues
+    // Instead manually save to preserve metadata
+    if (currentJourneyId) {
+      updateJourneyMutation.mutate({
+        id: currentJourneyId,
+        journeyData: {
+          title: journeyTitle,
+          customerName: metadata.customerName,
+          workflowIntent: metadata.workflowIntent,
+          notes: metadata.notes,
+          summary: metadata.summary,
+          nodes,
+          edges
+        }
+      });
+    }
+  }, [currentJourneyId, updateJourneyMutation, journeyTitle, nodes, edges, toast]);
   
   // Cleanup effect
   useEffect(() => {
