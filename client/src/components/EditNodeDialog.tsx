@@ -40,26 +40,29 @@ export default function EditNodeDialog({
   onUpdate, 
   onDelete 
 }: EditNodeDialogProps) {
-  const [stepType, setStepType] = useState(nodeData.stepType);
-  const [title, setTitle] = useState(nodeData.title);
-  const [description, setDescription] = useState(nodeData.description);
-  const [outputPaths, setOutputPaths] = useState(nodeData.outputPaths || 3);
-  const [isMultiPath, setIsMultiPath] = useState(nodeData.stepType === 'Decision Split');
+  // Use empty defaults when nodeData is null or undefined
+  const [stepType, setStepType] = useState(nodeData?.stepType || 'Entry Point');
+  const [title, setTitle] = useState(nodeData?.title || '');
+  const [description, setDescription] = useState(nodeData?.description || '');
+  const [outputPaths, setOutputPaths] = useState(nodeData?.outputPaths || 3);
+  const [isMultiPath, setIsMultiPath] = useState(nodeData?.stepType === 'Decision Split');
 
   // Update form state when node data changes
   useEffect(() => {
-    setStepType(nodeData.stepType);
-    setTitle(nodeData.title);
-    setDescription(nodeData.description);
-    setOutputPaths(nodeData.outputPaths || 3);
-    setIsMultiPath(nodeData.stepType === 'Decision Split');
+    if (nodeData) {
+      setStepType(nodeData.stepType);
+      setTitle(nodeData.title);
+      setDescription(nodeData.description);
+      setOutputPaths(nodeData.outputPaths || 3);
+      setIsMultiPath(nodeData.stepType === 'Decision Split');
+    }
   }, [nodeData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (title.trim() === "") {
-      return; // Simple validation - title cannot be empty
+    if (title.trim() === "" || !nodeData) {
+      return; // Simple validation - title cannot be empty and nodeData must exist
     }
     
     const updateData: any = {
@@ -78,7 +81,9 @@ export default function EditNodeDialog({
   };
   
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete the "${nodeData.title}" node?`)) {
+    if (!nodeData) return;
+    
+    if (window.confirm(`Are you sure you want to delete the "${title}" node?`)) {
       onDelete(nodeData.id);
       onOpenChange(false);
     }
