@@ -291,9 +291,12 @@ export default function CustomerJourney() {
   });
   
   const updateJourneyMutation = useMutation({
-    mutationFn: (params: { id: number, journeyData: Partial<CustomerJourneyType> }) => 
-      updateCustomerJourney(params.id, params.journeyData),
-    onSuccess: () => {
+    mutationFn: (params: { id: number, journeyData: Partial<CustomerJourneyType> }) => {
+      console.log("Updating journey with data:", params.journeyData);
+      return updateCustomerJourney(params.id, params.journeyData);
+    },
+    onSuccess: (data) => {
+      console.log("Journey updated successfully:", data);
       toast({
         title: "Journey Updated",
         description: "Your journey has been updated successfully.",

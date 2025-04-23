@@ -54,6 +54,7 @@ export default function JourneyMetadataDialog({
   
   // Update form values when metadata changes (e.g., when selecting a different journey)
   useEffect(() => {
+    console.log("Metadata changed in dialog:", metadata);
     setCustomerName(metadata.customerName || "");
     setWorkflowIntent(metadata.workflowIntent || "");
     setNotes(metadata.notes || "");
@@ -107,8 +108,11 @@ export default function JourneyMetadataDialog({
                 <div className="flex-grow">
                   <Select 
                     disabled={isLoadingCustomers} 
-                    value={customerName}
-                    onValueChange={setCustomerName}
+                    value={customerName || ""}
+                    onValueChange={(value) => {
+                      console.log("Customer selected:", value);
+                      setCustomerName(value);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a customer" />
