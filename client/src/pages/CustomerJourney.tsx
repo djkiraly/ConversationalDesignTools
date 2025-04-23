@@ -499,9 +499,9 @@ export default function CustomerJourney() {
         setJourneyTitle("New Customer Journey");
         setCurrentJourneyId(null);
         
-        // Reset metadata
+        // Reset metadata but preserve customer name
         setJourneyMetadata({
-          customerName: "",
+          customerName: journeyMetadata.customerName || "", // Preserve customer name
           workflowIntent: "",
           notes: ""
         });
@@ -521,9 +521,9 @@ export default function CustomerJourney() {
         setJourneyTitle("New Customer Journey");
         setCurrentJourneyId(null);
         
-        // Reset metadata
+        // Reset metadata but preserve customer name
         setJourneyMetadata({
-          customerName: "",
+          customerName: journeyMetadata.customerName || "", // Preserve customer name
           workflowIntent: "",
           notes: ""
         });
@@ -906,9 +906,9 @@ export default function CustomerJourney() {
     setEdges([]);
     setCurrentJourneyId(null);
     
-    // Reset metadata
+    // Reset metadata but preserve customer name
     setJourneyMetadata({
-      customerName: "",
+      customerName: journeyMetadata.customerName || "", // Preserve customer name
       workflowIntent: "",
       notes: "",
       summary: ""
@@ -932,9 +932,9 @@ export default function CustomerJourney() {
       setIsGeneratingAIJourney(true);
       setJourneyTitle(flowName);
       
-      // Reset metadata with journey description as notes
+      // Reset metadata with journey description as notes, but preserve customer name
       setJourneyMetadata({
-        customerName: "",
+        customerName: journeyMetadata.customerName || "", // Preserve customer name
         workflowIntent: description,
         notes: description,
         summary: ""
@@ -1295,9 +1295,9 @@ export default function CustomerJourney() {
               setEdges([]);
               setCurrentJourneyId(null);
               setJourneyTitle("New Customer Journey");
-              // Reset metadata
+              // Reset metadata but preserve customer name
               setJourneyMetadata({
-                customerName: "",
+                customerName: journeyMetadata.customerName || "", // Preserve customer name
                 workflowIntent: "",
                 notes: "",
                 summary: ""
