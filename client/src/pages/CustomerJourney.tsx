@@ -432,6 +432,8 @@ export default function CustomerJourney() {
     queryClient
   ]);
   
+
+  
   // Auto-save functionality
   const autoSaveChanges = useCallback(() => {
     // Clear any existing timeout
@@ -641,11 +643,15 @@ export default function CustomerJourney() {
   // Handle new connections between nodes
   const onConnect = useCallback(
     (params: Connection) => {
-      // Create edge with animated line
+      // Create a unique ID for the edge
+      const edgeId = `e${params.source}-${params.target}-${Date.now()}`;
+      
+      // Create edge with animated line and make it deletable
       setEdges((eds) =>
         addEdge(
           {
             ...params,
+            id: edgeId,
             type: 'smoothstep',
             animated: true,
             style: { stroke: '#2563eb' },
@@ -653,12 +659,20 @@ export default function CustomerJourney() {
               type: MarkerType.ArrowClosed,
               color: '#2563eb',
             },
+            // Make the edge deletable
+            deletable: true
           },
           eds
         )
       );
+      
+      toast({
+        title: "Connection Created",
+        description: "Connected nodes in the journey flow.",
+        duration: 2000
+      });
     },
-    [setEdges]
+    [setEdges, toast]
   );
 
   // Get a position for a new node
