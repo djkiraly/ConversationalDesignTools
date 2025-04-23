@@ -474,14 +474,40 @@ export default function CustomerJourney() {
   // Load a specific journey
   const loadJourney = useCallback(async (journeyId: number) => {
     try {
+      // Clear any existing auto-save timeout
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        setSaveTimeout(null);
+      }
+      
       setIsLoading(true);
+      console.log("Loading journey ID:", journeyId);
       const journey = await fetchCustomerJourney(journeyId);
       
       if (journey) {
-        setJourneyTitle(journey.title || 'Untitled Journey');
-        setNodes(journey.nodes || initialNodes);
-        setEdges(journey.edges || []);
+        console.log("Journey loaded:", journey);
+        
+        // Set all the state at once to prevent auto-save issue
+        // Block any auto-saves during this process
+        const isAutoSaveEnabled = autoSaveChanges !== null;
+        
+        // First set the journey ID
         setCurrentJourneyId(journey.id);
+        
+        // Then set the journey data
+        setJourneyTitle(journey.title || 'Untitled Journey');
+        
+        // Add the onNodeEdit handler to nodes
+        const processedNodes = (journey.nodes || initialNodes).map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            onNodeEdit: handleNodeEdit
+          }
+        }));
+        
+        setNodes(processedNodes);
+        setEdges(journey.edges || []);
         
         // Load metadata
         setJourneyMetadata({
@@ -507,7 +533,7 @@ export default function CustomerJourney() {
     } finally {
       setIsLoading(false);
     }
-  }, [setNodes, setEdges, toast]);
+  }, [setNodes, setEdges, toast, saveTimeout, handleNodeEdit]);
   
   // Delete a saved journey
   const deleteJourney = useCallback(async (journeyId: number, journeyTitle: string) => {
