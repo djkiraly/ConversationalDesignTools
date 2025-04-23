@@ -1,10 +1,10 @@
-import React from "react";
-import { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Setting } from "@shared/schema";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
 
 import {
   Card,
@@ -25,10 +25,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { 
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
 
 // Form validation schema
 const formSchema = z.object({
@@ -66,6 +70,11 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Settings() {
   const { toast } = useToast();
+  const [validatingApiKey, setValidatingApiKey] = useState(false);
+  const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    message: string;
+  } | null>(null);
   
   // Query to fetch settings
   const { 
@@ -102,21 +111,27 @@ export default function Settings() {
       roi_csat_improvement_base: '5',
       roi_csat_improvement_scale: '20',
     },
-    values: {
-      openai_api_key: getSettingValue('openai_api_key'),
-      openai_system_prompt: getSettingValue('openai_system_prompt'),
-      openai_user_prompt: getSettingValue('openai_user_prompt'),
-      // ROI calculation parameters
-      roi_agent_hourly_cost: getSettingValue('roi_agent_hourly_cost') || '25',
-      roi_implementation_cost_min: getSettingValue('roi_implementation_cost_min') || '15000',
-      roi_implementation_cost_max: getSettingValue('roi_implementation_cost_max') || '100000',
-      roi_maintenance_pct: getSettingValue('roi_maintenance_pct') || '15',
-      roi_automation_rate_base: getSettingValue('roi_automation_rate_base') || '5',
-      roi_automation_rate_scale: getSettingValue('roi_automation_rate_scale') || '25',
-      roi_csat_improvement_base: getSettingValue('roi_csat_improvement_base') || '5',
-      roi_csat_improvement_scale: getSettingValue('roi_csat_improvement_scale') || '20',
-    }
   });
+
+  // Update form values when settings are loaded
+  useEffect(() => {
+    if (settings.length > 0) {
+      form.reset({
+        openai_api_key: getSettingValue('openai_api_key'),
+        openai_system_prompt: getSettingValue('openai_system_prompt'),
+        openai_user_prompt: getSettingValue('openai_user_prompt'),
+        // ROI calculation parameters
+        roi_agent_hourly_cost: getSettingValue('roi_agent_hourly_cost') || '25',
+        roi_implementation_cost_min: getSettingValue('roi_implementation_cost_min') || '15000',
+        roi_implementation_cost_max: getSettingValue('roi_implementation_cost_max') || '100000',
+        roi_maintenance_pct: getSettingValue('roi_maintenance_pct') || '15',
+        roi_automation_rate_base: getSettingValue('roi_automation_rate_base') || '5',
+        roi_automation_rate_scale: getSettingValue('roi_automation_rate_scale') || '25',
+        roi_csat_improvement_base: getSettingValue('roi_csat_improvement_base') || '5',
+        roi_csat_improvement_scale: getSettingValue('roi_csat_improvement_scale') || '20',
+      });
+    }
+  }, [settings, form]);
 
   // Update setting mutation
   const updateSetting = useMutation({
@@ -134,6 +149,44 @@ export default function Settings() {
       });
     }
   });
+
+  // Validate OpenAI API key
+  async function validateApiKey() {
+    const apiKey = form.getValues('openai_api_key');
+    
+    if (!apiKey) {
+      setValidationResult({
+        valid: false,
+        message: "Please enter an API key to validate"
+      });
+      return;
+    }
+    
+    setValidatingApiKey(true);
+    setValidationResult(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/openai/validate', { apiKey });
+      if (response.valid) {
+        setValidationResult({
+          valid: true,
+          message: "API key is valid! Models available: " + (response.models?.join(', ') || 'Unknown')
+        });
+      } else {
+        setValidationResult({
+          valid: false,
+          message: response.error || "API key validation failed"
+        });
+      }
+    } catch (error) {
+      setValidationResult({
+        valid: false,
+        message: (error as Error).message || "API key validation failed"
+      });
+    } finally {
+      setValidatingApiKey(false);
+    }
+  }
 
   // Form submit handler
   async function onSubmit(values: FormValues) {
@@ -252,17 +305,50 @@ export default function Settings() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>OpenAI API Key</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter your OpenAI API key"
-                            {...field} 
-                            type="text"
-                          />
-                        </FormControl>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter your OpenAI API key"
+                              {...field} 
+                              type="password"
+                              className="flex-1"
+                            />
+                          </FormControl>
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={validateApiKey}
+                            disabled={validatingApiKey}
+                            className="shrink-0"
+                          >
+                            {validatingApiKey ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Validating...
+                              </>
+                            ) : "Validate Key"}
+                          </Button>
+                        </div>
                         <FormDescription>
                           Your OpenAI API key used for AI-powered features.
                         </FormDescription>
                         <FormMessage />
+                        
+                        {validationResult && (
+                          <Alert className={validationResult.valid ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
+                            {validationResult.valid ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <AlertTriangle className="h-4 w-4 text-red-600" />
+                            )}
+                            <AlertTitle>
+                              {validationResult.valid ? "Valid API Key" : "Invalid API Key"}
+                            </AlertTitle>
+                            <AlertDescription>
+                              {validationResult.message}
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -499,11 +585,11 @@ export default function Settings() {
                 <Button 
                   type="submit"
                   disabled={updateSetting.isPending || form.formState.isSubmitting}
-                  className="w-full md:w-auto"
+                  className="w-full sm:w-auto"
                 >
                   {updateSetting.isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Saving...
                     </>
                   ) : "Save Settings"}
