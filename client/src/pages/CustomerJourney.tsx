@@ -754,16 +754,7 @@ export default function CustomerJourney() {
     [setEdges, toast, autoSaveChanges]
   );
   
-  // Function to handle edge deletion (not a hook)
-  const handleEdgeDelete = (deletedEdges: Edge[]) => {
-    toast({
-      title: "Connection Deleted",
-      description: "Deleted connection in the journey flow.",
-      duration: 2000
-    });
-    // Trigger auto-save
-    setTimeout(() => autoSaveChanges(), 100);
-  };
+  // This section intentionally left empty after cleanup
 
   // Get a position for a new node
   const getNewNodePosition = (): XYPosition => {
@@ -1548,9 +1539,32 @@ export default function CustomerJourney() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={(changes) => {
+              onNodesChange(changes);
+              // Auto-save after a brief delay
+              if (saveTimeout) clearTimeout(saveTimeout);
+              const timeout = setTimeout(() => autoSaveChanges(), 2000);
+              setSaveTimeout(timeout);
+            }}
+            onEdgesChange={(changes) => {
+              onEdgesChange(changes);
+              // Auto-save after a brief delay
+              if (saveTimeout) clearTimeout(saveTimeout);
+              const timeout = setTimeout(() => autoSaveChanges(), 2000);
+              setSaveTimeout(timeout);
+            }}
             onConnect={onConnect}
+            onEdgesDelete={(edges) => {
+              toast({
+                title: "Connection Deleted",
+                description: "Deleted connection in the journey flow.",
+                duration: 2000
+              });
+              // Auto-save after a brief delay
+              if (saveTimeout) clearTimeout(saveTimeout);
+              const timeout = setTimeout(() => autoSaveChanges(), 2000);
+              setSaveTimeout(timeout);
+            }}
             nodeTypes={nodeTypes}
             connectionLineStyle={{ stroke: '#2563eb' }}
             connectionLineType={ConnectionLineType.SmoothStep}
