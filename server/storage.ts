@@ -63,6 +63,13 @@ export interface IStorage {
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: UpdateCustomer): Promise<Customer>;
   deleteCustomer(id: number): Promise<void>;
+  
+  // Action Plan management
+  getAllActionPlans(): Promise<ActionPlan[]>;
+  getActionPlan(id: number): Promise<ActionPlan | undefined>;
+  createActionPlan(actionPlan: InsertActionPlan): Promise<ActionPlan>;
+  updateActionPlan(id: number, actionPlan: UpdateActionPlan): Promise<ActionPlan>;
+  deleteActionPlan(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -72,6 +79,7 @@ export class MemStorage implements IStorage {
   private settings: Map<string, Setting>;
   private customerJourneys: Map<number, CustomerJourney>;
   private customers: Map<number, Customer>;
+  private actionPlans: Map<number, ActionPlan>;
   
   private userCurrentId: number;
   private useCaseCurrentId: number;
@@ -79,6 +87,7 @@ export class MemStorage implements IStorage {
   private settingCurrentId: number;
   private customerJourneyCurrentId: number;
   private customerCurrentId: number;
+  private actionPlanCurrentId: number;
 
   constructor() {
     this.users = new Map();

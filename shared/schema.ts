@@ -185,3 +185,77 @@ export const updateCustomerSchema = createInsertSchema(customers).pick({
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 export type Customer = typeof customers.$inferSelect;
+
+// Action Plan model
+export const actionPlans = pgTable("action_plans", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  customerId: integer("customer_id").references(() => customers.id),
+  // Business Discovery
+  industry: text("industry"),
+  primaryChannel: text("primary_channel"),
+  interactionVolume: text("interaction_volume"),
+  currentAutomation: text("current_automation"),
+  
+  // Pain Point Assessment
+  biggestChallenge: text("biggest_challenge"),
+  repetitiveProcesses: text("repetitive_processes"),
+  
+  // AI Agent Goals
+  aiGoals: json("ai_goals").notNull().$type<string[]>().default([]),
+  autonomyLevel: text("autonomy_level"),
+  
+  // System & Integration Readiness
+  currentPlatforms: text("current_platforms"),
+  teamComfort: text("team_comfort"),
+  apisAvailable: text("apis_available"),
+  
+  // Success Metrics
+  successMetrics: json("success_metrics").notNull().$type<string[]>().default([]),
+  
+  // Plan status
+  status: text("status").default("draft").notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertActionPlanSchema = createInsertSchema(actionPlans).pick({
+  title: true,
+  customerId: true,
+  industry: true,
+  primaryChannel: true,
+  interactionVolume: true,
+  currentAutomation: true,
+  biggestChallenge: true,
+  repetitiveProcesses: true,
+  aiGoals: true,
+  autonomyLevel: true,
+  currentPlatforms: true,
+  teamComfort: true,
+  apisAvailable: true,
+  successMetrics: true,
+  status: true,
+});
+
+export const updateActionPlanSchema = createInsertSchema(actionPlans).pick({
+  title: true,
+  customerId: true,
+  industry: true,
+  primaryChannel: true,
+  interactionVolume: true,
+  currentAutomation: true,
+  biggestChallenge: true,
+  repetitiveProcesses: true,
+  aiGoals: true,
+  autonomyLevel: true,
+  currentPlatforms: true,
+  teamComfort: true,
+  apisAvailable: true,
+  successMetrics: true,
+  status: true,
+});
+
+export type InsertActionPlan = z.infer<typeof insertActionPlanSchema>;
+export type UpdateActionPlan = z.infer<typeof updateActionPlanSchema>;
+export type ActionPlan = typeof actionPlans.$inferSelect;
