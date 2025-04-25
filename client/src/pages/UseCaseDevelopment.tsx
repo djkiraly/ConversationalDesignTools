@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lightbulb, BarChart, CheckSquare, FileText, BookOpen, Compass } from 'lucide-react';
+import { Lightbulb, BarChart, CheckSquare, FileText, BookOpen, Compass, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,12 +9,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function UseCaseDevelopment() {
   // State to track active tab
   const [activeTab, setActiveTab] = useState("discovery");
+  const { toast } = useToast();
   
-  // Dummy data for industry options
+  // State for industry and business function selection
+  const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [selectedFunction, setSelectedFunction] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  
+  // State for questionnaire generation
+  const [isGeneratingQuestionnaire, setIsGeneratingQuestionnaire] = useState(false);
+  const [questionnaireContent, setQuestionnaireContent] = useState("");
+  const [showQuestionnaireDialog, setShowQuestionnaireDialog] = useState(false);
+  
+  // State for framework content
+  const [isGeneratingFramework, setIsGeneratingFramework] = useState(false);
+  const [frameworkContent, setFrameworkContent] = useState("");
+  const [showFrameworkDialog, setShowFrameworkDialog] = useState(false);
+  const [selectedFramework, setSelectedFramework] = useState("");
+  
+  // Industry options
   const industries = [
     { value: "finance", label: "Finance & Banking" },
     { value: "healthcare", label: "Healthcare" },
@@ -26,7 +45,7 @@ export default function UseCaseDevelopment() {
     { value: "energy", label: "Energy & Utilities" }
   ];
   
-  // Dummy data for business functions
+  // Business function options
   const businessFunctions = [
     { value: "marketing", label: "Marketing" },
     { value: "sales", label: "Sales" },
@@ -37,6 +56,88 @@ export default function UseCaseDevelopment() {
     { value: "it", label: "IT & Security" },
     { value: "supplyChain", label: "Supply Chain" }
   ];
+  
+  // Function to generate questionnaire
+  const generateQuestionnaire = async () => {
+    if (!selectedIndustry || !selectedFunction) {
+      toast({
+        title: "Missing information",
+        description: "Please select both an industry and business function.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsGeneratingQuestionnaire(true);
+    
+    try {
+      const response = await fetch('/api/use-case-development/generate-questionnaire', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          industry: industries.find(i => i.value === selectedIndustry)?.label || selectedIndustry,
+          businessFunction: businessFunctions.find(f => f.value === selectedFunction)?.label || selectedFunction,
+          companyName
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate questionnaire');
+      }
+      
+      setQuestionnaireContent(data.content);
+      setShowQuestionnaireDialog(true);
+    } catch (error) {
+      console.error('Error generating questionnaire:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate questionnaire. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingQuestionnaire(false);
+    }
+  };
+  
+  // Function to load framework content
+  const loadFrameworkContent = async (frameworkName: string) => {
+    setSelectedFramework(frameworkName);
+    setIsGeneratingFramework(true);
+    
+    try {
+      const response = await fetch('/api/use-case-development/framework-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          frameworkName
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load framework content');
+      }
+      
+      setFrameworkContent(data.content);
+      setShowFrameworkDialog(true);
+    } catch (error: any) {
+      console.error('Error loading framework content:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load framework content. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingFramework(false);
+    }
+  };
   
   // Dummy data for use cases
   const useCases = [
@@ -148,7 +249,7 @@ export default function UseCaseDevelopment() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
-                    <Select>
+                    <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
                       <SelectTrigger id="industry">
                         <SelectValue placeholder="Select industry" />
                       </SelectTrigger>
@@ -164,7 +265,7 @@ export default function UseCaseDevelopment() {
                   
                   <div className="space-y-2">
                     <Label htmlFor="function">Business Function</Label>
-                    <Select>
+                    <Select value={selectedFunction} onValueChange={setSelectedFunction}>
                       <SelectTrigger id="function">
                         <SelectValue placeholder="Select function" />
                       </SelectTrigger>
@@ -180,10 +281,28 @@ export default function UseCaseDevelopment() {
                   
                   <div className="space-y-2">
                     <Label htmlFor="company">Company</Label>
-                    <Input id="company" placeholder="Enter company name" />
+                    <Input 
+                      id="company" 
+                      placeholder="Enter company name" 
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                    />
                   </div>
                   
-                  <Button className="w-full mt-4">Generate Questionnaire</Button>
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={generateQuestionnaire}
+                    disabled={isGeneratingQuestionnaire}
+                  >
+                    {isGeneratingQuestionnaire ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate Questionnaire'
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
               
@@ -194,17 +313,57 @@ export default function UseCaseDevelopment() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <Button variant="outline" className="w-full justify-start">
-                      <span className="mr-2">•</span> Jobs to be Done
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => loadFrameworkContent("Jobs to be Done")}
+                      disabled={isGeneratingFramework}
+                    >
+                      {isGeneratingFramework && selectedFramework === "Jobs to be Done" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="mr-2">•</span>
+                      )}
+                      Jobs to be Done
                     </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <span className="mr-2">•</span> 5 Whys Analysis
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => loadFrameworkContent("5 Whys Analysis")}
+                      disabled={isGeneratingFramework}
+                    >
+                      {isGeneratingFramework && selectedFramework === "5 Whys Analysis" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="mr-2">•</span>
+                      )}
+                      5 Whys Analysis
                     </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <span className="mr-2">•</span> Value Stream Mapping
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => loadFrameworkContent("Value Stream Mapping")}
+                      disabled={isGeneratingFramework}
+                    >
+                      {isGeneratingFramework && selectedFramework === "Value Stream Mapping" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="mr-2">•</span>
+                      )}
+                      Value Stream Mapping
                     </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <span className="mr-2">•</span> SWOT Analysis
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => loadFrameworkContent("SWOT Analysis")}
+                      disabled={isGeneratingFramework}
+                    >
+                      {isGeneratingFramework && selectedFramework === "SWOT Analysis" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="mr-2">•</span>
+                      )}
+                      SWOT Analysis
                     </Button>
                   </div>
                 </CardContent>

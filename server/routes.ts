@@ -872,6 +872,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Use Case Development APIs
+  app.post('/api/use-case-development/generate-questionnaire', async (req, res) => {
+    try {
+      const { industry, businessFunction } = req.body;
+      
+      if (!industry || !businessFunction) {
+        return res.status(400).json({ error: "Industry and business function are required" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      const result = await generateIndustryQuestionnaire(
+        apiKeySetting.value,
+        industry,
+        businessFunction
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating industry questionnaire:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  app.post('/api/use-case-development/framework-content', async (req, res) => {
+    try {
+      const { frameworkName } = req.body;
+      
+      if (!frameworkName) {
+        return res.status(400).json({ error: "Framework name is required" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      const result = await generateFrameworkContent(
+        apiKeySetting.value,
+        frameworkName
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating framework content:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
