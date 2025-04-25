@@ -9,6 +9,7 @@ import CustomerJourney from "@/pages/CustomerJourney";
 import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
 import ActionPlan from "@/pages/ActionPlan";
+import UseCaseDevelopment from "@/pages/UseCaseDevelopment";
 import AppLayout from "@/components/AppLayout";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/customer-journey" component={CustomerJourney} />
         <Route path="/customers" component={Customers} />
         <Route path="/action-plan" component={ActionPlan} />
+        <Route path="/use-case-development" component={UseCaseDevelopment} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
