@@ -80,6 +80,18 @@ export default function UseCasePage() {
       title: "",
       description: "",
       customer: "",
+      
+      // Initialize new fields
+      problemStatement: "",
+      proposedSolution: "",
+      keyObjectives: "",
+      requiredDataInputs: "",
+      expectedOutputs: "",
+      keyStakeholders: "",
+      scope: "",
+      potentialRisks: "",
+      estimatedImpact: "",
+      
       conversationFlow: ""
     }
   });
