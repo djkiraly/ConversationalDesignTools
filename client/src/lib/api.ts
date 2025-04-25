@@ -298,6 +298,7 @@ export async function deleteActionPlan(id: number): Promise<void> {
 export interface AppStatistics {
   useCaseCount: number;
   customerJourneyCount: number;
+  actionPlanCount: number;
   database: {
     totalSizeMB: number;
     tables: {
