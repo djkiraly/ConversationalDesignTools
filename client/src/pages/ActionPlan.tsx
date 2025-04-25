@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List, Lightbulb } from 'lucide-react';
+import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List, Lightbulb, FileDown } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useROIParameters, calculateTimeSaved, calculateCostSavings, calculateImplementationCost, 
          calculateMaintenanceCost, calculateCSATImprovement, calculatePaybackPeriod, 
