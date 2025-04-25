@@ -282,16 +282,53 @@ export class DbStorage implements IStorage {
   async createActionPlan(planData: InsertActionPlan): Promise<ActionPlan> {
     const now = new Date();
     
-    // Ensure array fields are properly handled
+    console.log("DbStorage createActionPlan - Received aiGoals:", JSON.stringify(planData.aiGoals, null, 2));
+    console.log("DbStorage createActionPlan - aiGoals is Array?", Array.isArray(planData.aiGoals));
+    console.log("DbStorage createActionPlan - aiGoals type:", typeof planData.aiGoals);
+    
+    // Process aiGoals field to ensure type safety
+    let aiGoals: string[] = [];
+    
+    if (planData.aiGoals !== undefined) {
+      if (Array.isArray(planData.aiGoals)) {
+        aiGoals = planData.aiGoals;
+        console.log("DbStorage createActionPlan - Using array aiGoals:", JSON.stringify(aiGoals, null, 2));
+      } else if (typeof planData.aiGoals === 'object') {
+        // Handle case where aiGoals might come in as an object with array-like properties
+        try {
+          aiGoals = Array.from(Object.values(planData.aiGoals as any));
+          console.log("DbStorage createActionPlan - Converted object to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to convert aiGoals to array:", err);
+          aiGoals = [];
+        }
+      } else if (typeof planData.aiGoals === 'string') {
+        // Handle string - could be a JSON string
+        try {
+          const parsed = JSON.parse(planData.aiGoals as string);
+          aiGoals = Array.isArray(parsed) ? parsed : [];
+          console.log("DbStorage createActionPlan - Parsed string to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to parse aiGoals string:", err);
+          aiGoals = [planData.aiGoals as string];
+        }
+      }
+    }
+    
+    // Process array fields to ensure type safety
     const processedData = {
       ...planData,
-      aiGoals: Array.isArray(planData.aiGoals) ? planData.aiGoals : [],
+      aiGoals: aiGoals,
       successMetrics: Array.isArray(planData.successMetrics) ? planData.successMetrics : [],
       createdAt: now,
       updatedAt: now
     };
     
+    console.log("DbStorage createActionPlan - Final processedData aiGoals:", JSON.stringify(processedData.aiGoals, null, 2));
+    
     const result = await db.insert(actionPlans).values(processedData).returning();
+    console.log("DbStorage createActionPlan - Created result aiGoals:", JSON.stringify(result[0].aiGoals, null, 2));
+    
     return result[0];
   }
   
@@ -301,22 +338,60 @@ export class DbStorage implements IStorage {
       throw new Error(`Action plan with id ${id} not found`);
     }
     
+    console.log("DbStorage updateActionPlan - Existing aiGoals:", JSON.stringify(existingPlan.aiGoals, null, 2));
+    console.log("DbStorage updateActionPlan - New aiGoals:", JSON.stringify(updateData.aiGoals, null, 2));
+    console.log("DbStorage updateActionPlan - aiGoals is Array?", Array.isArray(updateData.aiGoals));
+    console.log("DbStorage updateActionPlan - aiGoals type:", typeof updateData.aiGoals);
+    
     // Process array fields to ensure type safety
+    let aiGoals = existingPlan.aiGoals;
+    
+    if (updateData.aiGoals !== undefined) {
+      if (Array.isArray(updateData.aiGoals)) {
+        aiGoals = updateData.aiGoals;
+        console.log("DbStorage updateActionPlan - Using array aiGoals:", JSON.stringify(aiGoals, null, 2));
+      } else if (typeof updateData.aiGoals === 'object') {
+        // Handle case where aiGoals might come in as an object with array-like properties
+        try {
+          aiGoals = Array.from(Object.values(updateData.aiGoals as any));
+          console.log("DbStorage updateActionPlan - Converted object to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to convert aiGoals to array:", err);
+          aiGoals = [];
+        }
+      } else if (typeof updateData.aiGoals === 'string') {
+        // Handle string - could be a JSON string
+        try {
+          const parsed = JSON.parse(updateData.aiGoals as string);
+          aiGoals = Array.isArray(parsed) ? parsed : [];
+          console.log("DbStorage updateActionPlan - Parsed string to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to parse aiGoals string:", err);
+          aiGoals = [updateData.aiGoals as string];
+        }
+      } else {
+        // Fallback
+        aiGoals = [];
+      }
+    }
+    
     const processedData = {
       ...updateData,
-      aiGoals: updateData.aiGoals !== undefined 
-        ? (Array.isArray(updateData.aiGoals) ? updateData.aiGoals : []) 
-        : existingPlan.aiGoals,
+      aiGoals: aiGoals,
       successMetrics: updateData.successMetrics !== undefined 
         ? (Array.isArray(updateData.successMetrics) ? updateData.successMetrics : []) 
         : existingPlan.successMetrics,
       updatedAt: new Date()
     };
     
+    console.log("DbStorage updateActionPlan - Final processedData aiGoals:", JSON.stringify(processedData.aiGoals, null, 2));
+    
     const result = await db.update(actionPlans)
       .set(processedData)
       .where(eq(actionPlans.id, id))
       .returning();
+    
+    console.log("DbStorage updateActionPlan - Updated result aiGoals:", JSON.stringify(result[0].aiGoals, null, 2));
     
     return result[0];
   }
