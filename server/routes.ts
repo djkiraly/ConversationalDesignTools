@@ -16,7 +16,7 @@ import {
   insertActionPlanSchema,
   updateActionPlanSchema
 } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, OPENAI_API_KEY_SETTING } from "./openai";
 import { generateUseCaseDetails } from "./generateUseCaseDetails";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -933,6 +933,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         error: error.message || "Failed to generate use case details"
+      });
+    }
+  });
+  
+  // Generate Action Plan from Use Case
+  app.post('/api/use-cases/:id/generate-action-plan', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const useCase = await storage.getUseCase(id);
+      if (!useCase) {
+        return res.status(404).json({ error: "Use case not found" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Log the request for debugging
+      console.log("Generating action plan from use case:", useCase.title);
+      
+      // Generate action plan from use case
+      const result = await generateActionPlanFromUseCase(
+        apiKeySetting.value,
+        {
+          id: useCase.id,
+          title: useCase.title,
+          description: useCase.description,
+          customer: useCase.customer,
+          problemStatement: useCase.problemStatement,
+          proposedSolution: useCase.proposedSolution,
+          keyObjectives: useCase.keyObjectives,
+          requiredDataInputs: useCase.requiredDataInputs,
+          expectedOutputs: useCase.expectedOutputs,
+          keyStakeholders: useCase.keyStakeholders,
+          scope: useCase.scope,
+          potentialRisks: useCase.potentialRisks,
+          estimatedImpact: useCase.estimatedImpact
+        }
+      );
+      
+      if (!result.success || !result.actionPlan) {
+        return res.status(500).json({ 
+          success: false, 
+          error: result.error || "Failed to generate action plan from use case" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        actionPlan: result.actionPlan
+      });
+    } catch (error: any) {
+      console.error("Error generating action plan from use case:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message || "Failed to generate action plan from use case"
       });
     }
   });
