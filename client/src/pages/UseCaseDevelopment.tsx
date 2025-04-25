@@ -27,7 +27,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
 
 export default function UseCaseDevelopment() {
   // State to track active tab
@@ -597,59 +604,146 @@ export default function UseCaseDevelopment() {
             
             <div className="md:col-span-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Use Case Catalog</CardTitle>
-                  <CardDescription>Browse and select relevant AI use cases</CardDescription>
+                <CardHeader className="flex flex-row justify-between items-center pb-2">
+                  <div>
+                    <CardTitle>Use Case Catalog</CardTitle>
+                    <CardDescription>AI implementation patterns with proven ROI</CardDescription>
+                  </div>
+                  <Select defaultValue="newest">
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="impact">Highest Impact</SelectItem>
+                      <SelectItem value="complexity">Lowest Complexity</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    {useCases.map(useCase => (
-                      <div key={useCase.id} className="border rounded-lg p-4 hover:border-primary transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-lg">{useCase.title}</h3>
-                          <div className="flex gap-2">
-                            <Badge variant="outline">{useCase.category}</Badge>
-                            <Badge 
-                              variant={
-                                useCase.impactPotential === 'high' ? 'default' : 
-                                useCase.impactPotential === 'medium' ? 'secondary' : 'outline'
-                              }
-                            >
-                              {useCase.impactPotential.charAt(0).toUpperCase() + useCase.impactPotential.slice(1)} Impact
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-muted-foreground mb-4">{useCase.description}</p>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm font-medium">Data Requirements:</p>
-                            <ul className="list-disc pl-4 text-sm text-muted-foreground">
-                              {useCase.dataRequirements.map((req, index) => (
-                                <li key={index}>{req}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Complexity:</p>
-                            <p className="text-sm text-muted-foreground capitalize">{useCase.complexity}</p>
+                  <div className="space-y-4">
+                    {/* Filtered use cases */}
+                    {useCases
+                      .filter(useCase => {
+                        // Filter by search query
+                        if (searchQuery && !useCase.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
+                            !useCase.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+                          return false;
+                        }
+                        
+                        // Filter by industry
+                        if (filteredIndustry && useCase.industry !== filteredIndustry) {
+                          return false;
+                        }
+                        
+                        // Filter by function
+                        if (filteredFunction && useCase.function !== filteredFunction) {
+                          return false;
+                        }
+                        
+                        // Filter by impact
+                        if (filteredImpact && useCase.impactPotential !== filteredImpact) {
+                          return false;
+                        }
+                        
+                        return true;
+                      })
+                      .map(useCase => (
+                        <Card key={useCase.id} className="overflow-hidden">
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                              <CardTitle className="text-lg">{useCase.title}</CardTitle>
+                              <Badge variant="outline" className="bg-primary/10">{useCase.category}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm text-muted-foreground mb-3">{useCase.description}</p>
                             
-                            <p className="text-sm font-medium mt-2">Typical ROI Timeframe:</p>
-                            <p className="text-sm text-muted-foreground">
-                              {useCase.complexity === 'low' ? '1-3 months' : 
-                               useCase.complexity === 'medium' ? '3-6 months' : '6-12 months'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
-                          <Button size="sm">
-                            Select Use Case
-                          </Button>
-                        </div>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <Badge variant="outline" className="bg-primary/10">
+                                <ArrowUpCircle className="h-3 w-3 mr-1" /> 
+                                {useCase.impactPotential} Impact
+                              </Badge>
+                              <Badge variant="outline" className="bg-primary/10">
+                                <BarChart2 className="h-3 w-3 mr-1" /> 
+                                {useCase.complexity} Complexity
+                              </Badge>
+                              <Badge variant="outline" className="bg-primary/10">
+                                <Building className="h-3 w-3 mr-1" />
+                                {industries.find(i => i.value === useCase.industry)?.label || useCase.industry}
+                              </Badge>
+                              <Badge variant="outline" className="bg-primary/10">
+                                <Briefcase className="h-3 w-3 mr-1" />
+                                {businessFunctions.find(f => f.value === useCase.function)?.label || useCase.function}
+                              </Badge>
+                            </div>
+                            
+                            {useCase.dataRequirements && (
+                              <div className="mt-3">
+                                <p className="text-sm font-medium mb-1">Data Requirements:</p>
+                                <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+                                  {useCase.dataRequirements.map((req, idx) => (
+                                    <li key={idx}>{req}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            <Separator className="my-3" />
+                            
+                            <div className="flex justify-between">
+                              <div className="space-x-2">
+                                <Button variant="ghost" size="sm">
+                                  <Share2 className="h-4 w-4 mr-1" />
+                                  Share
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Info className="h-4 w-4 mr-1" />
+                                  Details
+                                </Button>
+                              </div>
+                              <Button size="sm">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add to Project
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    
+                    {/* Empty state when no use cases match filters */}
+                    {useCases.filter(useCase => {
+                        if (searchQuery && !useCase.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
+                            !useCase.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+                          return false;
+                        }
+                        if (filteredIndustry && useCase.industry !== filteredIndustry) {
+                          return false;
+                        }
+                        if (filteredFunction && useCase.function !== filteredFunction) {
+                          return false;
+                        }
+                        if (filteredImpact && useCase.impactPotential !== filteredImpact) {
+                          return false;
+                        }
+                        return true;
+                      }).length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <SearchX className="h-16 w-16 text-muted-foreground opacity-50" />
+                        <div className="text-xl font-medium">No matching use cases found</div>
+                        <p className="text-center text-muted-foreground max-w-lg">
+                          Try adjusting your filters or use the "Generate Suggestions" button to create custom AI-powered use cases for your specific industry and function.
+                        </p>
+                        <Button 
+                          onClick={generateUseCaseSuggestions}
+                          disabled={isGeneratingSuggestions || !filteredIndustry || !filteredFunction}
+                          className="mt-4"
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate Custom Suggestions
+                        </Button>
                       </div>
-                    ))}
+                    )}
                     
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setActiveTab("discovery")}>
