@@ -704,17 +704,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Action plan not found" });
       }
 
-      // Check if we're doing a partial update (like status change)
-      if (req.body.status && Object.keys(req.body).length === 1) {
-        // Handle partial update (only status field)
+      // Check if we're doing a simple status update 
+      // Handle both { status: "value" } and { actionPlan: { status: "value" } } formats
+      const updateData = req.body.actionPlan || req.body;
+      
+      if (updateData.status && Object.keys(updateData).length === 1) {
+        console.log("Performing status-only update to:", updateData.status);
+        // Handle status-only update without validation
         const updatedActionPlan = await storage.updateActionPlan(id, {
           ...existingActionPlan,
-          status: req.body.status
+          status: updateData.status
         });
         return res.json(updatedActionPlan);
       } else {
         // Handle normal complete update with validation
-        const result = updateActionPlanSchema.safeParse(req.body);
+        const result = updateActionPlanSchema.safeParse(updateData);
         if (!result.success) {
           return res.status(400).json({ error: result.error.message });
         }
@@ -723,6 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(updatedActionPlan);
       }
     } catch (error) {
+      console.error("Error updating action plan:", error);
       res.status(500).json({ error: (error as Error).message });
     }
   });
