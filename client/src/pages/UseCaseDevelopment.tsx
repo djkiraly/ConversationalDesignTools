@@ -33,6 +33,15 @@ export default function UseCaseDevelopment() {
   const [showFrameworkDialog, setShowFrameworkDialog] = useState(false);
   const [selectedFramework, setSelectedFramework] = useState("");
   
+  // State for use case filtering and suggestions
+  const [filteredIndustry, setFilteredIndustry] = useState("");
+  const [filteredFunction, setFilteredFunction] = useState("");
+  const [filteredImpact, setFilteredImpact] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [suggestedUseCases, setSuggestedUseCases] = useState<any[]>([]);
+  const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);
+  
   // Industry options
   const industries = [
     { value: "finance", label: "Finance & Banking" },
@@ -136,6 +145,52 @@ export default function UseCaseDevelopment() {
       });
     } finally {
       setIsGeneratingFramework(false);
+    }
+  };
+  
+  // Function to generate AI use case suggestions
+  const generateUseCaseSuggestions = async () => {
+    if (!filteredIndustry || !filteredFunction) {
+      toast({
+        title: "Missing information",
+        description: "Please select both an industry and business function to generate relevant suggestions.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsGeneratingSuggestions(true);
+    
+    try {
+      const response = await fetch('/api/use-case-development/generate-suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          industry: industries.find(i => i.value === filteredIndustry)?.label || filteredIndustry,
+          businessFunction: businessFunctions.find(f => f.value === filteredFunction)?.label || filteredFunction,
+          impactLevel: filteredImpact
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate suggestions');
+      }
+      
+      setSuggestedUseCases(data.suggestions);
+      setShowSuggestionsDialog(true);
+    } catch (error: any) {
+      console.error('Error generating suggestions:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate suggestions. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingSuggestions(false);
     }
   };
   
@@ -1142,6 +1197,66 @@ Technical: CIO, IT Infrastructure Manager, Data Security Officer"
           
           <div className="flex justify-end mt-4">
             <Button onClick={() => setShowFrameworkDialog(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* AI Suggestions Dialog */}
+      <Dialog open={showSuggestionsDialog} onOpenChange={setShowSuggestionsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              AI-Generated Use Case Suggestions
+            </DialogTitle>
+            <DialogDescription>
+              Potential AI opportunities based on your selected industry and business function.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4 grid grid-cols-1 gap-4">
+            {suggestedUseCases.length > 0 ? (
+              suggestedUseCases.map((useCase, index) => (
+                <Card key={index} className="overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{useCase.title}</CardTitle>
+                      <Badge variant="outline" className="bg-primary/10">{useCase.category}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">{useCase.description}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="outline" className="bg-primary/10">
+                        <ArrowUpCircle className="h-3 w-3 mr-1" /> 
+                        {useCase.impactPotential || "Medium"} Impact
+                      </Badge>
+                      <Badge variant="outline" className="bg-primary/10">
+                        <BarChart2 className="h-3 w-3 mr-1" /> 
+                        {useCase.complexity || "Medium"} Complexity
+                      </Badge>
+                    </div>
+                    {useCase.dataRequirements && useCase.dataRequirements.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium mb-1">Data Requirements:</p>
+                        <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                          {useCase.dataRequirements.map((req: string, i: number) => (
+                            <li key={i}>{req}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <p className="text-muted-foreground">No suggestions available.</p>
+            )}
+          </div>
+          
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowSuggestionsDialog(false)}>
               Close
             </Button>
           </div>
