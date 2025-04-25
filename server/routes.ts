@@ -734,6 +734,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: (error as Error).message });
     }
   });
+  
+  // Action Plan AI Suggestions endpoint
+  app.post('/api/action-plans/:id/suggestions', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const actionPlan = await storage.getActionPlan(id);
+      if (!actionPlan) {
+        return res.status(404).json({ error: "Action plan not found" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
+      }
+      
+      // Call OpenAI to generate suggestions
+      const result = await generateActionPlanSuggestions(
+        apiKeySetting.value,
+        {
+          title: actionPlan.title,
+          industry: actionPlan.industry,
+          primaryChannel: actionPlan.primaryChannel,
+          interactionVolume: actionPlan.interactionVolume,
+          currentAutomation: actionPlan.currentAutomation,
+          biggestChallenge: actionPlan.biggestChallenge,
+          repetitiveProcesses: actionPlan.repetitiveProcesses,
+          aiGoals: actionPlan.aiGoals,
+          autonomyLevel: actionPlan.autonomyLevel,
+          currentPlatforms: actionPlan.currentPlatforms,
+          teamComfort: actionPlan.teamComfort,
+          apisAvailable: actionPlan.apisAvailable,
+          successMetrics: actionPlan.successMetrics
+        }
+      );
+      
+      if (!result.success) {
+        return res.status(500).json({ 
+          success: false,
+          error: result.error || "Failed to generate action plan suggestions" 
+        });
+      }
+      
+      return res.json({
+        success: true,
+        suggestions: result.suggestions
+      });
+    } catch (error) {
+      console.error("Error generating action plan suggestions:", error);
+      return res.status(500).json({ error: (error as Error).message });
+    }
+  });
 
   // Health check endpoint for monitoring
   app.get('/api/health', async (_req, res) => {

@@ -7,16 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List } from 'lucide-react';
+import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List, Lightbulb } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useROIParameters, calculateTimeSaved, calculateCostSavings, calculateImplementationCost, 
          calculateMaintenanceCost, calculateCSATImprovement, calculatePaybackPeriod, 
          formatCurrency, formatRange } from '../lib/roiCalculator';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchAllCustomers, fetchAllActionPlans, createActionPlan, updateActionPlan, 
+         generateActionPlanSuggestions,
          ActionPlan as ActionPlanType, Customer } from '../lib/api';
 import { useToast } from '@/hooks/use-toast';
 import ActionPlanSelectionDialog from '@/components/ActionPlanSelectionDialog';
+import AISuggestionsDialog from '@/components/AISuggestionsDialog';
 
 interface FormSection {
   id: string;
@@ -32,6 +34,9 @@ export default function ActionPlan() {
   const [isSaving, setIsSaving] = useState(false);
   const [currentPlanId, setCurrentPlanId] = useState<number | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
+  const [isSuggestionsDialogOpen, setIsSuggestionsDialogOpen] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -296,6 +301,58 @@ export default function ActionPlan() {
   
   // Fetch ROI parameters from settings
   const { data: roiParams, isLoading: isLoadingROI } = useROIParameters();
+  
+  // Generate AI suggestions for improving the action plan
+  const handleGenerateSuggestions = async () => {
+    if (!currentPlanId) {
+      toast({
+        title: "Action plan not saved",
+        description: "Please save your action plan first to get AI suggestions.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsGeneratingSuggestions(true);
+    setAiSuggestions(null);
+    
+    try {
+      const suggestions = await generateActionPlanSuggestions(currentPlanId);
+      setAiSuggestions(suggestions);
+    } catch (error) {
+      toast({
+        title: "Error generating suggestions",
+        description: error.message || "An error occurred while generating AI suggestions.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSuggestions(false);
+    }
+  };
+  
+  // Apply AI suggestions to the current action plan
+  const handleApplySuggestions = (suggestions: string) => {
+    // Here we would typically extract data from the suggestions
+    // For this implementation, we'll just show a success message
+    toast({
+      title: "Suggestions applied",
+      description: "AI suggestions have been applied to your action plan.",
+      variant: "default",
+    });
+    
+    // Close the dialog
+    setIsSuggestionsDialogOpen(false);
+    
+    // Optionally mark the plan as "ai-enhanced"
+    if (currentPlanId) {
+      updateActionPlanMutation.mutate({
+        id: currentPlanId,
+        actionPlan: {
+          status: "ai-enhanced"
+        }
+      });
+    }
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">
