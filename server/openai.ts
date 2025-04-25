@@ -560,3 +560,91 @@ practical, and tailored to this business's unique needs based on their inputs.`;
     };
   }
 }
+
+export async function generateIndustryQuestionnaire(
+  apiKey: string,
+  industry: string,
+  businessFunction: string
+): Promise<{ success: boolean; questionnaire?: string; error?: string }> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    const promptContent = `Create a discovery questionnaire for identifying AI use cases in the ${industry} industry, specifically for the ${businessFunction} function. 
+
+The questionnaire should:
+1. Include 10-15 questions organized in these sections:
+   - Current Challenges & Pain Points
+   - Strategic Business Objectives
+   - Existing Processes & Systems
+   - Data Availability & Quality
+   - Success Metrics & KPIs
+
+2. Each question should be specific to ${industry} and ${businessFunction}, not generic.
+3. Questions should help uncover opportunities for AI implementation.
+4. Format the questionnaire with clear section headers and numbered questions.
+
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { role: "system", content: "You are an AI solution consultant who creates industry-specific discovery questionnaires to help identify high-value AI use cases." },
+        { role: "user", content: promptContent }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    return {
+      success: true,
+      questionnaire: response.choices[0].message.content || ''
+    };
+  } catch (error: any) {
+    console.error('Error generating industry questionnaire:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to generate questionnaire'
+    };
+  }
+}
+
+export async function generateFrameworkContent(
+  apiKey: string,
+  frameworkName: string
+): Promise<{ success: boolean; content?: string; error?: string }> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    const promptContent = `Create a practical guide for using the "${frameworkName}" framework to identify AI use case opportunities.
+
+The guide should include:
+1. A brief explanation of what the ${frameworkName} framework is
+2. Step-by-step instructions for applying it specifically to AI use case discovery
+3. 2-3 example questions for each step of the framework
+4. A simple template or worksheet structure that can be used during a discovery session
+
+Make it actionable, concise, and focused on uncovering business pain points that could be addressed with AI solutions.
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { role: "system", content: "You are an AI solution consultant who creates practical frameworks for business problem identification and AI opportunity discovery." },
+        { role: "user", content: promptContent }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    return {
+      success: true,
+      content: response.choices[0].message.content || ''
+    };
+  } catch (error: any) {
+    console.error('Error generating framework content:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to generate framework content'
+    };
+  }
+}
