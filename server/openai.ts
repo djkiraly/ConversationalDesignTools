@@ -443,6 +443,88 @@ picture of how the agent should interact with users.`;
 }
 
 // Generate suggestions for improving an action plan
+// Generate AI use case suggestions based on industry and business function
+export async function generateUseCaseSuggestions(
+  apiKey: string,
+  industry: string,
+  businessFunction: string,
+  impactLevel?: string
+): Promise<{
+  success: boolean;
+  suggestions?: any[];
+  error?: string;
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Construct the prompt based on the industry and business function
+    let prompt = `Generate 5 specific AI use case suggestions for the ${industry} industry focused on the ${businessFunction} function.`;
+    
+    if (impactLevel) {
+      prompt += ` Focus on use cases with ${impactLevel} impact potential.`;
+    }
+    
+    prompt += `\n\nFor each use case, include:
+1. A concise, specific title (max 7 words)
+2. A category (e.g., "Process Automation", "Customer Analytics", "Predictive Maintenance", etc.)
+3. A detailed description (1-2 sentences)
+4. Impact potential ("high", "medium", or "low")
+5. Implementation complexity ("high", "medium", or "low")
+6. A list of 3-5 specific data requirements needed to implement this use case
+
+Respond with an array of JSON objects in this exact format:
+[
+  {
+    "title": "Specific Use Case Title",
+    "category": "Category Name",
+    "description": "Detailed description of the use case and its benefits.",
+    "impactPotential": "high|medium|low",
+    "complexity": "high|medium|low",
+    "dataRequirements": ["Specific data requirement 1", "Specific data requirement 2", ...],
+  },
+  ...more use cases...
+]
+
+Focus on practical, implementable use cases with clear business value. Be specific to the ${industry} industry and ${businessFunction} function.`;
+
+    // Make a request to OpenAI
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an AI solution architect with deep expertise in industry-specific AI applications. You provide detailed, practical use case suggestions based on industry and business function." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+    
+    // Parse the response
+    const content = response.choices[0].message.content || '{"suggestions":[]}';
+    const parsedContent = JSON.parse(content);
+    
+    // If the response is an array, use it directly
+    // If it's wrapped in a suggestions object, extract it
+    const suggestions = Array.isArray(parsedContent) 
+      ? parsedContent 
+      : parsedContent.suggestions || [];
+    
+    return {
+      success: true,
+      suggestions
+    };
+  } catch (error: any) {
+    console.error('Error generating use case suggestions:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to generate use case suggestions'
+    };
+  }
+}
+
 export async function generateActionPlanSuggestions(
   apiKey: string,
   actionPlan: {

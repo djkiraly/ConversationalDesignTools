@@ -26,6 +26,7 @@ import {
   generateActionPlanSuggestions, 
   generateIndustryQuestionnaire,
   generateFrameworkContent,
+  generateUseCaseSuggestions,
   OPENAI_API_KEY_SETTING 
 } from "./openai";
 
@@ -940,6 +941,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error generating framework content:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // Endpoint for generating AI use case suggestions
+  app.post('/api/use-case-development/generate-suggestions', async (req, res) => {
+    try {
+      const { industry, businessFunction, impactLevel } = req.body;
+      
+      if (!industry || !businessFunction) {
+        return res.status(400).json({ 
+          error: "Industry and business function are required"
+        });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please add it in Settings."
+        });
+      }
+      
+      // Make sure the API key is not empty
+      if (apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ 
+          error: "OpenAI API key is empty. Please add a valid key in Settings."
+        });
+      }
+      
+      const result = await generateUseCaseSuggestions(
+        apiKeySetting.value,
+        industry,
+        businessFunction,
+        impactLevel
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating use case suggestions:", error);
       res.status(500).json({ error: (error as Error).message });
     }
   });
