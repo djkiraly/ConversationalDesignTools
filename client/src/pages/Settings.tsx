@@ -110,6 +110,12 @@ export default function Settings() {
       roi_automation_rate_scale: '25',
       roi_csat_improvement_base: '5',
       roi_csat_improvement_scale: '20',
+      // Revenue improvement parameters
+      roi_revenue_per_customer: '5000',
+      roi_conversion_rate_improvement_base: '2',
+      roi_conversion_rate_improvement_scale: '10',
+      roi_cross_sell_rate_base: '5',
+      roi_cross_sell_rate_scale: '15',
     },
   });
 
@@ -574,6 +580,117 @@ export default function Settings() {
                           </FormControl>
                           <FormDescription>
                             Maximum customer satisfaction improvement
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="border-t pt-4 pb-2 mt-6">
+                    <h4 className="text-md font-medium">Revenue Improvement Parameters</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="roi_revenue_per_customer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Average Revenue Per Customer ($)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="5000"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Average annual revenue generated per customer
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_conversion_rate_improvement_base"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base Conversion Rate Improvement (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="2"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Minimum expected improvement in conversion rate
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_conversion_rate_improvement_scale"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Conversion Rate Improvement (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="10"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Maximum expected improvement in conversion rate
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_cross_sell_rate_base"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base Cross-Sell Rate Improvement (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="5"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Minimum improvement in cross-selling rate
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="roi_cross_sell_rate_scale"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Cross-Sell Rate Improvement (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="15"
+                              {...field} 
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Maximum improvement in cross-selling rate
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

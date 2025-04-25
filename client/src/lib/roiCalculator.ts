@@ -11,6 +11,11 @@ const DEFAULT_ROI_PARAMS = {
   automation_rate_scale: 25,
   csat_improvement_base: 5,
   csat_improvement_scale: 20,
+  revenue_per_customer: 5000,
+  conversion_rate_improvement_base: 2,
+  conversion_rate_improvement_scale: 10,
+  cross_sell_rate_base: 5,
+  cross_sell_rate_scale: 15,
 };
 
 export interface ROIParameters {
@@ -22,6 +27,11 @@ export interface ROIParameters {
   automation_rate_scale: number;
   csat_improvement_base: number;
   csat_improvement_scale: number;
+  revenue_per_customer: number;
+  conversion_rate_improvement_base: number;
+  conversion_rate_improvement_scale: number;
+  cross_sell_rate_base: number;
+  cross_sell_rate_scale: number;
 }
 
 /**
@@ -57,6 +67,11 @@ export function useROIParameters(): {
     automation_rate_scale: getSettingValue('automation_rate_scale', DEFAULT_ROI_PARAMS.automation_rate_scale),
     csat_improvement_base: getSettingValue('csat_improvement_base', DEFAULT_ROI_PARAMS.csat_improvement_base),
     csat_improvement_scale: getSettingValue('csat_improvement_scale', DEFAULT_ROI_PARAMS.csat_improvement_scale),
+    revenue_per_customer: getSettingValue('revenue_per_customer', DEFAULT_ROI_PARAMS.revenue_per_customer),
+    conversion_rate_improvement_base: getSettingValue('conversion_rate_improvement_base', DEFAULT_ROI_PARAMS.conversion_rate_improvement_base),
+    conversion_rate_improvement_scale: getSettingValue('conversion_rate_improvement_scale', DEFAULT_ROI_PARAMS.conversion_rate_improvement_scale),
+    cross_sell_rate_base: getSettingValue('cross_sell_rate_base', DEFAULT_ROI_PARAMS.cross_sell_rate_base),
+    cross_sell_rate_scale: getSettingValue('cross_sell_rate_scale', DEFAULT_ROI_PARAMS.cross_sell_rate_scale),
   };
 
   return {
@@ -201,6 +216,112 @@ export function formatCurrency(value: number): string {
     currency: 'USD',
     maximumFractionDigits: 0
   }).format(value);
+}
+
+/**
+ * Calculate conversion rate improvement based on AI goals
+ */
+export function calculateConversionRateImprovement(
+  aiGoals: string[],
+  roiParams: ROIParameters
+): { min: number; max: number } {
+  let improvement = {
+    min: roiParams.conversion_rate_improvement_base,
+    max: roiParams.conversion_rate_improvement_scale
+  };
+  
+  // Boost for specific sales/marketing goals
+  const salesGoals = [
+    'lead-qualification', 
+    'personalized-recommendations', 
+    'product-information-navigation',
+    'sales-follow-up',
+    'cart-abandonment-recovery'
+  ];
+  
+  // Count how many sales-focused goals are selected
+  const salesGoalCount = aiGoals.filter(goal => salesGoals.includes(goal)).length;
+  
+  // Each sales goal can add up to an additional 1-3% conversion improvement
+  if (salesGoalCount > 0) {
+    improvement.min += salesGoalCount * 1;
+    improvement.max += salesGoalCount * 3;
+  }
+  
+  return improvement;
+}
+
+/**
+ * Calculate cross-sell/upsell rate improvement
+ */
+export function calculateCrossSellRateImprovement(
+  aiGoals: string[],
+  roiParams: ROIParameters
+): { min: number; max: number } {
+  let improvement = {
+    min: roiParams.cross_sell_rate_base,
+    max: roiParams.cross_sell_rate_scale
+  };
+  
+  // Boost for specific cross-sell/upsell goals
+  const crossSellGoals = [
+    'personalized-recommendations',
+    'product-bundles',
+    'post-purchase-follow-up',
+    'customer-retention'
+  ];
+  
+  // Count how many cross-sell focused goals are selected
+  const crossSellGoalCount = aiGoals.filter(goal => crossSellGoals.includes(goal)).length;
+  
+  // Each cross-sell goal can add up to an additional 2-4% improvement
+  if (crossSellGoalCount > 0) {
+    improvement.min += crossSellGoalCount * 2;
+    improvement.max += crossSellGoalCount * 4;
+  }
+  
+  return improvement;
+}
+
+/**
+ * Calculate revenue improvement based on conversion and cross-sell rates
+ */
+export function calculateRevenueImprovement(
+  interactionVolume: string,
+  conversionImprovement: { min: number; max: number },
+  crossSellImprovement: { min: number; max: number },
+  roiParams: ROIParameters
+): { min: number; max: number } {
+  // Estimate monthly customer interactions based on volume
+  const monthlyInteractions = {
+    '0-1000': 500,
+    '1000-5000': 2500,
+    '5000-10000': 7500,
+    '10000-50000': 25000,
+    '50000+': 75000
+  }[interactionVolume] || 500;
+  
+  // Annual interactions
+  const annualInteractions = monthlyInteractions * 12;
+  
+  // Estimate additional conversions due to improved rates
+  const additionalConversions = {
+    min: Math.round(annualInteractions * (conversionImprovement.min / 100)),
+    max: Math.round(annualInteractions * (conversionImprovement.max / 100))
+  };
+  
+  // Estimate additional revenue from cross-sells/upsells
+  const additionalCrossSells = {
+    min: Math.round(annualInteractions * (crossSellImprovement.min / 100)),
+    max: Math.round(annualInteractions * (crossSellImprovement.max / 100))
+  };
+  
+  // Calculate total revenue impact
+  // New conversions + cross-sells, multiplied by avg revenue per customer
+  return {
+    min: Math.round((additionalConversions.min + additionalCrossSells.min) * roiParams.revenue_per_customer),
+    max: Math.round((additionalConversions.max + additionalCrossSells.max) * roiParams.revenue_per_customer)
+  };
 }
 
 /**
