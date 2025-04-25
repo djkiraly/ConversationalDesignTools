@@ -898,7 +898,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessFunction
       );
       
-      res.json(result);
+      // Convert questionnaire to content for consistent frontend handling
+      if (result.success && result.questionnaire) {
+        res.json({
+          success: true,
+          content: result.questionnaire
+        });
+      } else {
+        res.json(result);
+      }
     } catch (error) {
       console.error("Error generating industry questionnaire:", error);
       res.status(500).json({ error: (error as Error).message });

@@ -91,7 +91,7 @@ export default function UseCaseDevelopment() {
       
       setQuestionnaireContent(data.content);
       setShowQuestionnaireDialog(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating questionnaire:', error);
       toast({
         title: "Error",
@@ -1091,6 +1091,62 @@ Technical: CIO, IT Infrastructure Manager, Data Security Officer"
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Questionnaire Dialog */}
+      <Dialog open={showQuestionnaireDialog} onOpenChange={setShowQuestionnaireDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Industry-Specific Questionnaire: {selectedIndustry ? industries.find(i => i.value === selectedIndustry)?.label : ''} / {selectedFunction ? businessFunctions.find(f => f.value === selectedFunction)?.label : ''}
+            </DialogTitle>
+            <DialogDescription>
+              Use these questions to guide your discovery session and identify key pain points and opportunities.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {questionnaireContent ? (
+              <div className="whitespace-pre-line">{questionnaireContent}</div>
+            ) : (
+              <p className="text-muted-foreground">No questionnaire content available.</p>
+            )}
+          </div>
+          
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowQuestionnaireDialog(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Framework Dialog */}
+      <Dialog open={showFrameworkDialog} onOpenChange={setShowFrameworkDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedFramework}
+            </DialogTitle>
+            <DialogDescription>
+              Framework for structured problem identification and analysis.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {frameworkContent ? (
+              <div className="whitespace-pre-line">{frameworkContent}</div>
+            ) : (
+              <p className="text-muted-foreground">No framework content available.</p>
+            )}
+          </div>
+          
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowFrameworkDialog(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
