@@ -461,6 +461,146 @@ picture of how the agent should interact with users.`;
 }
 
 // Generate suggestions for improving an action plan
+// Generate action plan from use case data
+export async function generateActionPlanFromUseCase(
+  apiKey: string,
+  useCase: {
+    id: number;
+    title: string;
+    description?: string | null;
+    customer?: string | null;
+    problemStatement?: string | null;
+    proposedSolution?: string | null;
+    keyObjectives?: string | null;
+    requiredDataInputs?: string | null;
+    expectedOutputs?: string | null;
+    keyStakeholders?: string | null;
+    scope?: string | null;
+    potentialRisks?: string | null;
+    estimatedImpact?: string | null;
+  }
+): Promise<{
+  success: boolean;
+  actionPlan?: {
+    title: string;
+    industry: string;
+    primaryChannel: string;
+    interactionVolume: string;
+    currentAutomation: string;
+    biggestChallenge: string;
+    repetitiveProcesses: string;
+    aiGoals: string[];
+    autonomyLevel: string;
+    currentPlatforms: string;
+    teamComfort: string;
+    apisAvailable: string;
+    successMetrics: string[];
+  };
+  error?: string;
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Format the use case data for the prompt
+    const useCaseData = {
+      id: useCase.id,
+      title: useCase.title,
+      description: useCase.description || "Not provided",
+      customer: useCase.customer || "Not specified",
+      problemStatement: useCase.problemStatement || "Not provided",
+      proposedSolution: useCase.proposedSolution || "Not provided",
+      keyObjectives: useCase.keyObjectives || "Not provided",
+      requiredDataInputs: useCase.requiredDataInputs || "Not provided",
+      expectedOutputs: useCase.expectedOutputs || "Not provided",
+      keyStakeholders: useCase.keyStakeholders || "Not provided",
+      scope: useCase.scope || "Not provided",
+      potentialRisks: useCase.potentialRisks || "Not provided",
+      estimatedImpact: useCase.estimatedImpact || "Not provided"
+    };
+    
+    const prompt = `
+You are an AI deployment specialist. You need to create an action plan based on the provided use case. The plan should be focused on implementing conversational AI.
+
+USE CASE INFORMATION:
+- Title: ${useCaseData.title}
+- Description: ${useCaseData.description}
+- Customer: ${useCaseData.customer}
+- Problem Statement: ${useCaseData.problemStatement}
+- Proposed AI Solution: ${useCaseData.proposedSolution}
+- Key Objectives: ${useCaseData.keyObjectives}
+- Required Data Inputs: ${useCaseData.requiredDataInputs}
+- Expected Outputs: ${useCaseData.expectedOutputs}
+- Key Stakeholders: ${useCaseData.keyStakeholders}
+- Scope: ${useCaseData.scope}
+- Potential Risks: ${useCaseData.potentialRisks}
+- Estimated Impact: ${useCaseData.estimatedImpact}
+
+Based on this information, generate a complete action plan with the following sections:
+1. Industry - Infer the industry from the context
+2. Primary Customer Interaction Channel - What would be the main channel for this solution? (chat, voice, email, etc)
+3. Estimated Monthly Interaction Volume - Provide a reasonable estimate based on the context
+4. Current Automation Level - Infer from the problem statement
+5. Biggest Challenge the organization is facing
+6. Repetitive Processes that could be automated
+7. AI Goals (list 3-5 specific goals as an array) - These should be specific and achievable
+8. Recommended Autonomy Level - (supervised, semi-autonomous, or fully autonomous)
+9. Current Platforms being used (infer from the case)
+10. Team Readiness - "yes" if team seems ready for AI, "no" if training would be required
+11. APIs Availability - "yes" if data seems readily available through APIs, "no" otherwise
+12. Success Metrics (list 3-5 specific metrics as an array) - These should be measurable KPIs
+
+Format your response as a JSON object with the following structure:
+{
+  "title": string, // A good title for the action plan
+  "industry": string,
+  "primaryChannel": string,
+  "interactionVolume": string,
+  "currentAutomation": string,
+  "biggestChallenge": string,
+  "repetitiveProcesses": string,
+  "aiGoals": string[], // Array of goal statements
+  "autonomyLevel": string,
+  "currentPlatforms": string,
+  "teamComfort": string, // "yes" or "no"
+  "apisAvailable": string, // "yes" or "no"
+  "successMetrics": string[] // Array of metric statements
+}
+
+Keep all suggestions grounded in the information provided in the use case, making reasonable inferences where needed.
+`;
+
+    // Call the OpenAI API with the prompt
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { role: "system", content: "You are an AI implementation specialist who helps create action plans for AI deployment projects." },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("Empty response from OpenAI");
+    }
+
+    // Parse the JSON response
+    const actionPlan = JSON.parse(content);
+    
+    return {
+      success: true,
+      actionPlan
+    };
+  } catch (error: any) {
+    console.error('Error generating action plan from use case:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate action plan from use case'
+    };
+  }
+}
+
 export async function generateActionPlanSuggestions(
   apiKey: string,
   actionPlan: {
