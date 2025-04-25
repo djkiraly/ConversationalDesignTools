@@ -403,12 +403,12 @@ export class MemStorage implements IStorage {
       currentAutomation: insertActionPlan.currentAutomation || null,
       biggestChallenge: insertActionPlan.biggestChallenge || null,
       repetitiveProcesses: insertActionPlan.repetitiveProcesses || null,
-      aiGoals: insertActionPlan.aiGoals || [],
+      aiGoals: Array.isArray(insertActionPlan.aiGoals) ? insertActionPlan.aiGoals : [],
       autonomyLevel: insertActionPlan.autonomyLevel || null,
       currentPlatforms: insertActionPlan.currentPlatforms || null,
       teamComfort: insertActionPlan.teamComfort || null,
       apisAvailable: insertActionPlan.apisAvailable || null,
-      successMetrics: insertActionPlan.successMetrics || [],
+      successMetrics: Array.isArray(insertActionPlan.successMetrics) ? insertActionPlan.successMetrics : [],
       status: insertActionPlan.status || 'draft',
       createdAt: now,
       updatedAt: now
@@ -424,9 +424,20 @@ export class MemStorage implements IStorage {
       throw new Error(`Action plan with id ${id} not found`);
     }
     
+    // Handle array fields properly to ensure type safety
+    const aiGoals = updateData.aiGoals !== undefined ? 
+      (Array.isArray(updateData.aiGoals) ? updateData.aiGoals : []) : 
+      existingPlan.aiGoals;
+      
+    const successMetrics = updateData.successMetrics !== undefined ? 
+      (Array.isArray(updateData.successMetrics) ? updateData.successMetrics : []) : 
+      existingPlan.successMetrics;
+    
     const updatedPlan: ActionPlan = {
       ...existingPlan,
       ...updateData,
+      aiGoals,
+      successMetrics,
       updatedAt: new Date()
     };
     

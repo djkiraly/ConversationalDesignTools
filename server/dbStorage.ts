@@ -6,6 +6,7 @@ import {
   settings,
   customerJourneys,
   customers,
+  actionPlans,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -21,7 +22,10 @@ import {
   type UpdateCustomerJourney,
   type Customer,
   type InsertCustomer,
-  type UpdateCustomer
+  type UpdateCustomer,
+  type ActionPlan,
+  type InsertActionPlan,
+  type UpdateActionPlan
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -260,6 +264,65 @@ export class DbStorage implements IStorage {
   
   async deleteCustomer(id: number): Promise<void> {
     await db.delete(customers).where(eq(customers.id, id));
+  }
+  
+  // Action Plan methods
+  async getAllActionPlans(): Promise<ActionPlan[]> {
+    const results = await db.select()
+      .from(actionPlans)
+      .orderBy(actionPlans.updatedAt);
+    return results;
+  }
+  
+  async getActionPlan(id: number): Promise<ActionPlan | undefined> {
+    const results = await db.select().from(actionPlans).where(eq(actionPlans.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createActionPlan(planData: InsertActionPlan): Promise<ActionPlan> {
+    const now = new Date();
+    
+    // Ensure array fields are properly handled
+    const processedData = {
+      ...planData,
+      aiGoals: Array.isArray(planData.aiGoals) ? planData.aiGoals : [],
+      successMetrics: Array.isArray(planData.successMetrics) ? planData.successMetrics : [],
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    const result = await db.insert(actionPlans).values(processedData).returning();
+    return result[0];
+  }
+  
+  async updateActionPlan(id: number, updateData: UpdateActionPlan): Promise<ActionPlan> {
+    const existingPlan = await this.getActionPlan(id);
+    if (!existingPlan) {
+      throw new Error(`Action plan with id ${id} not found`);
+    }
+    
+    // Process array fields to ensure type safety
+    const processedData = {
+      ...updateData,
+      aiGoals: updateData.aiGoals !== undefined 
+        ? (Array.isArray(updateData.aiGoals) ? updateData.aiGoals : []) 
+        : existingPlan.aiGoals,
+      successMetrics: updateData.successMetrics !== undefined 
+        ? (Array.isArray(updateData.successMetrics) ? updateData.successMetrics : []) 
+        : existingPlan.successMetrics,
+      updatedAt: new Date()
+    };
+    
+    const result = await db.update(actionPlans)
+      .set(processedData)
+      .where(eq(actionPlans.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteActionPlan(id: number): Promise<void> {
+    await db.delete(actionPlans).where(eq(actionPlans.id, id));
   }
 
   // Function to seed initial data after migrations

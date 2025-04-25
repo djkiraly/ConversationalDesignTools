@@ -650,6 +650,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Action Plan APIs
+  app.get('/api/action-plans', async (_req, res) => {
+    try {
+      const actionPlans = await storage.getAllActionPlans();
+      res.json(actionPlans);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/action-plans/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const actionPlan = await storage.getActionPlan(id);
+      if (!actionPlan) {
+        return res.status(404).json({ error: "Action plan not found" });
+      }
+
+      res.json(actionPlan);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/action-plans', async (req, res) => {
+    try {
+      const result = insertActionPlanSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const newActionPlan = await storage.createActionPlan(result.data);
+      res.status(201).json(newActionPlan);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.put('/api/action-plans/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingActionPlan = await storage.getActionPlan(id);
+      if (!existingActionPlan) {
+        return res.status(404).json({ error: "Action plan not found" });
+      }
+
+      const result = updateActionPlanSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedActionPlan = await storage.updateActionPlan(id, result.data);
+      res.json(updatedActionPlan);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.delete('/api/action-plans/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingActionPlan = await storage.getActionPlan(id);
+      if (!existingActionPlan) {
+        return res.status(404).json({ error: "Action plan not found" });
+      }
+
+      await storage.deleteActionPlan(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Health check endpoint for monitoring
   app.get('/api/health', async (_req, res) => {
     try {
