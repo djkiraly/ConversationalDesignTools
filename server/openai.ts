@@ -105,7 +105,8 @@ export async function getConversationFlowSuggestion(
   description: string,
   currentFlow: string,
   agentPersona: string,
-  additionalInstructions?: string
+  additionalInstructions?: string,
+  useCase?: any // Additional use case details
 ): Promise<{ 
   success: boolean; 
   suggestion?: string;
@@ -121,8 +122,24 @@ Suggest improvements to make the conversation more natural, effective, and helpf
 
 Use Case Title: "${title}"
 Use Case Description: "${description}"
-Agent Persona: "${agentPersona}"
+Agent Persona: "${agentPersona}"`;
 
+    // Add detailed use case information if available
+    if (useCase) {
+      prompt += `\n
+Detailed Use Case Information:
+- Problem Statement: ${useCase.problemStatement || 'Not specified'}
+- Proposed Solution: ${useCase.proposedSolution || 'Not specified'}
+- Key Objectives: ${useCase.keyObjectives || 'Not specified'}
+- Required Data Inputs: ${useCase.requiredDataInputs || 'Not specified'}
+- Expected Outputs: ${useCase.expectedOutputs || 'Not specified'}
+- Key Stakeholders: ${useCase.keyStakeholders || 'Not specified'}
+- Scope: ${useCase.scope || 'Not specified'}
+- Potential Risks: ${useCase.potentialRisks || 'Not specified'}
+- Estimated Impact: ${useCase.estimatedImpact || 'Not specified'}`;
+    }
+
+    prompt += `\n
 Current Conversation Flow:
 \`\`\`
 ${currentFlow}
@@ -134,7 +151,8 @@ Please analyze this conversation flow and provide an improved version that:
 3. Ensures the agent's responses align with the provided Agent Persona
 4. Improves clarity and addresses potential points of confusion
 5. Adds appropriate follow-up questions or clarifications where needed
-6. Enhances the logical flow between conversation steps`;
+6. Enhances the logical flow between conversation steps
+7. Incorporates relevant aspects from the detailed use case information (if provided)`;
 
     // Add additional instructions if provided
     if (additionalInstructions && additionalInstructions.trim() !== '') {

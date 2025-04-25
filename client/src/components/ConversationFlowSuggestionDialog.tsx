@@ -20,6 +20,7 @@ interface ConversationFlowSuggestionDialogProps {
   description: string;
   currentFlow: string;
   agentPersona: string;
+  useCaseId?: number;
   onApplySuggestion: (suggestion: string) => void;
 }
 
@@ -36,6 +37,7 @@ export default function ConversationFlowSuggestionDialog({
   description, 
   currentFlow,
   agentPersona,
+  useCaseId,
   onApplySuggestion 
 }: ConversationFlowSuggestionDialogProps) {
   const { toast } = useToast();
@@ -65,7 +67,8 @@ export default function ConversationFlowSuggestionDialog({
           description,
           currentFlow,
           agentPersona,
-          additionalInstructions: additionalInstructions.trim()
+          additionalInstructions: additionalInstructions.trim(),
+          useCaseId: useCaseId
         }
       ) as OpenAIResponse;
 

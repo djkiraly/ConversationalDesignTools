@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint for conversation flow suggestions
   app.post('/api/openai/conversation-flow', async (req, res) => {
     try {
-      const { title, description, currentFlow, agentPersona, additionalInstructions } = req.body;
+      const { title, description, currentFlow, agentPersona, additionalInstructions, useCaseId } = req.body;
       
       // Validate input
       if (!currentFlow) {
@@ -334,6 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Received request for conversation flow suggestion with description:", description || "none");
       console.log("Received request for conversation flow suggestion with agentPersona:", agentPersona || "none");
       console.log("Received request for conversation flow suggestion with additionalInstructions:", additionalInstructions || "none");
+      console.log("Received request for conversation flow suggestion with useCaseId:", useCaseId || "none");
       
       // Get the OpenAI API key from settings
       const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
@@ -346,6 +347,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "OpenAI API key is empty. Please add a valid key in Settings." });
       }
       
+      // Get detailed use case information if useCaseId is provided
+      let useCase = null;
+      if (useCaseId) {
+        try {
+          useCase = await storage.getUseCase(parseInt(useCaseId));
+          console.log("Retrieved use case details for suggestion:", useCase ? "Success" : "Not found");
+        } catch (error) {
+          console.warn("Failed to retrieve use case details:", error);
+          // Continue without use case details if retrieval fails
+        }
+      }
+      
       // Call OpenAI to get conversation flow suggestion
       const response = await getConversationFlowSuggestion(
         apiKeySetting.value,
@@ -353,7 +366,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description || "",
         currentFlow,
         agentPersona || "",
-        additionalInstructions || ""
+        additionalInstructions || "",
+        useCase
       );
       
       res.json(response);
