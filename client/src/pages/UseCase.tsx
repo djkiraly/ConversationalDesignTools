@@ -35,8 +35,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { parseConversationFlow } from "@/lib/parseConversation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Users, PlusCircle, Trash2, MessageSquare, Settings, ChevronRight, CheckCircle, Edit, Wand2 } from "lucide-react";
+import { Users, PlusCircle, Trash2, MessageSquare, Settings, ChevronRight, CheckCircle, Edit, Wand2, FileText } from "lucide-react";
 import { generateUseCaseDetails, UseCaseDetailsSuggestions } from "@/lib/api";
+import ExportUseCaseButton from "@/components/ExportUseCaseButton";
 
 // Define form schema based on the UseCase model
 const formSchema = z.object({
@@ -430,13 +431,20 @@ export default function UseCasePage() {
                 )}
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button 
-                  variant="default" 
-                  onClick={() => handleEditUseCase(useCase)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="default" 
+                    onClick={() => handleEditUseCase(useCase)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <ExportUseCaseButton
+                    useCase={useCase}
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
                 <Button 
                   variant="ghost" 
                   onClick={() => setIsDeleteDialogOpen(useCase.id)}
@@ -985,7 +993,7 @@ export default function UseCasePage() {
                     {isGeneratingAI || generateDetailsMutation.isPending ? "Generating..." : "AI Suggest"}
                   </Button>
                 </div>
-                <div>
+                <div className="flex items-center">
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -994,6 +1002,13 @@ export default function UseCasePage() {
                   >
                     Cancel
                   </Button>
+                  {currentUseCase && (
+                    <ExportUseCaseButton 
+                      useCase={currentUseCase} 
+                      variant="secondary"
+                      className="mr-2"
+                    />
+                  )}
                   <Button 
                     type="submit"
                     disabled={updateUseCaseMutation.isPending}

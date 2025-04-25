@@ -9,12 +9,14 @@ interface ExportUseCaseButtonProps {
   useCase: UseCase;
   variant?: "default" | "outline" | "secondary";
   size?: "default" | "sm" | "lg" | "icon";
+  className?: string;
 }
 
 const ExportUseCaseButton: React.FC<ExportUseCaseButtonProps> = ({ 
   useCase, 
   variant = "outline", 
-  size = "default" 
+  size = "default",
+  className = ""
 }) => {
   const [isExporting, setIsExporting] = useState(false);
 
@@ -72,6 +74,7 @@ const ExportUseCaseButton: React.FC<ExportUseCaseButtonProps> = ({
       size={size}
       onClick={handleExport}
       disabled={isExporting}
+      className={className}
     >
       <FileText className="h-4 w-4 mr-2" />
       {isExporting ? "Exporting..." : "Export to Word"}
