@@ -257,14 +257,14 @@ export default function ActionPlan() {
                   <div className="space-y-2">
                     <Label htmlFor="customer">Select a Customer (Optional)</Label>
                     <Select 
-                      value={selectedCustomerId?.toString() || ''}
-                      onValueChange={(value) => setSelectedCustomerId(value ? parseInt(value) : null)}
+                      value={selectedCustomerId?.toString() || "none"}
+                      onValueChange={(value) => setSelectedCustomerId(value && value !== "none" ? parseInt(value) : null)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a customer" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {customers?.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
                             {customer.companyName}
