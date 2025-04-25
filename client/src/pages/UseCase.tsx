@@ -35,7 +35,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { parseConversationFlow } from "@/lib/parseConversation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Users, PlusCircle, Trash2, MessageSquare, Settings, ChevronRight, CheckCircle, Edit } from "lucide-react";
+import { Users, PlusCircle, Trash2, MessageSquare, Settings, ChevronRight, CheckCircle, Edit, Wand2 } from "lucide-react";
+import { generateUseCaseDetails, UseCaseDetailsSuggestions } from "@/lib/api";
 
 // Define form schema based on the UseCase model
 const formSchema = z.object({
@@ -65,6 +66,7 @@ export default function UseCasePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<number | null>(null);
   const [currentUseCase, setCurrentUseCase] = useState<UseCase | null>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   // Fetch all use cases
   const { 
@@ -256,6 +258,51 @@ export default function UseCasePage() {
 
   const handleDeleteUseCase = (id: number) => {
     deleteUseCaseMutation.mutate(id);
+  };
+  
+  // AI Details Generation Mutation
+  const generateDetailsMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return generateUseCaseDetails(id);
+    },
+    onSuccess: (suggestions) => {
+      // Update the form with AI-generated suggestions
+      const currentValues = editForm.getValues();
+      
+      editForm.setValue("problemStatement", suggestions.problemStatement);
+      editForm.setValue("proposedSolution", suggestions.proposedSolution);
+      editForm.setValue("keyObjectives", suggestions.keyObjectives);
+      editForm.setValue("requiredDataInputs", suggestions.requiredDataInputs);
+      editForm.setValue("expectedOutputs", suggestions.expectedOutputs);
+      editForm.setValue("keyStakeholders", suggestions.keyStakeholders);
+      editForm.setValue("scope", suggestions.scope);
+      editForm.setValue("potentialRisks", suggestions.potentialRisks);
+      editForm.setValue("estimatedImpact", suggestions.estimatedImpact);
+      
+      toast({
+        title: "AI suggestions generated",
+        description: "Use case details have been populated with AI-generated suggestions."
+      });
+      
+      setIsGeneratingAI(false);
+    },
+    onError: (error) => {
+      console.error("Error generating AI suggestions:", error);
+      toast({
+        title: "Error generating suggestions",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+      setIsGeneratingAI(false);
+    }
+  });
+  
+  // Handle AI generation
+  const handleGenerateAI = () => {
+    if (isEditDialogOpen) {
+      setIsGeneratingAI(true);
+      generateDetailsMutation.mutate(isEditDialogOpen);
+    }
   };
 
   // If there's an error fetching data, display error message
@@ -925,20 +972,35 @@ export default function UseCasePage() {
                 </TabsContent>
               </Tabs>
               
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditDialogOpen(null)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={updateUseCaseMutation.isPending}
-                >
-                  {updateUseCaseMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
+              <DialogFooter className="flex justify-between">
+                <div>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="mr-2"
+                    onClick={handleGenerateAI}
+                    disabled={isGeneratingAI || generateDetailsMutation.isPending}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    {isGeneratingAI || generateDetailsMutation.isPending ? "Generating..." : "AI Suggest"}
+                  </Button>
+                </div>
+                <div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsEditDialogOpen(null)}
+                    className="mr-2"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={updateUseCaseMutation.isPending}
+                  >
+                    {updateUseCaseMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </DialogFooter>
             </form>
           </Form>
