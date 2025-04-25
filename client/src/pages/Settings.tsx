@@ -64,6 +64,22 @@ const formSchema = z.object({
   roi_csat_improvement_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
     message: "Must be a valid percentage"
   }),
+  // Revenue improvement parameters
+  roi_revenue_per_customer: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount"
+  }),
+  roi_conversion_rate_improvement_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_conversion_rate_improvement_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_cross_sell_rate_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_cross_sell_rate_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -135,6 +151,12 @@ export default function Settings() {
         roi_automation_rate_scale: getSettingValue('roi_automation_rate_scale') || '25',
         roi_csat_improvement_base: getSettingValue('roi_csat_improvement_base') || '5',
         roi_csat_improvement_scale: getSettingValue('roi_csat_improvement_scale') || '20',
+        // Revenue improvement parameters
+        roi_revenue_per_customer: getSettingValue('roi_revenue_per_customer') || '5000',
+        roi_conversion_rate_improvement_base: getSettingValue('roi_conversion_rate_improvement_base') || '2',
+        roi_conversion_rate_improvement_scale: getSettingValue('roi_conversion_rate_improvement_scale') || '10',
+        roi_cross_sell_rate_base: getSettingValue('roi_cross_sell_rate_base') || '5',
+        roi_cross_sell_rate_scale: getSettingValue('roi_cross_sell_rate_scale') || '15',
       });
     }
   }, [settings, form]);
@@ -243,6 +265,28 @@ export default function Settings() {
       await updateSetting.mutateAsync({
         key: 'roi_csat_improvement_scale',
         value: values.roi_csat_improvement_scale
+      });
+      
+      // Revenue improvement parameters
+      await updateSetting.mutateAsync({
+        key: 'roi_revenue_per_customer',
+        value: values.roi_revenue_per_customer
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_conversion_rate_improvement_base',
+        value: values.roi_conversion_rate_improvement_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_conversion_rate_improvement_scale',
+        value: values.roi_conversion_rate_improvement_scale
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_cross_sell_rate_base',
+        value: values.roi_cross_sell_rate_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_cross_sell_rate_scale',
+        value: values.roi_cross_sell_rate_scale
       });
       
       toast({
