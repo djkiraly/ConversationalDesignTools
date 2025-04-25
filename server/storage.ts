@@ -154,6 +154,18 @@ export class MemStorage implements IStorage {
       title: insertUseCase.title,
       description: insertUseCase.description ?? null,
       customer: insertUseCase.customer ?? null,
+      
+      // New fields
+      problemStatement: insertUseCase.problemStatement ?? null,
+      proposedSolution: insertUseCase.proposedSolution ?? null,
+      keyObjectives: insertUseCase.keyObjectives ?? null,
+      requiredDataInputs: insertUseCase.requiredDataInputs ?? null,
+      expectedOutputs: insertUseCase.expectedOutputs ?? null,
+      keyStakeholders: insertUseCase.keyStakeholders ?? null,
+      scope: insertUseCase.scope ?? null,
+      potentialRisks: insertUseCase.potentialRisks ?? null,
+      estimatedImpact: insertUseCase.estimatedImpact ?? null,
+      
       conversationFlow: insertUseCase.conversationFlow,
       nodePositions: insertUseCase.nodePositions ?? null,
       createdAt: now,
@@ -173,11 +185,24 @@ export class MemStorage implements IStorage {
     const customer = updateData.customer !== undefined 
       ? updateData.customer 
       : existingUseCase.customer;
-    
+      
+    // Create the updated use case with all the new fields
     const updatedUseCase: UseCase = {
       ...existingUseCase,
       ...updateData,
       customer,
+      
+      // Ensure we keep existing values for new fields if not provided in the update
+      problemStatement: updateData.problemStatement ?? existingUseCase.problemStatement,
+      proposedSolution: updateData.proposedSolution ?? existingUseCase.proposedSolution,
+      keyObjectives: updateData.keyObjectives ?? existingUseCase.keyObjectives,
+      requiredDataInputs: updateData.requiredDataInputs ?? existingUseCase.requiredDataInputs,
+      expectedOutputs: updateData.expectedOutputs ?? existingUseCase.expectedOutputs,
+      keyStakeholders: updateData.keyStakeholders ?? existingUseCase.keyStakeholders,
+      scope: updateData.scope ?? existingUseCase.scope,
+      potentialRisks: updateData.potentialRisks ?? existingUseCase.potentialRisks,
+      estimatedImpact: updateData.estimatedImpact ?? existingUseCase.estimatedImpact,
+      
       updatedAt: new Date()
     };
     
@@ -494,6 +519,18 @@ export class MemStorage implements IStorage {
       title: "Customer Order Inquiry",
       description: "Agent helps customer track their order status",
       customer: "Acme Corp",
+      
+      // New fields for properly defining the use case
+      problemStatement: "Customers frequently contact support about order status, creating high support volume.",
+      proposedSolution: "An AI agent that can access order systems to provide real-time order information and offer shipping adjustments.",
+      keyObjectives: "Reduce support volume by 40%; Increase customer satisfaction by 25%; Lower average resolution time to under 2 minutes.",
+      requiredDataInputs: "Order database with real-time status info; Customer account history; Shipping options and pricing; Payment processing system.",
+      expectedOutputs: "Order status updates; Shipping modification confirmations; Tracking information; Proactive order delay notifications.",
+      keyStakeholders: "Customer Support Team; Shipping Department; Warehouse Operations; IT Systems Integration Team.",
+      scope: "Includes: Order tracking, shipping modifications, basic account verification. Excludes: Refunds, complex order modifications, inventory inquiries.",
+      potentialRisks: "System integration delays; Data privacy concerns with order information; Need for human escalation for complex issues.",
+      estimatedImpact: "Potential $250,000 annual savings in support costs; Improved customer retention; Faster resolution times leading to higher satisfaction.",
+      
       conversationFlow: `Customer: I placed an order last week and haven't received a shipping confirmation yet.
 Agent: I'd be happy to help you with that. Could you please provide your order number?
 →
@@ -515,6 +552,18 @@ Agent: You'll receive an email with the tracking information as soon as your ord
       title: "Product Recommendation",
       description: "Agent helps customer find the right product based on customer needs",
       customer: "TechCorp Inc",
+      
+      // New fields for properly defining the use case
+      problemStatement: "Customers struggle to find appropriate products for their technical needs, resulting in returns and poor satisfaction.",
+      proposedSolution: "An AI product recommendation system that can analyze customer requirements and match them to suitable products.",
+      keyObjectives: "Increase conversion rate by 20%; Reduce returns by 30%; Improve average order value by 15%.",
+      requiredDataInputs: "Complete product catalog with specifications; Customer interaction history; Product availability; Pricing and promotions database.",
+      expectedOutputs: "Personalized product recommendations; Accurate specification matches; Comparison options; Complementary product suggestions.",
+      keyStakeholders: "Sales Team; Marketing Department; Product Management; Inventory Management Team.",
+      scope: "Includes: Technical product matching, specification comparison, promotion integration. Excludes: Checkout process, shipping logistics, custom product configurations.",
+      potentialRisks: "Product data accuracy may affect recommendations; Need for frequent updates as new products are released; Potential for incorrect technical matches.",
+      estimatedImpact: "Projected $500,000 increase in annual revenue; 25% improvement in customer satisfaction scores; Significant reduction in product returns.",
+      
       conversationFlow: `Customer: I'm looking for a new laptop for work.
 Agent: I'd be happy to help you find a laptop for work! Could you tell me what kind of work you'll be using it for?
 →

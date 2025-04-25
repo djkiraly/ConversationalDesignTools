@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { parseConversationFlow } from "@/lib/parseConversation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Users, PlusCircle, Trash2, MessageSquare, Settings, ChevronRight, CheckCircle, Edit } from "lucide-react";
@@ -41,6 +42,18 @@ const formSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
   description: z.string().optional(),
   customer: z.string().optional(),
+  
+  // New fields for properly defining the use case
+  problemStatement: z.string().optional(),
+  proposedSolution: z.string().optional(),
+  keyObjectives: z.string().optional(),
+  requiredDataInputs: z.string().optional(),
+  expectedOutputs: z.string().optional(),
+  keyStakeholders: z.string().optional(),
+  scope: z.string().optional(),
+  potentialRisks: z.string().optional(),
+  estimatedImpact: z.string().optional(),
+  
   conversationFlow: z.string().optional(),
 });
 
@@ -216,6 +229,37 @@ export default function UseCasePage() {
                   {useCase.description || "No description provided"}
                 </p>
                 
+                {/* Show problem statement if available */}
+                {useCase.problemStatement && (
+                  <div className="mt-3">
+                    <div className="text-xs font-semibold text-primary">Problem Statement:</div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {useCase.problemStatement}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Key highlights of the use case */}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {useCase.keyObjectives && (
+                    <div className="text-xs">
+                      <span className="inline-block bg-primary/10 text-primary rounded-sm px-1.5 py-0.5 text-[10px] font-medium mb-1">
+                        Objectives
+                      </span>
+                      <p className="line-clamp-1">{useCase.keyObjectives}</p>
+                    </div>
+                  )}
+                  
+                  {useCase.estimatedImpact && (
+                    <div className="text-xs">
+                      <span className="inline-block bg-green-100 text-green-800 rounded-sm px-1.5 py-0.5 text-[10px] font-medium mb-1">
+                        Impact
+                      </span>
+                      <p className="line-clamp-1">{useCase.estimatedImpact}</p>
+                    </div>
+                  )}
+                </div>
+                
                 {/* Conversation snippet if available */}
                 {useCase.conversationFlow && (
                   <div className="mt-4 p-3 bg-muted rounded-md text-xs line-clamp-2">
@@ -304,6 +348,182 @@ export default function UseCasePage() {
                   </FormItem>
                 )}
               />
+              
+              {/* New fields for properly defining the use case */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="detailed-fields">
+                  <AccordionTrigger className="font-semibold text-primary">
+                    Detailed Use Case Definition (Optional)
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4">
+                    <FormField
+                      control={createForm.control}
+                      name="problemStatement"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Problem Statement</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Concise statement of the problem this AI use case will solve..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="proposedSolution"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Proposed AI Solution</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="High-level description of the proposed AI solution..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="keyObjectives"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Key Objectives & Success Metrics</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Quantifiable objectives and success metrics for this use case..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={createForm.control}
+                        name="requiredDataInputs"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Required Data Inputs</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Data sources, types, and availability status..."
+                                className="min-h-[60px]"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={createForm.control}
+                        name="expectedOutputs"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Expected Outputs & Actions</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="What outputs and actions will the AI produce..."
+                                className="min-h-[60px]"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="keyStakeholders"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Key Stakeholders</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Business and technical stakeholders involved..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="scope"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>High-Level Scope</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Define inclusions and exclusions for this use case..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={createForm.control}
+                        name="potentialRisks"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Potential Risks & Dependencies</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Identify potential risks and dependencies..."
+                                className="min-h-[60px]"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={createForm.control}
+                        name="estimatedImpact"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estimated Impact/Value</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Quantify the expected impact or value..."
+                                className="min-h-[60px]"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
               
               <DialogFooter>
                 <Button 

@@ -20,6 +20,18 @@ export const useCases = pgTable("use_cases", {
   title: text("title").notNull(),
   description: text("description"),
   customer: text("customer"),  // Store the customer name for this use case
+  
+  // New fields for properly defining and scoping the use case
+  problemStatement: text("problem_statement"),  // Concise problem statement
+  proposedSolution: text("proposed_solution"),  // High-level description of AI solution
+  keyObjectives: text("key_objectives"),  // Quantifiable objectives and success metrics
+  requiredDataInputs: text("required_data_inputs"),  // Sources, types, availability status
+  expectedOutputs: text("expected_outputs"),  // Expected outputs and actions
+  keyStakeholders: text("key_stakeholders"),  // Business and technical stakeholders
+  scope: text("scope"),  // High-level scope (inclusions & exclusions)
+  potentialRisks: text("potential_risks"),  // Potential risks and dependencies
+  estimatedImpact: text("estimated_impact"),  // Estimated impact/value
+  
   conversationFlow: text("conversation_flow").notNull(),
   nodePositions: text("node_positions"),  // Store node positions as JSON string
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -30,6 +42,15 @@ export const insertUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
   customer: true,
+  problemStatement: true,
+  proposedSolution: true,
+  keyObjectives: true,
+  requiredDataInputs: true,
+  expectedOutputs: true,
+  keyStakeholders: true,
+  scope: true,
+  potentialRisks: true,
+  estimatedImpact: true,
   conversationFlow: true,
   nodePositions: true,
 });
@@ -38,6 +59,15 @@ export const updateUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
   customer: true,
+  problemStatement: true,
+  proposedSolution: true,
+  keyObjectives: true,
+  requiredDataInputs: true,
+  expectedOutputs: true,
+  keyStakeholders: true,
+  scope: true,
+  potentialRisks: true,
+  estimatedImpact: true,
   conversationFlow: true,
   nodePositions: true,
 });

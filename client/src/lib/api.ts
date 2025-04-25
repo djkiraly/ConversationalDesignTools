@@ -300,6 +300,18 @@ export interface UseCase {
   title: string;
   description: string | null;
   customer: string | null;
+  
+  // New fields for properly defining and scoping the use case
+  problemStatement: string | null;
+  proposedSolution: string | null;
+  keyObjectives: string | null;
+  requiredDataInputs: string | null;
+  expectedOutputs: string | null;
+  keyStakeholders: string | null;
+  scope: string | null;
+  potentialRisks: string | null;
+  estimatedImpact: string | null;
+  
   conversationFlow: string;
   nodePositions: string | null;
   createdAt: string;
