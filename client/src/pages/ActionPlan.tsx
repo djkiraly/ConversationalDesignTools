@@ -319,7 +319,7 @@ export default function ActionPlan() {
     try {
       const suggestions = await generateActionPlanSuggestions(currentPlanId);
       setAiSuggestions(suggestions);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error generating suggestions",
         description: error.message || "An error occurred while generating AI suggestions.",
@@ -1020,7 +1020,20 @@ export default function ActionPlan() {
                               })()}
                               
                               <div className="mt-6 pt-6 border-t">
-                                <div className="text-sm font-medium mb-2">Performance Methodology</div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="text-sm font-medium">Performance Methodology</div>
+                                  {currentPlanId && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setIsSuggestionsDialogOpen(true)}
+                                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                                    >
+                                      <Lightbulb className="h-4 w-4 mr-2 text-yellow-500" />
+                                      AI Suggestions
+                                    </Button>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground mb-3">
                                   Projections are calculated using industry benchmarks from {formData.industry || 'your industry'} and data from {
                                     formData.interactionVolume === '0-1000' ? 'small' : 
@@ -1072,6 +1085,17 @@ export default function ActionPlan() {
                     </TabsContent>
                   </Tabs>
                 </CardContent>
+                
+                {/* AI Suggestions Dialog */}
+                <AISuggestionsDialog
+                  open={isSuggestionsDialogOpen}
+                  onOpenChange={setIsSuggestionsDialogOpen}
+                  actionPlan={currentPlanId ? actionPlans?.find(plan => plan.id === currentPlanId) || null : null}
+                  isLoading={isGeneratingSuggestions}
+                  suggestions={aiSuggestions}
+                  onGenerateSuggestions={handleGenerateSuggestions}
+                  onApplySuggestions={handleApplySuggestions}
+                />
               </>
             )}
             
