@@ -1028,25 +1028,24 @@ export default function ActionPlan() {
               </Button>
               
               <div className="flex space-x-2">
-                {currentSection === 'results' && (
-                  <Button 
-                    onClick={handleSaveActionPlan}
-                    variant="default"
-                    disabled={isSaving || !planTitle.trim()}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Action Plan
-                      </>
-                    )}
-                  </Button>
-                )}
+                {/* Always show save button but with different styling based on section */}
+                <Button 
+                  onClick={handleSaveActionPlan}
+                  variant={currentSection === 'results' ? "default" : "outline"}
+                  disabled={isSaving || !planTitle.trim()}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      {currentPlanId ? `Update${currentSection === 'results' ? ' Action Plan' : ''}` : `Save${currentSection === 'results' ? ' Action Plan' : ''}`}
+                    </>
+                  )}
+                </Button>
               
                 <Button
                   onClick={handleNext}
