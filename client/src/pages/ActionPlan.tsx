@@ -343,12 +343,29 @@ export default function ActionPlan() {
     // Close the dialog
     setIsSuggestionsDialogOpen(false);
     
-    // Optionally mark the plan as "ai-enhanced"
-    if (currentPlanId) {
+    // Get the current action plan data from state or fetch it
+    const currentPlan = actionPlans?.find(plan => plan.id === currentPlanId);
+    
+    if (currentPlanId && currentPlan) {
+      // Create a complete action plan update request with all required fields
       updateActionPlanMutation.mutate({
         id: currentPlanId,
         actionPlan: {
-          status: "ai-enhanced"
+          title: currentPlan.title, // Required field
+          industry: currentPlan.industry,
+          primaryChannel: currentPlan.primaryChannel,
+          interactionVolume: currentPlan.interactionVolume,
+          currentAutomation: currentPlan.currentAutomation,
+          biggestChallenge: currentPlan.biggestChallenge,
+          repetitiveProcesses: currentPlan.repetitiveProcesses,
+          aiGoals: currentPlan.aiGoals,
+          autonomyLevel: currentPlan.autonomyLevel,
+          currentPlatforms: currentPlan.currentPlatforms,
+          teamComfort: currentPlan.teamComfort,
+          apisAvailable: currentPlan.apisAvailable,
+          successMetrics: currentPlan.successMetrics,
+          status: "ai-enhanced", // Update the status
+          customerId: currentPlan.customerId
         }
       });
     }
