@@ -17,6 +17,7 @@ import {
   updateActionPlanSchema
 } from "@shared/schema";
 import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, OPENAI_API_KEY_SETTING } from "./openai";
+import { generateUseCaseDetails } from "./generateUseCaseDetails";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use Cases APIs
