@@ -8,7 +8,7 @@ export interface APIResponse<T> {
 
 export async function apiRequest<T = any>(
   url: string,
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET',
   body?: any
 ): Promise<APIResponse<T>> {
   try {
@@ -372,6 +372,36 @@ export async function deleteUseCase(id: number): Promise<void> {
   }
   
   queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
+}
+
+// Generate AI suggestions for use case fields
+export interface UseCaseDetailsSuggestions {
+  problemStatement: string;
+  proposedSolution: string;
+  keyObjectives: string;
+  requiredDataInputs: string;
+  expectedOutputs: string;
+  keyStakeholders: string;
+  scope: string;
+  potentialRisks: string;
+  estimatedImpact: string;
+}
+
+export async function generateUseCaseDetails(id: number): Promise<UseCaseDetailsSuggestions> {
+  const response = await apiRequest<{ success: boolean; suggestions: UseCaseDetailsSuggestions }>(
+    `/api/use-cases/${id}/generate-details`,
+    'POST'
+  );
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  if (!response.data || !response.data.success || !response.data.suggestions) {
+    throw new Error('Failed to generate use case details');
+  }
+  
+  return response.data.suggestions;
 }
 
 // App Statistics API
