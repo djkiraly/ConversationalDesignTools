@@ -662,13 +662,37 @@ export default function ActionPlan() {
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <Label>What do you want your AI to accomplish?</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2">
                       {[
-                        { id: 'lead-generation', label: 'Lead generation' },
-                        { id: 'customer-support', label: 'Customer support' },
-                        { id: 'ticket-triage', label: 'Internal ticket triage' },
-                        { id: 'appointment-scheduling', label: 'Appointment scheduling' },
-                        { id: 'feedback-collection', label: 'Feedback collection' }
+                        // Original goals
+                        { id: 'lead-generation', label: 'Lead Generation' },
+                        { id: 'customer-support', label: 'Customer Support' },
+                        { id: 'ticket-triage', label: 'Internal Ticket Triage' },
+                        { id: 'appointment-scheduling', label: 'Appointment Scheduling' },
+                        { id: 'feedback-collection', label: 'Feedback Collection' },
+                        
+                        // New goals (customer-facing)
+                        { id: 'customer-engagement', label: 'Customer Engagement' },
+                        { id: 'customer-onboarding', label: 'Customer Onboarding & Education' },
+                        { id: 'order-management', label: 'Order Management & Status Updates' },
+                        { id: 'tier1-troubleshooting', label: 'Tier 1 Troubleshooting' },
+                        { id: 'account-management', label: 'Account Management Assistance' },
+                        
+                        // New goals (internal)
+                        { id: 'hr-support', label: 'HR Support & FAQ (Internal)' },
+                        { id: 'it-helpdesk', label: 'IT Helpdesk (Internal)' },
+                        { id: 'knowledge-base', label: 'Knowledge Base Navigation (Internal)' },
+                        { id: 'meeting-coordination', label: 'Meeting Coordination & Summarization' },
+                        { id: 'data-entry', label: 'Data Entry & Routine Task Automation' },
+                        { id: 'internal-comms', label: 'Internal Communications Dissemination' },
+                        
+                        // New goals (business intelligence & sales)
+                        { id: 'lead-qualification', label: 'Lead Qualification & Scoring' },
+                        { id: 'content-curation', label: 'Content Curation & Summarization' },
+                        { id: 'market-research', label: 'Market Research Assistance' },
+                        { id: 'sales-support', label: 'Sales Rep Support' },
+                        { id: 'report-generation', label: 'Basic Report Generation' },
+                        { id: 'sentiment-analysis', label: 'Sentiment Analysis on Feedback' }
                       ].map((goal) => (
                         <div key={goal.id} className="flex items-center space-x-2">
                           <input
@@ -826,11 +850,34 @@ export default function ActionPlan() {
                             <div className="space-y-2">
                               <div className="font-medium">Bot Type</div>
                               <div className="bg-muted p-2 rounded">
-                                {formData.aiGoals.includes('customer-support') 
-                                  ? 'Conversational Support Agent with Knowledge Base Integration' 
-                                  : formData.aiGoals.includes('lead-generation')
-                                  ? 'Lead Qualification & Nurturing Agent'
-                                  : 'Multi-purpose Automation Agent'}
+                                {(() => {
+                                  // Helper function to check if any goals in a category are selected
+                                  const hasGoalsInCategory = (categoryGoals: string[]) => {
+                                    return categoryGoals.some(goal => formData.aiGoals.includes(goal));
+                                  };
+                                  
+                                  // Define goal categories
+                                  const customerSupportGoals = ['customer-support', 'tier1-troubleshooting', 'customer-engagement'];
+                                  const salesGoals = ['lead-generation', 'lead-qualification', 'sales-support', 'market-research'];
+                                  const internalProcessGoals = ['hr-support', 'it-helpdesk', 'knowledge-base', 'meeting-coordination', 'data-entry', 'internal-comms'];
+                                  const contentGoals = ['content-curation', 'report-generation', 'sentiment-analysis'];
+                                  const onboardingGoals = ['customer-onboarding', 'account-management'];
+                                  
+                                  // Determine primary bot type based on selected goals
+                                  if (hasGoalsInCategory(customerSupportGoals)) {
+                                    return 'Conversational Support Agent with Knowledge Base Integration';
+                                  } else if (hasGoalsInCategory(salesGoals)) {
+                                    return 'Lead Qualification & Sales Enablement Agent';
+                                  } else if (hasGoalsInCategory(internalProcessGoals)) {
+                                    return 'Internal Process Automation Agent';
+                                  } else if (hasGoalsInCategory(contentGoals)) {
+                                    return 'Content & Analytics Processing Agent';
+                                  } else if (hasGoalsInCategory(onboardingGoals)) {
+                                    return 'Customer Onboarding & Education Agent';
+                                  } else {
+                                    return 'Multi-purpose Automation Agent';
+                                  }
+                                })()}
                               </div>
                             </div>
                             
@@ -839,12 +886,36 @@ export default function ActionPlan() {
                               <div className="bg-muted p-2 rounded">
                                 {formData.aiGoals.map(goal => {
                                   const label = {
+                                    // Original goals
                                     'lead-generation': 'Lead Qualification', 
                                     'customer-support': 'Support Resolution',
                                     'ticket-triage': 'Ticket Prioritization',
                                     'appointment-scheduling': 'Appointment Booking',
-                                    'feedback-collection': 'Customer Feedback'
-                                  }[goal];
+                                    'feedback-collection': 'Customer Feedback',
+                                    
+                                    // Customer-facing goals
+                                    'customer-engagement': 'Customer Engagement',
+                                    'customer-onboarding': 'Customer Onboarding',
+                                    'order-management': 'Order Management',
+                                    'tier1-troubleshooting': 'Basic Troubleshooting',
+                                    'account-management': 'Account Management',
+                                    
+                                    // Internal goals
+                                    'hr-support': 'HR Support (Internal)',
+                                    'it-helpdesk': 'IT Helpdesk (Internal)',
+                                    'knowledge-base': 'Knowledge Base Navigation',
+                                    'meeting-coordination': 'Meeting Coordination',
+                                    'data-entry': 'Data Entry Automation',
+                                    'internal-comms': 'Internal Communications',
+                                    
+                                    // Business intelligence & sales
+                                    'lead-qualification': 'Lead Qualification',
+                                    'content-curation': 'Content Curation',
+                                    'market-research': 'Market Research',
+                                    'sales-support': 'Sales Support',
+                                    'report-generation': 'Report Generation',
+                                    'sentiment-analysis': 'Sentiment Analysis'
+                                  }[goal] || goal.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                                   return <div key={goal}>{label}</div>;
                                 })}
                               </div>
