@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList, Compass, Lightbulb } from 'lucide-react';
+import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList } from 'lucide-react';
 import { fetchAppStatistics, AppStatistics } from '../lib/api';
 
 // Define the structure for application pages
@@ -30,14 +30,6 @@ export default function HomePage() {
   
   // Define the list of application pages
   const appPages: AppPage[] = [
-    {
-      id: 'use-case-development',
-      title: 'Use Case Development',
-      description: 'Identify, define, qualify, and prioritize high-value AI use cases aligned with strategic objectives',
-      icon: <Compass className="h-6 w-6" />,
-      path: '/use-case-development',
-      color: 'bg-amber-50 text-amber-700 border-amber-200'
-    },
     {
       id: 'action-plan',
       title: 'Action Plan',
@@ -108,27 +100,13 @@ export default function HomePage() {
       <div className="mt-12 p-6 bg-muted rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Getting Started</h2>
         <p className="mb-4">
-          This application provides tools to design, develop, and implement AI conversation systems:
+          This application provides tools to design conversational flows and customer journeys:
         </p>
         <ul className="list-disc pl-6 space-y-2 mb-6">
-          <li>Start with <strong>Use Case Development</strong> to identify, qualify, and prioritize high-value AI opportunities</li>
-          <li>Build an <strong>Action Plan</strong> to create a tailored Agentic AI deployment strategy with ROI projections</li>
-          <li>Design <strong>Happy Path</strong> conversation flows that guide users through optimal interaction paths</li>
-          <li>Map the <strong>Customer Journey</strong> to visualize the end-to-end user experience</li>
+          <li>Use <strong>Happy Path</strong> to define the optimal conversation flows for your AI agents</li>
+          <li>Create a <strong>Customer Journey</strong> map to visualize the end-to-end user experience</li>
           <li>Configure AI behavior and system settings in the <strong>Settings</strong> page</li>
         </ul>
-        
-        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-center text-amber-800 mb-2">
-            <Lightbulb className="h-5 w-5 mr-2" />
-            <h3 className="font-medium">Recommended Workflow</h3>
-          </div>
-          <p className="text-sm text-amber-700">
-            For best results, we recommend starting with the <strong>Use Case Development</strong> module to identify 
-            opportunities, then creating an <strong>Action Plan</strong> for implementation, and finally designing the 
-            conversation flows with <strong>Happy Path</strong> and <strong>Customer Journey</strong> tools.
-          </p>
-        </div>
       </div>
       
       {/* App Statistics Section */}
@@ -179,14 +157,6 @@ export default function HomePage() {
                       <Badge variant="outline">{statistics?.customerJourneyCount || 0}</Badge>
                     </div>
                     <Progress value={statistics?.customerJourneyCount ? Math.min(statistics.customerJourneyCount * 10, 100) : 0} className="h-2" />
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">Action Plans</span>
-                      <Badge variant="outline">{statistics?.actionPlanCount || 0}</Badge>
-                    </div>
-                    <Progress value={statistics?.actionPlanCount ? Math.min(statistics.actionPlanCount * 10, 100) : 0} className="h-2" />
                   </div>
                   
                   <div className="flex justify-between items-center pt-2 border-t">
