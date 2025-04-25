@@ -5,6 +5,7 @@ import {
   settings,
   customerJourneys,
   customers,
+  actionPlans,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -20,7 +21,10 @@ import {
   type UpdateCustomerJourney,
   type Customer,
   type InsertCustomer,
-  type UpdateCustomer
+  type UpdateCustomer,
+  type ActionPlan,
+  type InsertActionPlan,
+  type UpdateActionPlan
 } from "@shared/schema";
 
 // Storage interface
@@ -96,6 +100,7 @@ export class MemStorage implements IStorage {
     this.settings = new Map();
     this.customerJourneys = new Map();
     this.customers = new Map();
+    this.actionPlans = new Map();
     
     this.userCurrentId = 1;
     this.useCaseCurrentId = 1;
@@ -103,6 +108,7 @@ export class MemStorage implements IStorage {
     this.settingCurrentId = 1;
     this.customerJourneyCurrentId = 1;
     this.customerCurrentId = 1;
+    this.actionPlanCurrentId = 1;
     
     // Add some sample use cases for testing
     this.addSampleUseCases();
@@ -371,6 +377,65 @@ export class MemStorage implements IStorage {
   
   async deleteCustomer(id: number): Promise<void> {
     this.customers.delete(id);
+  }
+  
+  // Action Plan methods
+  async getAllActionPlans(): Promise<ActionPlan[]> {
+    return Array.from(this.actionPlans.values()).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+  
+  async getActionPlan(id: number): Promise<ActionPlan | undefined> {
+    return this.actionPlans.get(id);
+  }
+  
+  async createActionPlan(insertActionPlan: InsertActionPlan): Promise<ActionPlan> {
+    const id = this.actionPlanCurrentId++;
+    const now = new Date();
+    const actionPlan: ActionPlan = {
+      id,
+      title: insertActionPlan.title,
+      customerId: insertActionPlan.customerId || null,
+      industry: insertActionPlan.industry || null,
+      primaryChannel: insertActionPlan.primaryChannel || null,
+      interactionVolume: insertActionPlan.interactionVolume || null,
+      currentAutomation: insertActionPlan.currentAutomation || null,
+      biggestChallenge: insertActionPlan.biggestChallenge || null,
+      repetitiveProcesses: insertActionPlan.repetitiveProcesses || null,
+      aiGoals: insertActionPlan.aiGoals || [],
+      autonomyLevel: insertActionPlan.autonomyLevel || null,
+      currentPlatforms: insertActionPlan.currentPlatforms || null,
+      teamComfort: insertActionPlan.teamComfort || null,
+      apisAvailable: insertActionPlan.apisAvailable || null,
+      successMetrics: insertActionPlan.successMetrics || [],
+      status: insertActionPlan.status || 'draft',
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.actionPlans.set(id, actionPlan);
+    return actionPlan;
+  }
+  
+  async updateActionPlan(id: number, updateData: UpdateActionPlan): Promise<ActionPlan> {
+    const existingPlan = this.actionPlans.get(id);
+    if (!existingPlan) {
+      throw new Error(`Action plan with id ${id} not found`);
+    }
+    
+    const updatedPlan: ActionPlan = {
+      ...existingPlan,
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    this.actionPlans.set(id, updatedPlan);
+    return updatedPlan;
+  }
+  
+  async deleteActionPlan(id: number): Promise<void> {
+    this.actionPlans.delete(id);
   }
   
   // Helper method to add default settings

@@ -12,7 +12,9 @@ import {
   insertCustomerJourneySchema,
   updateCustomerJourneySchema,
   insertCustomerSchema,
-  updateCustomerSchema
+  updateCustomerSchema,
+  insertActionPlanSchema,
+  updateActionPlanSchema
 } from "@shared/schema";
 import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, OPENAI_API_KEY_SETTING } from "./openai";
 
