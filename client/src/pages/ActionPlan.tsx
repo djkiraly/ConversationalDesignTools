@@ -7,14 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus } from 'lucide-react';
+import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useROIParameters, calculateTimeSaved, calculateCostSavings, calculateImplementationCost, 
          calculateMaintenanceCost, calculateCSATImprovement, calculatePaybackPeriod, 
          formatCurrency, formatRange } from '../lib/roiCalculator';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchAllCustomers, Customer, createActionPlan, ActionPlan as ActionPlanType } from '../lib/api';
+import { fetchAllCustomers, fetchAllActionPlans, createActionPlan, updateActionPlan, 
+         ActionPlan as ActionPlanType, Customer } from '../lib/api';
 import { useToast } from '@/hooks/use-toast';
+import ActionPlanSelectionDialog from '@/components/ActionPlanSelectionDialog';
 
 interface FormSection {
   id: string;
@@ -28,6 +30,8 @@ export default function ActionPlan() {
   const [planTitle, setPlanTitle] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentPlanId, setCurrentPlanId] = useState<number | null>(null);
+  const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -60,6 +64,12 @@ export default function ActionPlan() {
     queryFn: fetchAllCustomers,
   });
   
+  // Fetch all action plans
+  const { data: actionPlans, isLoading: isLoadingActionPlans } = useQuery({
+    queryKey: ['/api/action-plans'],
+    queryFn: fetchAllActionPlans,
+  });
+  
   // Setup mutation for creating an action plan
   const createActionPlanMutation = useMutation({
     mutationFn: createActionPlan,
@@ -69,12 +79,35 @@ export default function ActionPlan() {
         description: `Your action plan "${data.title}" has been saved.`,
         variant: "default",
       });
+      setCurrentPlanId(data.id);
       setIsSaving(false);
     },
     onError: (error) => {
       toast({
         title: "Error saving action plan",
         description: error.message || "An error occurred while saving the action plan.",
+        variant: "destructive",
+      });
+      setIsSaving(false);
+    }
+  });
+  
+  // Setup mutation for updating an action plan
+  const updateActionPlanMutation = useMutation({
+    mutationFn: (data: { id: number, actionPlan: Partial<Omit<ActionPlanType, 'id' | 'createdAt' | 'updatedAt'>> }) => 
+      updateActionPlan(data.id, data.actionPlan),
+    onSuccess: (data) => {
+      toast({
+        title: "Action plan updated successfully",
+        description: `Your action plan "${data.title}" has been updated.`,
+        variant: "default",
+      });
+      setIsSaving(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating action plan",
+        description: error.message || "An error occurred while updating the action plan.",
         variant: "destructive",
       });
       setIsSaving(false);
@@ -140,6 +173,71 @@ export default function ActionPlan() {
     }
   };
   
+  // Function to load selected action plan data into the form
+  const handleLoadActionPlan = (actionPlan: ActionPlanType) => {
+    setPlanTitle(actionPlan.title);
+    setSelectedCustomerId(actionPlan.customerId);
+    setCurrentPlanId(actionPlan.id);
+    
+    setFormData({
+      industry: actionPlan.industry || '',
+      primaryChannel: actionPlan.primaryChannel || '',
+      interactionVolume: actionPlan.interactionVolume || '',
+      currentAutomation: actionPlan.currentAutomation || '',
+      biggestChallenge: actionPlan.biggestChallenge || '',
+      repetitiveProcesses: actionPlan.repetitiveProcesses || '',
+      aiGoals: actionPlan.aiGoals || [],
+      autonomyLevel: actionPlan.autonomyLevel || '',
+      currentPlatforms: actionPlan.currentPlatforms || '',
+      teamComfort: actionPlan.teamComfort || '',
+      apisAvailable: actionPlan.apisAvailable || '',
+      successMetrics: actionPlan.successMetrics || []
+    });
+    
+    // Update progress
+    setProgress(calculateProgress());
+    
+    toast({
+      title: "Action plan loaded",
+      description: `"${actionPlan.title}" has been loaded for editing.`,
+      variant: "default",
+    });
+  };
+  
+  // Function to create a new action plan (reset form)
+  const handleNewActionPlan = () => {
+    setPlanTitle('');
+    setSelectedCustomerId(null);
+    setCurrentPlanId(null);
+    
+    setFormData({
+      industry: '',
+      primaryChannel: '',
+      interactionVolume: '',
+      currentAutomation: '',
+      biggestChallenge: '',
+      repetitiveProcesses: '',
+      aiGoals: [],
+      autonomyLevel: '',
+      currentPlatforms: '',
+      teamComfort: '',
+      apisAvailable: '',
+      successMetrics: []
+    });
+    
+    // Reset progress
+    setProgress(0);
+    
+    // Go to first section
+    setCurrentSection('business-discovery');
+    
+    toast({
+      title: "New action plan",
+      description: "Started a new action plan.",
+      variant: "default",
+    });
+  };
+  
   // Handle saving the action plan
   const handleSaveActionPlan = () => {
     if (!planTitle.trim()) {
@@ -171,7 +269,16 @@ export default function ActionPlan() {
       successMetrics: formData.successMetrics
     };
     
-    createActionPlanMutation.mutate(actionPlanData);
+    if (currentPlanId) {
+      // Update existing action plan
+      updateActionPlanMutation.mutate({
+        id: currentPlanId,
+        actionPlan: actionPlanData
+      });
+    } else {
+      // Create new action plan
+      createActionPlanMutation.mutate(actionPlanData);
+    }
   };
   
   const handleCheckboxChange = (field: string, value: string) => {
@@ -192,9 +299,50 @@ export default function ActionPlan() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center mb-8">
-        <ClipboardList className="h-8 w-8 mr-3 text-primary" />
-        <h1 className="text-3xl font-bold">Action Plan</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center">
+          <ClipboardList className="h-8 w-8 mr-3 text-primary" />
+          <h1 className="text-3xl font-bold">Action Plan</h1>
+          {currentPlanId && (
+            <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <Edit className="h-3 w-3 mr-1" />
+              Editing #{currentPlanId}
+            </span>
+          )}
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNewActionPlan}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLoadDialogOpen(true)}
+          >
+            <FolderOpen className="h-4 w-4 mr-2" />
+            Load
+          </Button>
+          <Button
+            onClick={handleSaveActionPlan}
+            disabled={isSaving}
+            size="sm"
+          >
+            {isSaving ? (
+              <>Saving...</>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                {currentPlanId ? "Update" : "Save"}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       
       <p className="text-lg text-muted-foreground mb-8">
@@ -208,6 +356,15 @@ export default function ActionPlan() {
         </div>
         <Progress value={progress} className="h-2 w-full" />
       </div>
+      
+      {/* Action Plan Selection Dialog */}
+      <ActionPlanSelectionDialog
+        open={isLoadDialogOpen}
+        onOpenChange={setIsLoadDialogOpen}
+        actionPlans={actionPlans || []}
+        isLoading={isLoadingActionPlans}
+        onSelect={handleLoadActionPlan}
+      />
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form Sections Navigation */}
