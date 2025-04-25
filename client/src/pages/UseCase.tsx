@@ -62,7 +62,9 @@ export default function UseCasePage() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<number | null>(null);
+  const [currentUseCase, setCurrentUseCase] = useState<UseCase | null>(null);
 
   // Fetch all use cases
   const { 
@@ -121,6 +123,52 @@ export default function UseCasePage() {
       });
     }
   });
+  
+  // Edit form for editing use cases
+  const editForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      customer: "",
+      problemStatement: "",
+      proposedSolution: "",
+      keyObjectives: "",
+      requiredDataInputs: "",
+      expectedOutputs: "",
+      keyStakeholders: "",
+      scope: "",
+      potentialRisks: "",
+      estimatedImpact: "",
+      conversationFlow: ""
+    }
+  });
+  
+  // Update use case mutation
+  const updateUseCaseMutation = useMutation({
+    mutationFn: async ({ id, useCase }: { id: number, useCase: z.infer<typeof formSchema> }) => {
+      return apiRequest('PATCH', `/api/use-cases/${id}`, {
+        ...useCase,
+        conversationFlow: useCase.conversationFlow || ""
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
+      toast({
+        title: "Use case updated",
+        description: "The use case has been updated successfully."
+      });
+      setIsEditDialogOpen(null);
+      setCurrentUseCase(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating use case",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    }
+  });
 
   // Delete use case mutation
   const deleteUseCaseMutation = useMutation({
@@ -148,14 +196,40 @@ export default function UseCasePage() {
   const handleCreateSubmit = (data: z.infer<typeof formSchema>) => {
     createUseCaseMutation.mutate(data);
   };
+  
+  const handleEditUseCase = (useCase: UseCase) => {
+    setCurrentUseCase(useCase);
+    setIsEditDialogOpen(useCase.id);
+    
+    // Reset the form with the use case data
+    editForm.reset({
+      title: useCase.title,
+      description: useCase.description || "",
+      customer: useCase.customer || "",
+      problemStatement: useCase.problemStatement || "",
+      proposedSolution: useCase.proposedSolution || "",
+      keyObjectives: useCase.keyObjectives || "",
+      requiredDataInputs: useCase.requiredDataInputs || "",
+      expectedOutputs: useCase.expectedOutputs || "",
+      keyStakeholders: useCase.keyStakeholders || "",
+      scope: useCase.scope || "",
+      potentialRisks: useCase.potentialRisks || "",
+      estimatedImpact: useCase.estimatedImpact || "",
+      conversationFlow: useCase.conversationFlow || ""
+    });
+  };
+  
+  const handleEditSubmit = (data: z.infer<typeof formSchema>) => {
+    if (isEditDialogOpen) {
+      updateUseCaseMutation.mutate({ 
+        id: isEditDialogOpen, 
+        useCase: data 
+      });
+    }
+  };
 
   const handleDeleteUseCase = (id: number) => {
     deleteUseCaseMutation.mutate(id);
-  };
-
-  // Function to navigate to the use case detail page
-  const goToUseCase = (id: number) => {
-    setLocation(`/use-case/${id}`);
   };
 
   // If there's an error fetching data, display error message
@@ -285,7 +359,7 @@ export default function UseCasePage() {
               <CardFooter className="flex justify-between">
                 <Button 
                   variant="default" 
-                  onClick={() => goToUseCase(useCase.id)}
+                  onClick={() => handleEditUseCase(useCase)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -581,6 +655,267 @@ export default function UseCasePage() {
               {deleteUseCaseMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Use Case Dialog */}
+      <Dialog open={isEditDialogOpen !== null} onOpenChange={(open) => !open && setIsEditDialogOpen(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Use Case</DialogTitle>
+            <DialogDescription>
+              Update the use case details.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="E.g., Customer Onboarding" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="customer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="E.g., Acme Inc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe the purpose and goals of this use case..." 
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* New fields for properly defining the use case */}
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="basic">Basic Information</TabsTrigger>
+                  <TabsTrigger value="detailed">Detailed Definition</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="basic" className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    The information above covers the basic details of your use case. To add more comprehensive
+                    information, switch to the "Detailed Definition" tab.
+                  </p>
+                </TabsContent>
+                
+                <TabsContent value="detailed" className="space-y-4 pt-4">
+                  <FormField
+                    control={editForm.control}
+                    name="problemStatement"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Problem Statement</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Concise statement of the problem this AI use case will solve..."
+                            className="min-h-[60px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="proposedSolution"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Proposed AI Solution</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="High-level description of the proposed AI solution..."
+                            className="min-h-[60px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="keyObjectives"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Key Objectives & Success Metrics</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Quantifiable objectives and success metrics for this use case..."
+                            className="min-h-[60px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={editForm.control}
+                      name="requiredDataInputs"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Required Data Inputs</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Data sources, types, and availability status..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="expectedOutputs"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Expected Outputs & Actions</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="What outputs and actions will the AI produce..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="keyStakeholders"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Key Stakeholders</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Business and technical stakeholders involved..."
+                            className="min-h-[60px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="scope"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>High-Level Scope</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Define inclusions and exclusions for this use case..."
+                            className="min-h-[60px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={editForm.control}
+                      name="potentialRisks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Potential Risks & Dependencies</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Identify potential risks and dependencies..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="estimatedImpact"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estimated Impact/Value</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Quantify the expected impact or value..."
+                              className="min-h-[60px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={updateUseCaseMutation.isPending}
+                >
+                  {updateUseCaseMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
