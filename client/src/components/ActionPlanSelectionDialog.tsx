@@ -106,9 +106,20 @@ export default function ActionPlanSelectionDialog({
                           ? 'bg-yellow-100 text-yellow-800' 
                           : plan.status === 'completed' 
                           ? 'bg-green-100 text-green-800'
+                          : plan.status === 'ai-enhanced'
+                          ? 'bg-blue-100 text-blue-800 flex items-center space-x-1'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+                        {plan.status === 'ai-enhanced' ? (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 mr-1">
+                              <path d="M12 2v8"></path><path d="m4.93 10.93 1.41 1.41"></path><path d="M2 18h2"></path><path d="M20 18h2"></path><path d="m19.07 10.93-1.41 1.41"></path><path d="M22 22H2"></path><path d="m16 6-4 4-4-4"></path><path d="M16 18a4 4 0 0 0 0-8H8a4 4 0 1 0 0 8"></path>
+                            </svg>
+                            AI Enhanced
+                          </>
+                        ) : (
+                          plan.status.charAt(0).toUpperCase() + plan.status.slice(1)
+                        )}
                       </span>
                     </TableCell>
                     <TableCell>{formatDate(plan.updatedAt)}</TableCell>

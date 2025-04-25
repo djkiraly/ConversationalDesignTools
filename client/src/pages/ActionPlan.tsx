@@ -333,39 +333,32 @@ export default function ActionPlan() {
   // Apply AI suggestions to the current action plan
   const handleApplySuggestions = (suggestions: string) => {
     // Here we would typically extract data from the suggestions
-    // For this implementation, we'll just show a success message
-    toast({
-      title: "Suggestions applied",
-      description: "AI suggestions have been applied to your action plan.",
-      variant: "default",
-    });
+    // For this implementation, we'll just show a success message and update the status
     
-    // Close the dialog
-    setIsSuggestionsDialogOpen(false);
-    
-    // Get the current action plan data from state or fetch it
-    const currentPlan = actionPlans?.find(plan => plan.id === currentPlanId);
-    
-    if (currentPlanId && currentPlan) {
-      // Create a complete action plan update request with all required fields
+    if (currentPlanId) {
+      // Just update the status field - our backend now supports partial updates
       updateActionPlanMutation.mutate({
         id: currentPlanId,
         actionPlan: {
-          title: currentPlan.title, // Required field
-          industry: currentPlan.industry,
-          primaryChannel: currentPlan.primaryChannel,
-          interactionVolume: currentPlan.interactionVolume,
-          currentAutomation: currentPlan.currentAutomation,
-          biggestChallenge: currentPlan.biggestChallenge,
-          repetitiveProcesses: currentPlan.repetitiveProcesses,
-          aiGoals: currentPlan.aiGoals,
-          autonomyLevel: currentPlan.autonomyLevel,
-          currentPlatforms: currentPlan.currentPlatforms,
-          teamComfort: currentPlan.teamComfort,
-          apisAvailable: currentPlan.apisAvailable,
-          successMetrics: currentPlan.successMetrics,
-          status: "ai-enhanced", // Update the status
-          customerId: currentPlan.customerId
+          status: "ai-enhanced" // Only update the status field
+        }
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Suggestions applied",
+            description: "AI suggestions have been applied to your action plan.",
+            variant: "default",
+          });
+          
+          // Close the dialog
+          setIsSuggestionsDialogOpen(false);
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error applying suggestions",
+            description: error.message || "An error occurred while applying AI suggestions.",
+            variant: "destructive",
+          });
         }
       });
     }

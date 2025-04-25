@@ -704,13 +704,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Action plan not found" });
       }
 
-      const result = updateActionPlanSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
+      // Check if we're doing a partial update (like status change)
+      if (req.body.status && Object.keys(req.body).length === 1) {
+        // Handle partial update (only status field)
+        const updatedActionPlan = await storage.updateActionPlan(id, {
+          ...existingActionPlan,
+          status: req.body.status
+        });
+        return res.json(updatedActionPlan);
+      } else {
+        // Handle normal complete update with validation
+        const result = updateActionPlanSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({ error: result.error.message });
+        }
 
-      const updatedActionPlan = await storage.updateActionPlan(id, result.data);
-      res.json(updatedActionPlan);
+        const updatedActionPlan = await storage.updateActionPlan(id, result.data);
+        res.json(updatedActionPlan);
+      }
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
