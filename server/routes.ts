@@ -148,17 +148,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const key = req.params.key;
       const existingSetting = await storage.getSetting(key);
       
-      if (!existingSetting) {
-        return res.status(404).json({ error: "Setting not found" });
-      }
-
       const result = updateSettingSchema.safeParse(req.body);
       if (!result.success) {
         return res.status(400).json({ error: result.error.message });
       }
 
-      const updatedSetting = await storage.updateSetting(key, result.data);
-      res.json(updatedSetting);
+      let setting;
+      if (!existingSetting) {
+        // Create the setting if it doesn't exist
+        setting = await storage.createSetting({ 
+          key, 
+          value: result.data.value 
+        });
+      } else {
+        // Update existing setting
+        setting = await storage.updateSetting(key, result.data);
+      }
+      
+      res.json(setting);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
