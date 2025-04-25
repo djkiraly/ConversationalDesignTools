@@ -203,6 +203,7 @@ export const actionPlans = pgTable("action_plans", {
   
   // AI Agent Goals
   aiGoals: json("ai_goals").notNull().$type<string[]>().default([]),
+  goalDetails: json("goal_details").notNull().$type<Record<string, string>>().default({}),
   autonomyLevel: text("autonomy_level"),
   
   // System & Integration Readiness
@@ -230,6 +231,7 @@ export const insertActionPlanSchema = createInsertSchema(actionPlans).pick({
   biggestChallenge: true,
   repetitiveProcesses: true,
   aiGoals: true,
+  goalDetails: true,
   autonomyLevel: true,
   currentPlatforms: true,
   teamComfort: true,
@@ -248,6 +250,7 @@ export const updateActionPlanSchema = createInsertSchema(actionPlans).pick({
   biggestChallenge: true,
   repetitiveProcesses: true,
   aiGoals: true,
+  goalDetails: true,
   autonomyLevel: true,
   currentPlatforms: true,
   teamComfort: true,

@@ -279,6 +279,7 @@ export default function ActionPlan() {
       biggestChallenge: formData.biggestChallenge,
       repetitiveProcesses: formData.repetitiveProcesses,
       aiGoals: [...formData.aiGoals, ...(formData.customGoalEnabled && formData.customGoal ? [formData.customGoal] : [])],
+      goalDetails: formData.goalDetails, // Added goalDetails to save goal-specific information
       autonomyLevel: formData.autonomyLevel,
       currentPlatforms: formData.currentPlatforms,
       teamComfort: formData.teamComfort,
