@@ -715,6 +715,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle both { status: "value" } and { actionPlan: { status: "value" } } formats
       const updateData = req.body.actionPlan || req.body;
       
+      console.log("Updating action plan with data:", JSON.stringify(updateData, null, 2));
+      console.log("Existing aiGoals:", JSON.stringify(existingActionPlan.aiGoals, null, 2));
+      if (updateData.aiGoals) {
+        console.log("New aiGoals:", JSON.stringify(updateData.aiGoals, null, 2));
+        console.log("Type of aiGoals:", typeof updateData.aiGoals, Array.isArray(updateData.aiGoals));
+      }
+      
       if (updateData.status && Object.keys(updateData).length === 1) {
         console.log("Performing status-only update to:", updateData.status);
         // Handle status-only update without validation
@@ -727,10 +734,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle normal complete update with validation
         const result = updateActionPlanSchema.safeParse(updateData);
         if (!result.success) {
+          console.error("Validation error:", result.error);
           return res.status(400).json({ error: result.error.message });
         }
 
+        console.log("Validated data:", JSON.stringify(result.data, null, 2));
+        if (result.data.aiGoals) {
+          console.log("Validated aiGoals:", JSON.stringify(result.data.aiGoals, null, 2));
+        }
+
         const updatedActionPlan = await storage.updateActionPlan(id, result.data);
+        console.log("Updated action plan:", JSON.stringify(updatedActionPlan, null, 2));
         res.json(updatedActionPlan);
       }
     } catch (error) {
