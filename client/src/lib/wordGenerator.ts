@@ -226,6 +226,50 @@ const createROITable = (actionPlan: ActionPlan): Table => {
   });
 };
 
+// Generate paragraphs for goal details
+const generateGoalDetailsSection = (actionPlan: ActionPlan): Paragraph[] => {
+  // If no goal details are available, return empty array
+  if (!actionPlan.goalDetails || Object.keys(actionPlan.goalDetails).length === 0) {
+    return [];
+  }
+  
+  const paragraphs: Paragraph[] = [
+    new Paragraph({
+      text: "Goal Details",
+      heading: HeadingLevel.HEADING_2,
+      spacing: {
+        after: 120
+      }
+    })
+  ];
+  
+  // Add each goal detail as a separate paragraph
+  Object.entries(actionPlan.goalDetails).forEach(([goalId, details]) => {
+    paragraphs.push(
+      new Paragraph({
+        text: `${goalId.split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')}:`,
+        spacing: {
+          after: 80
+        },
+        bullet: {
+          level: 0
+        }
+      }),
+      new Paragraph({
+        text: details,
+        spacing: {
+          after: 120,
+          left: 720
+        }
+      })
+    );
+  });
+  
+  return paragraphs;
+};
+
 // Generate a complete Word document for an action plan
 export const generateActionPlanDocument = (actionPlan: ActionPlan): Document => {
   // Format variables for better display
@@ -402,6 +446,7 @@ export const generateActionPlanDocument = (actionPlan: ActionPlan): Document => 
             heading: HeadingLevel.HEADING_1
           }),
           ...createSection("Target Capabilities", formatListItems(actionPlan.aiGoals)),
+          ...generateGoalDetailsSection(actionPlan),
           ...createSection("Autonomy Level", autonomyLevel),
           
           new Paragraph({
