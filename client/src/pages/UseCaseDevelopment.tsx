@@ -503,17 +503,22 @@ export default function UseCaseDevelopment() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="search-use-cases">Search</Label>
-                      <Input id="search-use-cases" placeholder="Search use cases..." />
+                      <Input 
+                        id="search-use-cases" 
+                        placeholder="Search use cases..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="filter-industry">Filter by Industry</Label>
-                      <Select>
+                      <Select value={filteredIndustry} onValueChange={setFilteredIndustry}>
                         <SelectTrigger id="filter-industry">
                           <SelectValue placeholder="All industries" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All industries</SelectItem>
+                          <SelectItem value="">All industries</SelectItem>
                           {industries.map(industry => (
                             <SelectItem key={industry.value} value={industry.value}>
                               {industry.label}
@@ -525,12 +530,12 @@ export default function UseCaseDevelopment() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="filter-function">Filter by Function</Label>
-                      <Select>
+                      <Select value={filteredFunction} onValueChange={setFilteredFunction}>
                         <SelectTrigger id="filter-function">
                           <SelectValue placeholder="All functions" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All functions</SelectItem>
+                          <SelectItem value="">All functions</SelectItem>
                           {businessFunctions.map(func => (
                             <SelectItem key={func.value} value={func.value}>
                               {func.label}
@@ -542,12 +547,12 @@ export default function UseCaseDevelopment() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="filter-impact">Filter by Impact</Label>
-                      <Select>
+                      <Select value={filteredImpact} onValueChange={setFilteredImpact}>
                         <SelectTrigger id="filter-impact">
                           <SelectValue placeholder="All impacts" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All impacts</SelectItem>
+                          <SelectItem value="">All impacts</SelectItem>
                           <SelectItem value="high">High Impact</SelectItem>
                           <SelectItem value="medium">Medium Impact</SelectItem>
                           <SelectItem value="low">Low Impact</SelectItem>
@@ -560,16 +565,32 @@ export default function UseCaseDevelopment() {
               
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle>Suggested Use Cases</CardTitle>
-                  <CardDescription>Based on your discovery inputs</CardDescription>
+                  <CardTitle>AI Use Case Generator</CardTitle>
+                  <CardDescription>Get tailored use case suggestions from AI</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Complete the discovery phase to receive tailored use case suggestions.
-                  </p>
-                  <Button className="w-full">
-                    Generate Suggestions
-                  </Button>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Select industry and function filters above, then generate AI-powered use case suggestions tailored to your business context.
+                    </p>
+                    <Button 
+                      className="w-full"
+                      onClick={generateUseCaseSuggestions}
+                      disabled={isGeneratingSuggestions || !filteredIndustry || !filteredFunction}
+                    >
+                      {isGeneratingSuggestions ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate Suggestions
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
