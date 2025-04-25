@@ -201,7 +201,7 @@ export default function ActionPlan() {
       autonomyLevel: actionPlan.autonomyLevel || '',
       customGoal: '',
       customGoalEnabled: false,
-      goalDetails: {},
+      goalDetails: actionPlan.goalDetails || {},
       currentPlatforms: actionPlan.currentPlatforms || '',
       teamComfort: actionPlan.teamComfort || '',
       apisAvailable: actionPlan.apisAvailable || '',

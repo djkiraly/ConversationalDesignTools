@@ -229,6 +229,7 @@ export interface ActionPlan {
   biggestChallenge: string | null;
   repetitiveProcesses: string | null;
   aiGoals: string[];
+  goalDetails: Record<string, string>;
   autonomyLevel: string | null;
   currentPlatforms: string | null;
   teamComfort: string | null;
