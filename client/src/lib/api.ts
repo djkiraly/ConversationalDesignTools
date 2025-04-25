@@ -332,3 +332,26 @@ export async function fetchAppStatistics(): Promise<AppStatistics> {
   
   return response.data;
 }
+
+// AI Suggestions API
+export interface AIActionPlanSuggestions {
+  success: boolean;
+  suggestions: string;
+}
+
+export async function generateActionPlanSuggestions(planId: number): Promise<string> {
+  const response = await apiRequest<AIActionPlanSuggestions>(
+    `/api/action-plans/${planId}/suggestions`,
+    'POST'
+  );
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  if (!response.data || !response.data.success) {
+    throw new Error('Failed to generate suggestions');
+  }
+  
+  return response.data.suggestions;
+}

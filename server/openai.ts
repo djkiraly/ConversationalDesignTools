@@ -441,3 +441,122 @@ picture of how the agent should interact with users.`;
     };
   }
 }
+
+// Generate suggestions for improving an action plan
+export async function generateActionPlanSuggestions(
+  apiKey: string,
+  actionPlan: {
+    title: string;
+    industry?: string | null;
+    primaryChannel?: string | null;
+    interactionVolume?: string | null;
+    currentAutomation?: string | null;
+    biggestChallenge?: string | null;
+    repetitiveProcesses?: string | null;
+    aiGoals: string[];
+    autonomyLevel?: string | null;
+    currentPlatforms?: string | null;
+    teamComfort?: string | null;
+    apisAvailable?: string | null;
+    successMetrics: string[];
+  }
+): Promise<{
+  success: boolean;
+  suggestions?: string;
+  error?: string;
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Clean up and prepare the action plan data for the prompt
+    const cleanPlan = {
+      title: actionPlan.title,
+      industry: actionPlan.industry || "Not specified",
+      primaryChannel: actionPlan.primaryChannel || "Not specified",
+      interactionVolume: actionPlan.interactionVolume || "Not specified",
+      currentAutomation: actionPlan.currentAutomation || "Not specified",
+      biggestChallenge: actionPlan.biggestChallenge || "Not specified",
+      repetitiveProcesses: actionPlan.repetitiveProcesses || "Not specified",
+      aiGoals: actionPlan.aiGoals.length > 0 ? actionPlan.aiGoals.join(", ") : "Not specified",
+      autonomyLevel: actionPlan.autonomyLevel || "Not specified",
+      currentPlatforms: actionPlan.currentPlatforms || "Not specified",
+      teamComfort: actionPlan.teamComfort || "Not specified",
+      apisAvailable: actionPlan.apisAvailable || "Not specified",
+      successMetrics: actionPlan.successMetrics.length > 0 ? actionPlan.successMetrics.join(", ") : "Not specified"
+    };
+    
+    // Create a prompt that includes all the necessary context
+    const prompt = `You are an expert consultant on implementing AI solutions for businesses. 
+You've been asked to review an AI Action Plan for a business and provide strategic suggestions 
+for improvement.
+
+Here is the current Action Plan:
+
+PLAN TITLE: ${cleanPlan.title}
+
+BUSINESS DISCOVERY:
+- Industry: ${cleanPlan.industry}
+- Primary Channel for Customer Interaction: ${cleanPlan.primaryChannel}
+- Monthly Interaction Volume: ${cleanPlan.interactionVolume}
+- Current Automation: ${cleanPlan.currentAutomation}
+
+PAIN POINT ASSESSMENT:
+- Biggest Challenge: ${cleanPlan.biggestChallenge}
+- Repetitive Processes: ${cleanPlan.repetitiveProcesses}
+
+AI AGENT GOALS:
+- Goals: ${cleanPlan.aiGoals}
+- Desired Autonomy Level: ${cleanPlan.autonomyLevel}
+
+SYSTEM & INTEGRATION READINESS:
+- Current Platforms: ${cleanPlan.currentPlatforms}
+- Team Comfort with No-Code/Low-Code Tools: ${cleanPlan.teamComfort}
+- APIs Available: ${cleanPlan.apisAvailable}
+
+SUCCESS METRICS:
+- Key Success Metrics: ${cleanPlan.successMetrics}
+
+Based on this information, provide thoughtful suggestions to improve this action plan and increase its chances of success. 
+Your response should include:
+
+1. Strategic recommendations (2-3 specific, actionable suggestions)
+2. Implementation considerations based on their tech stack and team comfort
+3. Risk mitigation strategies
+4. Any additional data points they should collect before proceeding
+5. Suggestions for phased implementation to ensure early wins
+
+Provide your recommendations in a well-organized, professional format with clear headings. Keep your suggestions specific, 
+practical, and tailored to this business's unique needs based on their inputs.`;
+
+    // Make the API call to OpenAI
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert consultant specializing in AI implementation strategies for businesses." 
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 1200
+    });
+
+    const suggestions = response.choices[0].message.content?.trim();
+    
+    if (!suggestions) {
+      throw new Error('No suggestions were generated');
+    }
+    
+    return {
+      success: true,
+      suggestions
+    };
+  } catch (error: any) {
+    console.error('Error generating action plan suggestions:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate action plan suggestions'
+    };
+  }
+}
