@@ -32,7 +32,7 @@ export const useCases = pgTable("use_cases", {
   potentialRisks: text("potential_risks"),  // Potential risks and dependencies
   estimatedImpact: text("estimated_impact"),  // Estimated impact/value
   
-  conversationFlow: text("conversation_flow").notNull(),
+  conversationFlow: text("conversation_flow"),
   nodePositions: text("node_positions"),  // Store node positions as JSON string
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
