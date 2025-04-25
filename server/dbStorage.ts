@@ -63,6 +63,17 @@ export class DbStorage implements IStorage {
     const result = await db.insert(useCases).values({
       ...insertUseCase,
       description: insertUseCase.description ?? null,
+      customer: insertUseCase.customer ?? null,
+      problemStatement: insertUseCase.problemStatement ?? null,
+      proposedSolution: insertUseCase.proposedSolution ?? null,
+      keyObjectives: insertUseCase.keyObjectives ?? null,
+      requiredDataInputs: insertUseCase.requiredDataInputs ?? null,
+      expectedOutputs: insertUseCase.expectedOutputs ?? null,
+      keyStakeholders: insertUseCase.keyStakeholders ?? null,
+      scope: insertUseCase.scope ?? null,
+      potentialRisks: insertUseCase.potentialRisks ?? null,
+      estimatedImpact: insertUseCase.estimatedImpact ?? null,
+      conversationFlow: insertUseCase.conversationFlow ?? null,
       nodePositions: insertUseCase.nodePositions ?? null,
       createdAt: now,
       updatedAt: now

@@ -106,7 +106,7 @@ export default function UseCasePage() {
       // Ensure all fields are properly formatted for JSON
       const formattedData = {
         ...useCase,
-        conversationFlow: useCase.conversationFlow || "",
+        conversationFlow: "", // Always start with empty conversation flow
         problemStatement: useCase.problemStatement || "",
         proposedSolution: useCase.proposedSolution || "",
         keyObjectives: useCase.keyObjectives || "",
