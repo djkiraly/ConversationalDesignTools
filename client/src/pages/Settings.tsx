@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Setting } from "@shared/schema";
-import { Loader2, Check, AlertTriangle, ChevronDown } from "lucide-react";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
 
 import {
   Card,
@@ -30,7 +30,12 @@ import {
   AlertDescription,
   AlertTitle
 } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -342,407 +347,419 @@ export default function Settings() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 {/* OpenAI Settings Section */}
-                <div className="space-y-6">
-                  <div className="border-b pb-2">
-                    <h3 className="text-lg font-medium">OpenAI Integration</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Configure AI features that use OpenAI
-                    </p>
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="openai_api_key"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>OpenAI API Key</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter your OpenAI API key"
-                              {...field} 
-                              type="password"
-                              className="flex-1"
-                            />
-                          </FormControl>
-                          <Button 
-                            type="button"
-                            variant="outline"
-                            onClick={validateApiKey}
-                            disabled={validatingApiKey}
-                            className="shrink-0"
-                          >
-                            {validatingApiKey ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Validating...
-                              </>
-                            ) : "Validate Key"}
-                          </Button>
-                        </div>
-                        <FormDescription>
-                          Your OpenAI API key used for AI-powered features.
-                        </FormDescription>
-                        <FormMessage />
-                        
-                        {validationResult && (
-                          <Alert className={validationResult.valid ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
-                            {validationResult.valid ? (
-                              <Check className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <AlertTriangle className="h-4 w-4 text-red-600" />
+                <Accordion type="single" collapsible defaultValue="openai-section" className="w-full">
+                  <AccordionItem value="openai-section">
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <div className="flex flex-col items-start">
+                        <h3 className="text-lg font-medium">OpenAI Integration</h3>
+                        <p className="text-sm text-muted-foreground font-normal text-left">
+                          Configure AI features that use OpenAI
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="openai_api_key"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>OpenAI API Key</FormLabel>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter your OpenAI API key"
+                                  {...field} 
+                                  type="password"
+                                  className="flex-1"
+                                />
+                              </FormControl>
+                              <Button 
+                                type="button"
+                                variant="outline"
+                                onClick={validateApiKey}
+                                disabled={validatingApiKey}
+                                className="shrink-0"
+                              >
+                                {validatingApiKey ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Validating...
+                                  </>
+                                ) : "Validate Key"}
+                              </Button>
+                            </div>
+                            <FormDescription>
+                              Your OpenAI API key used for AI-powered features.
+                            </FormDescription>
+                            <FormMessage />
+                            
+                            {validationResult && (
+                              <Alert className={validationResult.valid ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
+                                {validationResult.valid ? (
+                                  <Check className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                )}
+                                <AlertTitle>
+                                  {validationResult.valid ? "Valid API Key" : "Invalid API Key"}
+                                </AlertTitle>
+                                <AlertDescription>
+                                  {validationResult.message}
+                                </AlertDescription>
+                              </Alert>
                             )}
-                            <AlertTitle>
-                              {validationResult.valid ? "Valid API Key" : "Invalid API Key"}
-                            </AlertTitle>
-                            <AlertDescription>
-                              {validationResult.message}
-                            </AlertDescription>
-                          </Alert>
+                          </FormItem>
                         )}
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="openai_system_prompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>System Prompt</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter the system prompt for OpenAI"
-                            {...field} 
-                            rows={5}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This system prompt defines how the AI assistant should behave.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="openai_user_prompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>User Prompt</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter the user prompt template"
-                            {...field} 
-                            rows={3}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This prompt is used to format the user's message before sending to the AI.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="openai_system_prompt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>System Prompt</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter the system prompt for OpenAI"
+                                {...field} 
+                                rows={5}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              This system prompt defines how the AI assistant should behave.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="openai_user_prompt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>User Prompt</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter the user prompt template"
+                                {...field} 
+                                rows={3}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              This prompt is used to format the user's message before sending to the AI.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 
                 {/* ROI Calculation Parameters Section */}
-                <div className="space-y-6">
-                  <div className="border-b pb-2 pt-4">
-                    <h3 className="text-lg font-medium">ROI Calculation Parameters</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Configure the parameters used for ROI projections in the Action Plan
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="roi_agent_hourly_cost"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Agent Hourly Cost ($)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="25.00"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Average fully-loaded hourly cost of a human agent
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_maintenance_pct"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Annual Maintenance (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="15"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Percentage of implementation cost for annual maintenance
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_implementation_cost_min"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Min Implementation Cost ($)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="15000"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Minimum implementation cost for simple use cases
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_implementation_cost_max"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max Implementation Cost ($)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="100000"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Maximum implementation cost for complex use cases
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="border-t pt-4 pb-2">
-                    <h4 className="text-md font-medium">Automation & Efficiency Parameters</h4>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="roi_automation_rate_base"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Base Automation Rate (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="5"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Minimum percentage of tasks that can be automated
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_automation_rate_scale"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max Automation Rate (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="25"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Maximum percentage of tasks that can be automated
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_csat_improvement_base"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Base CSAT Improvement (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="5"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Minimum customer satisfaction improvement
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_csat_improvement_scale"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max CSAT Improvement (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="20"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Maximum customer satisfaction improvement
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="border-t pt-4 pb-2 mt-6">
-                    <h4 className="text-md font-medium">Revenue Improvement Parameters</h4>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="roi_revenue_per_customer"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Average Revenue Per Customer ($)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="5000"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Average annual revenue generated per customer
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_conversion_rate_improvement_base"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Base Conversion Rate Improvement (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="2"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Minimum expected improvement in conversion rate
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_conversion_rate_improvement_scale"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max Conversion Rate Improvement (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="10"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Maximum expected improvement in conversion rate
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_cross_sell_rate_base"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Base Cross-Sell Rate Improvement (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="5"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Minimum improvement in cross-selling rate
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="roi_cross_sell_rate_scale"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max Cross-Sell Rate Improvement (%)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="15"
-                              {...field} 
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Maximum improvement in cross-selling rate
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="roi-section">
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <div className="flex flex-col items-start">
+                        <h3 className="text-lg font-medium">ROI Calculation Parameters</h3>
+                        <p className="text-sm text-muted-foreground font-normal text-left">
+                          Configure the parameters used for ROI projections in the Action Plan
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="roi_agent_hourly_cost"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Agent Hourly Cost ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="25.00"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Average fully-loaded hourly cost of a human agent
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_maintenance_pct"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Annual Maintenance (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="15"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Percentage of implementation cost for annual maintenance
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_implementation_cost_min"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Min Implementation Cost ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="15000"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum implementation cost for simple use cases
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_implementation_cost_max"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Implementation Cost ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="100000"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum implementation cost for complex use cases
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="border-t pt-4 pb-2">
+                          <h4 className="text-md font-medium">Automation & Efficiency Parameters</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="roi_automation_rate_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Automation Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum percentage of tasks that can be automated
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_automation_rate_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Automation Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="25"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum percentage of tasks that can be automated
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_csat_improvement_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base CSAT Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum customer satisfaction improvement
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_csat_improvement_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max CSAT Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="20"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum customer satisfaction improvement
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="border-t pt-4 pb-2 mt-6">
+                          <h4 className="text-md font-medium">Revenue Improvement Parameters</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="roi_revenue_per_customer"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Average Revenue Per Customer ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5000"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Average annual revenue generated per customer
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_conversion_rate_improvement_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Conversion Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="2"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum expected improvement in conversion rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_conversion_rate_improvement_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Conversion Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="10"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum expected improvement in conversion rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_cross_sell_rate_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Cross-Sell Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum improvement in cross-selling rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_cross_sell_rate_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Cross-Sell Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="15"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum improvement in cross-selling rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 
                 <Button 
                   type="submit"
