@@ -103,6 +103,7 @@ export default function HomePage() {
           This application provides tools to design conversational flows and customer journeys:
         </p>
         <ul className="list-disc pl-6 space-y-2 mb-6">
+          <li>Create an <strong>Action Plan</strong> to build a tailored Agentic AI deployment strategy with ROI projections</li>
           <li>Use <strong>Happy Path</strong> to define the optimal conversation flows for your AI agents</li>
           <li>Create a <strong>Customer Journey</strong> map to visualize the end-to-end user experience</li>
           <li>Configure AI behavior and system settings in the <strong>Settings</strong> page</li>
@@ -157,6 +158,14 @@ export default function HomePage() {
                       <Badge variant="outline">{statistics?.customerJourneyCount || 0}</Badge>
                     </div>
                     <Progress value={statistics?.customerJourneyCount ? Math.min(statistics.customerJourneyCount * 10, 100) : 0} className="h-2" />
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">Action Plans</span>
+                      <Badge variant="outline">{statistics?.actionPlanCount || 0}</Badge>
+                    </div>
+                    <Progress value={statistics?.actionPlanCount ? Math.min(statistics.actionPlanCount * 10, 100) : 0} className="h-2" />
                   </div>
                   
                   <div className="flex justify-between items-center pt-2 border-t">
