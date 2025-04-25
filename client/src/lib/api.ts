@@ -294,6 +294,73 @@ export async function deleteActionPlan(id: number): Promise<void> {
   queryClient.invalidateQueries({ queryKey: ['/api/action-plans'] });
 }
 
+// Use Case API
+export interface UseCase {
+  id: number;
+  title: string;
+  description: string | null;
+  customer: string | null;
+  conversationFlow: string;
+  nodePositions: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAllUseCases(): Promise<UseCase[]> {
+  const response = await apiRequest<UseCase[]>('/api/use-cases');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  return response.data || [];
+}
+
+export async function fetchUseCase(id: number): Promise<UseCase> {
+  const response = await apiRequest<UseCase>(`/api/use-cases/${id}`);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Use case with id ${id} not found`);
+  }
+  return response.data;
+}
+
+export async function createUseCase(useCase: Omit<UseCase, 'id' | 'createdAt' | 'updatedAt'>): Promise<UseCase> {
+  const response = await apiRequest<UseCase>('/api/use-cases', 'POST', useCase);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error('Failed to create use case');
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
+  return response.data;
+}
+
+export async function updateUseCase(id: number, useCase: Partial<Omit<UseCase, 'id' | 'createdAt' | 'updatedAt'>>): Promise<UseCase> {
+  const response = await apiRequest<UseCase>(`/api/use-cases/${id}`, 'PUT', useCase);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Failed to update use case with id ${id}`);
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
+  queryClient.invalidateQueries({ queryKey: ['/api/use-cases', id] });
+  return response.data;
+}
+
+export async function deleteUseCase(id: number): Promise<void> {
+  const response = await apiRequest(`/api/use-cases/${id}`, 'DELETE');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
+}
+
 // App Statistics API
 export interface AppStatistics {
   useCaseCount: number;

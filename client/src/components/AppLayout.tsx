@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
-import { CheckCircle2, Settings, Map, Home, Users, ClipboardList } from 'lucide-react';
+import { CheckCircle2, Settings, Map, Home, Users, ClipboardList, MessageSquare } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -35,7 +35,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
         name: "Happy Path",
         path: "/happy-path",
         icon: <CheckCircle2 className="h-6 w-6" />,
-        isActive: location === '/happy-path' || location.startsWith('/use-case/')
+        isActive: location === '/happy-path'
+      },
+      {
+        name: "Use Cases",
+        path: "/use-case",
+        icon: <MessageSquare className="h-6 w-6" />,
+        isActive: location === '/use-case' || location.startsWith('/use-case/')
       }
     ];
     

@@ -9,6 +9,7 @@ import CustomerJourney from "@/pages/CustomerJourney";
 import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
 import ActionPlan from "@/pages/ActionPlan";
+import UseCase from "@/pages/UseCase";
 import AppLayout from "@/components/AppLayout";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
         <Route path="/" component={HomePage} />
         <Route path="/home" component={HomePage} />
         <Route path="/happy-path" component={Home} />
+        <Route path="/use-case" component={UseCase} />
         <Route path="/use-case/:id" component={Home} />
         <Route path="/customer-journey" component={CustomerJourney} />
         <Route path="/customers" component={Customers} />
