@@ -450,8 +450,8 @@ export const exportActionPlanToWord = async (actionPlan: ActionPlan): Promise<vo
   try {
     const doc = generateActionPlanDocument(actionPlan);
     
-    // Create a blob from the document
-    const blob = await doc.save();
+    // Create a blob from the document using Packer
+    const blob = await Packer.toBlob(doc);
     
     // Create a download link and trigger the download
     const url = window.URL.createObjectURL(blob);

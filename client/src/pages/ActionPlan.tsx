@@ -19,6 +19,7 @@ import { fetchAllCustomers, fetchAllActionPlans, createActionPlan, updateActionP
 import { useToast } from '@/hooks/use-toast';
 import ActionPlanSelectionDialog from '@/components/ActionPlanSelectionDialog';
 import AISuggestionsDialog from '@/components/AISuggestionsDialog';
+import { exportActionPlanToWord } from '../lib/wordGenerator';
 
 interface FormSection {
   id: string;
@@ -361,6 +362,51 @@ export default function ActionPlan() {
           });
         }
       });
+    }
+  };
+  
+  // Handle exporting the action plan to Word
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const handleExportActionPlan = async () => {
+    if (!currentPlanId) {
+      toast({
+        title: "Action plan not saved",
+        description: "Please save your action plan first to export it.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Get the current action plan
+    const currentPlan = actionPlans?.find(plan => plan.id === currentPlanId);
+    if (!currentPlan) {
+      toast({
+        title: "Action plan not found",
+        description: "The action plan could not be found. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsExporting(true);
+    
+    try {
+      await exportActionPlanToWord(currentPlan);
+      
+      toast({
+        title: "Export successful",
+        description: "Your action plan has been exported to a Word document.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export failed",
+        description: error.message || "An error occurred while exporting the action plan.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
   
@@ -1033,15 +1079,27 @@ export default function ActionPlan() {
                                 <div className="flex justify-between items-center mb-2">
                                   <div className="text-sm font-medium">Performance Methodology</div>
                                   {currentPlanId && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setIsSuggestionsDialogOpen(true)}
-                                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                                    >
-                                      <Lightbulb className="h-4 w-4 mr-2 text-yellow-500" />
-                                      AI Suggestions
-                                    </Button>
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsSuggestionsDialogOpen(true)}
+                                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                                      >
+                                        <Lightbulb className="h-4 w-4 mr-2 text-yellow-500" />
+                                        AI Suggestions
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleExportActionPlan}
+                                        disabled={isExporting}
+                                        className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                      >
+                                        <FileDown className="h-4 w-4 mr-2 text-green-600" />
+                                        {isExporting ? 'Exporting...' : 'Export to Word'}
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground mb-3">
