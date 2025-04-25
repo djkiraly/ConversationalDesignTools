@@ -185,6 +185,114 @@ export async function generateAIJourney(description: string): Promise<GeneratedJ
   return response.data.journey;
 }
 
+// Customer API
+export interface Customer {
+  id: number;
+  companyName: string;
+  companyWebsite: string | null;
+  primaryContactName: string;
+  primaryContactEmail: string | null;
+  primaryContactPhone: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAllCustomers(): Promise<Customer[]> {
+  const response = await apiRequest<Customer[]>('/api/customers');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  return response.data || [];
+}
+
+export async function fetchCustomer(id: number): Promise<Customer> {
+  const response = await apiRequest<Customer>(`/api/customers/${id}`);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Customer with id ${id} not found`);
+  }
+  return response.data;
+}
+
+// Action Plan API
+export interface ActionPlan {
+  id: number;
+  title: string;
+  status: string;
+  customerId: number | null;
+  industry: string | null;
+  primaryChannel: string | null;
+  interactionVolume: string | null;
+  currentAutomation: string | null;
+  biggestChallenge: string | null;
+  repetitiveProcesses: string | null;
+  aiGoals: string[];
+  autonomyLevel: string | null;
+  currentPlatforms: string | null;
+  teamComfort: string | null;
+  apisAvailable: string | null;
+  successMetrics: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAllActionPlans(): Promise<ActionPlan[]> {
+  const response = await apiRequest<ActionPlan[]>('/api/action-plans');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  return response.data || [];
+}
+
+export async function fetchActionPlan(id: number): Promise<ActionPlan> {
+  const response = await apiRequest<ActionPlan>(`/api/action-plans/${id}`);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Action plan with id ${id} not found`);
+  }
+  return response.data;
+}
+
+export async function createActionPlan(actionPlan: Omit<ActionPlan, 'id' | 'createdAt' | 'updatedAt'>): Promise<ActionPlan> {
+  const response = await apiRequest<ActionPlan>('/api/action-plans', 'POST', actionPlan);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error('Failed to create action plan');
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/action-plans'] });
+  return response.data;
+}
+
+export async function updateActionPlan(id: number, actionPlan: Partial<Omit<ActionPlan, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ActionPlan> {
+  const response = await apiRequest<ActionPlan>(`/api/action-plans/${id}`, 'PUT', actionPlan);
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(`Failed to update action plan with id ${id}`);
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/action-plans'] });
+  queryClient.invalidateQueries({ queryKey: ['/api/action-plans', id] });
+  return response.data;
+}
+
+export async function deleteActionPlan(id: number): Promise<void> {
+  const response = await apiRequest(`/api/action-plans/${id}`, 'DELETE');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  queryClient.invalidateQueries({ queryKey: ['/api/action-plans'] });
+}
+
 // App Statistics API
 export interface AppStatistics {
   useCaseCount: number;

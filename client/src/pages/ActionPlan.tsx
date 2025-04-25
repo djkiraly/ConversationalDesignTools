@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock } from 'lucide-react';
+import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useROIParameters, calculateTimeSaved, calculateCostSavings, calculateImplementationCost, 
          calculateMaintenanceCost, calculateCSATImprovement, calculatePaybackPeriod, 
          formatCurrency, formatRange } from '../lib/roiCalculator';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { fetchAllCustomers, Customer, createActionPlan, ActionPlan as ActionPlanType } from '../lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface FormSection {
   id: string;
@@ -22,6 +25,11 @@ interface FormSection {
 export default function ActionPlan() {
   const [currentSection, setCurrentSection] = useState('business-discovery');
   const [progress, setProgress] = useState(0);
+  const [planTitle, setPlanTitle] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     // Business Discovery
     industry: '',
@@ -44,6 +52,33 @@ export default function ActionPlan() {
     
     // Success Metrics
     successMetrics: [] as string[]
+  });
+  
+  // Fetch customers from the API
+  const { data: customers, isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ['/api/customers'],
+    queryFn: fetchAllCustomers,
+  });
+  
+  // Setup mutation for creating an action plan
+  const createActionPlanMutation = useMutation({
+    mutationFn: createActionPlan,
+    onSuccess: (data) => {
+      toast({
+        title: "Action plan saved successfully",
+        description: `Your action plan "${data.title}" has been saved.`,
+        variant: "default",
+      });
+      setIsSaving(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving action plan",
+        description: error.message || "An error occurred while saving the action plan.",
+        variant: "destructive",
+      });
+      setIsSaving(false);
+    }
   });
   
   const formSections: FormSection[] = [
@@ -103,6 +138,40 @@ export default function ActionPlan() {
     if (currentIndex > 0) {
       setCurrentSection(formSections[currentIndex - 1].id);
     }
+  };
+  
+  // Handle saving the action plan
+  const handleSaveActionPlan = () => {
+    if (!planTitle.trim()) {
+      toast({
+        title: "Missing title",
+        description: "Please provide a title for your action plan",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    const actionPlanData = {
+      title: planTitle.trim(),
+      status: "draft",
+      customerId: selectedCustomerId,
+      industry: formData.industry,
+      primaryChannel: formData.primaryChannel,
+      interactionVolume: formData.interactionVolume,
+      currentAutomation: formData.currentAutomation,
+      biggestChallenge: formData.biggestChallenge,
+      repetitiveProcesses: formData.repetitiveProcesses,
+      aiGoals: formData.aiGoals,
+      autonomyLevel: formData.autonomyLevel,
+      currentPlatforms: formData.currentPlatforms,
+      teamComfort: formData.teamComfort,
+      apisAvailable: formData.apisAvailable,
+      successMetrics: formData.successMetrics
+    };
+    
+    createActionPlanMutation.mutate(actionPlanData);
   };
   
   const handleCheckboxChange = (field: string, value: string) => {
@@ -175,6 +244,36 @@ export default function ActionPlan() {
                   <CardDescription>Tell us about your business and current customer interactions</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="plan-title">Action Plan Title</Label>
+                    <Input 
+                      id="plan-title" 
+                      placeholder="Enter a title for this action plan"
+                      value={planTitle}
+                      onChange={(e) => setPlanTitle(e.target.value)}
+                    />
+                  </div>
+                
+                  <div className="space-y-2">
+                    <Label htmlFor="customer">Select a Customer (Optional)</Label>
+                    <Select 
+                      value={selectedCustomerId?.toString() || ''}
+                      onValueChange={(value) => setSelectedCustomerId(value ? parseInt(value) : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {customers?.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id.toString()}>
+                            {customer.companyName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                
                   <div className="space-y-2">
                     <Label htmlFor="industry">What industry are you in?</Label>
                     <Input 
