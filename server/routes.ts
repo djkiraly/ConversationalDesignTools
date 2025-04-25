@@ -84,6 +84,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: (error as Error).message });
     }
   });
+  
+  // Add PATCH endpoint for partial updates
+  app.patch('/api/use-cases/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingUseCase = await storage.getUseCase(id);
+      if (!existingUseCase) {
+        return res.status(404).json({ error: "Use case not found" });
+      }
+
+      // Log incoming data for debugging
+      console.log("PATCH /api/use-cases/:id - Request body:", JSON.stringify(req.body));
+
+      // Try to parse the request body with our schema
+      const result = updateUseCaseSchema.safeParse(req.body);
+      if (!result.success) {
+        console.error("Validation error:", result.error.message);
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedUseCase = await storage.updateUseCase(id, result.data);
+      res.json(updatedUseCase);
+    } catch (error) {
+      console.error("Error in PATCH /api/use-cases/:id:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
 
   app.delete('/api/use-cases/:id', async (req, res) => {
     try {

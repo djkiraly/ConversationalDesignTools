@@ -351,7 +351,8 @@ export async function createUseCase(useCase: Omit<UseCase, 'id' | 'createdAt' | 
 }
 
 export async function updateUseCase(id: number, useCase: Partial<Omit<UseCase, 'id' | 'createdAt' | 'updatedAt'>>): Promise<UseCase> {
-  const response = await apiRequest<UseCase>(`/api/use-cases/${id}`, 'PUT', useCase);
+  // Use PATCH for partial updates instead of PUT which replaces the entire resource
+  const response = await apiRequest<UseCase>(`/api/use-cases/${id}`, 'PATCH', useCase);
   if (response.error) {
     throw new Error(response.error);
   }
