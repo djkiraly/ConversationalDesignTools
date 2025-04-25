@@ -294,6 +294,56 @@ export async function deleteActionPlan(id: number): Promise<void> {
   queryClient.invalidateQueries({ queryKey: ['/api/action-plans'] });
 }
 
+// Generate action plan from use case using AI
+export async function generateActionPlanFromUseCase(useCaseId: number): Promise<{
+  success: boolean;
+  actionPlan?: {
+    title: string;
+    industry: string;
+    primaryChannel: string;
+    interactionVolume: string;
+    currentAutomation: string;
+    biggestChallenge: string;
+    repetitiveProcesses: string;
+    aiGoals: string[];
+    autonomyLevel: string;
+    currentPlatforms: string;
+    teamComfort: string;
+    apisAvailable: string;
+    successMetrics: string[];
+  };
+  error?: string;
+}> {
+  const response = await apiRequest<{
+    success: boolean;
+    actionPlan?: {
+      title: string;
+      industry: string;
+      primaryChannel: string;
+      interactionVolume: string;
+      currentAutomation: string;
+      biggestChallenge: string;
+      repetitiveProcesses: string;
+      aiGoals: string[];
+      autonomyLevel: string;
+      currentPlatforms: string;
+      teamComfort: string;
+      apisAvailable: string;
+      successMetrics: string[];
+    };
+    error?: string;
+  }>(`/api/use-cases/${useCaseId}/generate-action-plan`, 'POST');
+  
+  if (response.error) {
+    return {
+      success: false,
+      error: response.error
+    };
+  }
+  
+  return response.data || { success: false, error: 'No data returned' };
+}
+
 // Use Case API
 export interface UseCase {
   id: number;

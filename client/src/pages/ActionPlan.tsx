@@ -7,18 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List, Lightbulb, FileDown } from 'lucide-react';
+import { ChevronRight, FileText, ClipboardList, BarChart3, CalendarClock, Save, Plus, FolderOpen, Edit, List, Lightbulb, FileDown, Import } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useROIParameters, calculateTimeSaved, calculateCostSavings, calculateImplementationCost, 
          calculateMaintenanceCost, calculateCSATImprovement, calculatePaybackPeriod, 
          formatCurrency, formatRange } from '../lib/roiCalculator';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchAllCustomers, fetchAllActionPlans, createActionPlan, updateActionPlan, 
-         generateActionPlanSuggestions,
-         ActionPlan as ActionPlanType, Customer } from '../lib/api';
+         generateActionPlanSuggestions, fetchAllUseCases, generateActionPlanFromUseCase,
+         ActionPlan as ActionPlanType, Customer, UseCase } from '../lib/api';
 import { useToast } from '@/hooks/use-toast';
 import ActionPlanSelectionDialog from '@/components/ActionPlanSelectionDialog';
 import AISuggestionsDialog from '@/components/AISuggestionsDialog';
+import UseCaseImportDialog from '@/components/UseCaseImportDialog';
 import { exportActionPlanToWord } from '../lib/wordGenerator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,8 +39,10 @@ export default function ActionPlan() {
   const [currentPlanId, setCurrentPlanId] = useState<number | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [isSuggestionsDialogOpen, setIsSuggestionsDialogOpen] = useState(false);
+  const [isUseCaseImportDialogOpen, setIsUseCaseImportDialogOpen] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [isGeneratingFromUseCase, setIsGeneratingFromUseCase] = useState(false);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -79,6 +82,12 @@ export default function ActionPlan() {
   const { data: actionPlans, isLoading: isLoadingActionPlans } = useQuery({
     queryKey: ['/api/action-plans'],
     queryFn: fetchAllActionPlans,
+  });
+  
+  // Fetch all use cases for import
+  const { data: useCases, isLoading: isLoadingUseCases } = useQuery({
+    queryKey: ['/api/use-cases'],
+    queryFn: fetchAllUseCases,
   });
   
   // Setup mutation for creating an action plan
@@ -430,6 +439,93 @@ export default function ActionPlan() {
     }
   };
   
+  // Handle the use case import manually (without AI suggestions)
+  const handleSelectUseCase = (useCase: UseCase) => {
+    // Just use the title and description to populate initial fields
+    setPlanTitle(`Action Plan for ${useCase.title}`);
+    
+    // Set some basic information based on the use case
+    setFormData(prev => ({
+      ...prev,
+      biggestChallenge: useCase.problemStatement || '',
+      repetitiveProcesses: useCase.scope || '',
+      aiGoals: ["customer-service", "process-automation"],
+      successMetrics: ["cost-savings", "time-efficiency", "customer-satisfaction"]
+    }));
+    
+    // Close the dialog
+    setIsUseCaseImportDialogOpen(false);
+    
+    toast({
+      title: "Use case imported",
+      description: `Basic information from "${useCase.title}" has been imported.`,
+      variant: "default",
+    });
+  };
+  
+  // Handle use case import with AI-generated suggestions
+  const handleSelectUseCaseWithAI = async (useCase: UseCase) => {
+    // Start the generation process
+    setIsGeneratingFromUseCase(true);
+    
+    try {
+      // Generate an action plan from the use case using AI
+      const result = await generateActionPlanFromUseCase(useCase.id);
+      
+      if (result.success && result.actionPlan) {
+        // Update form with AI-generated action plan data
+        setPlanTitle(`Action Plan for ${useCase.title}`);
+        
+        setFormData({
+          // Business Discovery
+          industry: result.actionPlan.industry || '',
+          primaryChannel: result.actionPlan.primaryChannel || '',
+          interactionVolume: result.actionPlan.interactionVolume || '',
+          currentAutomation: result.actionPlan.currentAutomation || '',
+          
+          // Pain Point Assessment
+          biggestChallenge: result.actionPlan.biggestChallenge || '',
+          repetitiveProcesses: result.actionPlan.repetitiveProcesses || '',
+          
+          // AI Agent Goals
+          aiGoals: result.actionPlan.aiGoals || [],
+          autonomyLevel: result.actionPlan.autonomyLevel || '',
+          customGoal: '',
+          customGoalEnabled: false,
+          goalDetails: {} as Record<string, string>,
+          
+          // System & Integration Readiness
+          currentPlatforms: result.actionPlan.currentPlatforms || '',
+          teamComfort: result.actionPlan.teamComfort || '',
+          apisAvailable: result.actionPlan.apisAvailable || '',
+          
+          // Success Metrics
+          successMetrics: result.actionPlan.successMetrics || []
+        });
+        
+        // Update progress
+        setProgress(calculateProgress());
+        
+        toast({
+          title: "AI-generated action plan",
+          description: `Action plan based on "${useCase.title}" has been created with AI assistance.`,
+          variant: "success",
+        });
+      } else {
+        throw new Error(result.error || "Failed to generate action plan from use case");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error generating action plan",
+        description: error.message || "An error occurred while generating the action plan.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingFromUseCase(false);
+      setIsUseCaseImportDialogOpen(false);
+    }
+  };
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
@@ -529,9 +625,19 @@ export default function ActionPlan() {
           <Card className="shadow-md">
             {currentSection === 'business-discovery' && (
               <>
-                <CardHeader>
-                  <CardTitle>Business Discovery</CardTitle>
-                  <CardDescription>Tell us about your business and current customer interactions</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div>
+                    <CardTitle>Business Discovery</CardTitle>
+                    <CardDescription>Tell us about your business and current customer interactions</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsUseCaseImportDialogOpen(true)}
+                  >
+                    <Import className="h-4 w-4 mr-2" />
+                    Import Use Case
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
