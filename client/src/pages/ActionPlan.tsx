@@ -509,7 +509,7 @@ export default function ActionPlan() {
         toast({
           title: "AI-generated action plan",
           description: `Action plan based on "${useCase.title}" has been created with AI assistance.`,
-          variant: "success",
+          variant: "default",
         });
       } else {
         throw new Error(result.error || "Failed to generate action plan from use case");
@@ -593,6 +593,17 @@ export default function ActionPlan() {
         actionPlans={actionPlans || []}
         isLoading={isLoadingActionPlans}
         onSelect={handleLoadActionPlan}
+      />
+      
+      {/* Use Case Import Dialog */}
+      <UseCaseImportDialog
+        open={isUseCaseImportDialogOpen}
+        onOpenChange={setIsUseCaseImportDialogOpen}
+        useCases={useCases || []}
+        isLoading={isLoadingUseCases}
+        onSelect={handleSelectUseCase}
+        onSelectWithAI={handleSelectUseCaseWithAI}
+        isGeneratingAI={isGeneratingFromUseCase}
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
