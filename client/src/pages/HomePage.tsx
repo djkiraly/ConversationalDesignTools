@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList } from 'lucide-react';
+import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList, MessageSquare } from 'lucide-react';
 import { fetchAppStatistics, AppStatistics } from '../lib/api';
 
 // Define the structure for application pages
@@ -53,6 +53,14 @@ export default function HomePage() {
       icon: <Map className="h-6 w-6" />,
       path: '/customer-journey',
       color: 'bg-blue-50 text-blue-700 border-blue-200'
+    },
+    {
+      id: 'use-case',
+      title: 'Use Cases',
+      description: 'Define and manage detailed use cases for your AI agents with problem statements, solutions, and key requirements',
+      icon: <MessageSquare className="h-6 w-6" />,
+      path: '/use-case',
+      color: 'bg-amber-50 text-amber-700 border-amber-200'
     },
     {
       id: 'settings',
@@ -104,6 +112,7 @@ export default function HomePage() {
         </p>
         <ul className="list-disc pl-6 space-y-2 mb-6">
           <li>Build <strong>Action Plans</strong> to develop tailored AI deployment strategies</li>
+          <li>Define <strong>Use Cases</strong> with comprehensive details including problem statements, solutions, and requirements</li>
           <li>Use <strong>Happy Path</strong> to define the optimal conversation flows for your AI agents</li>
           <li>Create a <strong>Customer Journey</strong> map to visualize the end-to-end user experience</li>
           <li>Configure AI behavior and system settings in the <strong>Settings</strong> page</li>
@@ -154,7 +163,7 @@ export default function HomePage() {
 
                   <div>
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">Happy Path Entries</span>
+                      <span className="text-sm font-medium">Use Cases</span>
                       <Badge variant="outline">{statistics?.useCaseCount || 0}</Badge>
                     </div>
                     <Progress value={statistics?.useCaseCount ? Math.min(statistics.useCaseCount * 10, 100) : 0} className="h-2" />
