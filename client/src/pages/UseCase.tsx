@@ -101,10 +101,22 @@ export default function UseCasePage() {
   // Create use case mutation
   const createUseCaseMutation = useMutation({
     mutationFn: async (useCase: z.infer<typeof formSchema>) => {
-      return apiRequest('POST', '/api/use-cases', {
+      // Ensure all fields are properly formatted for JSON
+      const formattedData = {
         ...useCase,
-        conversationFlow: useCase.conversationFlow || ""
-      });
+        conversationFlow: useCase.conversationFlow || "",
+        problemStatement: useCase.problemStatement || "",
+        proposedSolution: useCase.proposedSolution || "",
+        keyObjectives: useCase.keyObjectives || "",
+        requiredDataInputs: useCase.requiredDataInputs || "",
+        expectedOutputs: useCase.expectedOutputs || "",
+        keyStakeholders: useCase.keyStakeholders || "",
+        scope: useCase.scope || "",
+        potentialRisks: useCase.potentialRisks || "",
+        estimatedImpact: useCase.estimatedImpact || ""
+      };
+      
+      return apiRequest('POST', '/api/use-cases', formattedData);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
@@ -116,6 +128,7 @@ export default function UseCasePage() {
       createForm.reset();
     },
     onError: (error) => {
+      console.error("Create error:", error);
       toast({
         title: "Error creating use case",
         description: (error as Error).message,
@@ -147,10 +160,22 @@ export default function UseCasePage() {
   // Update use case mutation
   const updateUseCaseMutation = useMutation({
     mutationFn: async ({ id, useCase }: { id: number, useCase: z.infer<typeof formSchema> }) => {
-      return apiRequest('PATCH', `/api/use-cases/${id}`, {
+      // Ensure all fields are properly formatted for JSON
+      const formattedData = {
         ...useCase,
-        conversationFlow: useCase.conversationFlow || ""
-      });
+        conversationFlow: useCase.conversationFlow || "",
+        problemStatement: useCase.problemStatement || "",
+        proposedSolution: useCase.proposedSolution || "",
+        keyObjectives: useCase.keyObjectives || "",
+        requiredDataInputs: useCase.requiredDataInputs || "",
+        expectedOutputs: useCase.expectedOutputs || "",
+        keyStakeholders: useCase.keyStakeholders || "",
+        scope: useCase.scope || "",
+        potentialRisks: useCase.potentialRisks || "",
+        estimatedImpact: useCase.estimatedImpact || ""
+      };
+      
+      return apiRequest('PATCH', `/api/use-cases/${id}`, formattedData);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/use-cases'] });
@@ -162,6 +187,7 @@ export default function UseCasePage() {
       setCurrentUseCase(null);
     },
     onError: (error) => {
+      console.error("Update error:", error);
       toast({
         title: "Error updating use case",
         description: (error as Error).message,
