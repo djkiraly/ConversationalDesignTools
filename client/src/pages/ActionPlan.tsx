@@ -20,6 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import ActionPlanSelectionDialog from '@/components/ActionPlanSelectionDialog';
 import AISuggestionsDialog from '@/components/AISuggestionsDialog';
 import { exportActionPlanToWord } from '../lib/wordGenerator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FormSection {
   id: string;
@@ -54,6 +56,9 @@ export default function ActionPlan() {
     // AI Agent Goals
     aiGoals: [] as string[],
     autonomyLevel: '',
+    customGoal: '',
+    customGoalEnabled: false,
+    goalDetails: {} as Record<string, string>,
     
     // System & Integration Readiness
     currentPlatforms: '',
@@ -194,6 +199,9 @@ export default function ActionPlan() {
       repetitiveProcesses: actionPlan.repetitiveProcesses || '',
       aiGoals: actionPlan.aiGoals || [],
       autonomyLevel: actionPlan.autonomyLevel || '',
+      customGoal: '',
+      customGoalEnabled: false,
+      goalDetails: {},
       currentPlatforms: actionPlan.currentPlatforms || '',
       teamComfort: actionPlan.teamComfort || '',
       apisAvailable: actionPlan.apisAvailable || '',
@@ -225,6 +233,9 @@ export default function ActionPlan() {
       repetitiveProcesses: '',
       aiGoals: [],
       autonomyLevel: '',
+      customGoal: '',
+      customGoalEnabled: false,
+      goalDetails: {},
       currentPlatforms: '',
       teamComfort: '',
       apisAvailable: '',
@@ -267,7 +278,7 @@ export default function ActionPlan() {
       currentAutomation: formData.currentAutomation,
       biggestChallenge: formData.biggestChallenge,
       repetitiveProcesses: formData.repetitiveProcesses,
-      aiGoals: formData.aiGoals,
+      aiGoals: [...formData.aiGoals, ...(formData.customGoalEnabled && formData.customGoal ? [formData.customGoal] : [])],
       autonomyLevel: formData.autonomyLevel,
       currentPlatforms: formData.currentPlatforms,
       teamComfort: formData.teamComfort,
@@ -297,6 +308,14 @@ export default function ActionPlan() {
       const newData = { ...prev, [field]: newValues };
       setProgress(calculateProgress());
       return newData;
+    });
+  };
+  
+  // Handle goal detail changes
+  const handleGoalDetailChange = (goalId: string, value: string) => {
+    setFormData(prev => {
+      const newGoalDetails = { ...prev.goalDetails, [goalId]: value };
+      return { ...prev, goalDetails: newGoalDetails };
     });
   };
   
@@ -660,55 +679,287 @@ export default function ActionPlan() {
                   <CardDescription>Define what you want your AI to accomplish</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>What do you want your AI to accomplish?</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2">
-                      {[
-                        // Original goals
-                        { id: 'lead-generation', label: 'Lead Generation' },
-                        { id: 'customer-support', label: 'Customer Support' },
-                        { id: 'ticket-triage', label: 'Internal Ticket Triage' },
-                        { id: 'appointment-scheduling', label: 'Appointment Scheduling' },
-                        { id: 'feedback-collection', label: 'Feedback Collection' },
-                        
-                        // New goals (customer-facing)
-                        { id: 'customer-engagement', label: 'Customer Engagement' },
-                        { id: 'customer-onboarding', label: 'Customer Onboarding & Education' },
-                        { id: 'order-management', label: 'Order Management & Status Updates' },
-                        { id: 'tier1-troubleshooting', label: 'Tier 1 Troubleshooting' },
-                        { id: 'account-management', label: 'Account Management Assistance' },
-                        
-                        // New goals (internal)
-                        { id: 'hr-support', label: 'HR Support & FAQ (Internal)' },
-                        { id: 'it-helpdesk', label: 'IT Helpdesk (Internal)' },
-                        { id: 'knowledge-base', label: 'Knowledge Base Navigation (Internal)' },
-                        { id: 'meeting-coordination', label: 'Meeting Coordination & Summarization' },
-                        { id: 'data-entry', label: 'Data Entry & Routine Task Automation' },
-                        { id: 'internal-comms', label: 'Internal Communications Dissemination' },
-                        
-                        // New goals (business intelligence & sales)
-                        { id: 'lead-qualification', label: 'Lead Qualification & Scoring' },
-                        { id: 'content-curation', label: 'Content Curation & Summarization' },
-                        { id: 'market-research', label: 'Market Research Assistance' },
-                        { id: 'sales-support', label: 'Sales Rep Support' },
-                        { id: 'report-generation', label: 'Basic Report Generation' },
-                        { id: 'sentiment-analysis', label: 'Sentiment Analysis on Feedback' }
-                      ].map((goal) => (
-                        <div key={goal.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={goal.id}
-                            checked={formData.aiGoals.includes(goal.id)}
-                            onChange={() => handleCheckboxChange('aiGoals', goal.id)}
-                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  <div className="space-y-4">
+                    <Label className="text-lg">What do you want your AI to accomplish?</Label>
+                    <p className="text-sm text-muted-foreground">Select broad categories or specific goals. You can select multiple goals across categories.</p>
+                    
+                    <Accordion type="multiple" className="max-h-[500px] overflow-y-auto px-1">
+                      {/* Customer Service Category */}
+                      <AccordionItem value="customer-service">
+                        <AccordionTrigger className="text-md font-medium">
+                          Customer Service & Support
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                            {[
+                              { id: 'customer-support', label: 'General Customer Support' },
+                              { id: 'tier1-troubleshooting', label: 'Tier 1 Troubleshooting' },
+                              { id: 'customer-engagement', label: 'Customer Engagement' },
+                              { id: 'customer-onboarding', label: 'Customer Onboarding & Education' },
+                              { id: 'order-management', label: 'Order Management & Status Updates' },
+                              { id: 'account-management', label: 'Account Management Assistance' },
+                              { id: 'feedback-collection', label: 'Feedback Collection' }
+                            ].map((goal) => (
+                              <div key={goal.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={goal.id}
+                                  checked={formData.aiGoals.includes(goal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    } else {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={goal.id} className="cursor-pointer">{goal.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      {/* Sales & Marketing Category */}
+                      <AccordionItem value="sales-marketing">
+                        <AccordionTrigger className="text-md font-medium">
+                          Sales & Marketing
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                            {[
+                              { id: 'lead-generation', label: 'Lead Generation' },
+                              { id: 'lead-qualification', label: 'Lead Qualification & Scoring' },
+                              { id: 'appointment-scheduling', label: 'Appointment Scheduling' },
+                              { id: 'sales-support', label: 'Sales Rep Support' },
+                              { id: 'market-research', label: 'Market Research Assistance' }
+                            ].map((goal) => (
+                              <div key={goal.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={goal.id}
+                                  checked={formData.aiGoals.includes(goal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    } else {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={goal.id} className="cursor-pointer">{goal.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      {/* Internal Operations Category */}
+                      <AccordionItem value="internal-operations">
+                        <AccordionTrigger className="text-md font-medium">
+                          Internal Operations
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                            {[
+                              { id: 'data-entry', label: 'Data Entry Automation' },
+                              { id: 'internal-comms', label: 'Internal Communications' },
+                              { id: 'ticket-triage', label: 'Internal Ticket Triage' },
+                              { id: 'meeting-coordination', label: 'Meeting Coordination' },
+                              { id: 'knowledge-base', label: 'Knowledge Base Navigation' }
+                            ].map((goal) => (
+                              <div key={goal.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={goal.id}
+                                  checked={formData.aiGoals.includes(goal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    } else {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={goal.id} className="cursor-pointer">{goal.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      {/* HR Support Category */}
+                      <AccordionItem value="hr-support">
+                        <AccordionTrigger className="text-md font-medium">
+                          HR Support
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                            {[
+                              { id: 'hr-support', label: 'HR Support & FAQ' },
+                              { id: 'hr-onboarding', label: 'Employee Onboarding' },
+                              { id: 'hr-benefits', label: 'Benefits Administration' },
+                              { id: 'hr-policy', label: 'Policy Guidance' }
+                            ].map((goal) => (
+                              <div key={goal.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={goal.id}
+                                  checked={formData.aiGoals.includes(goal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    } else {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={goal.id} className="cursor-pointer">{goal.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      {/* IT Support Category */}
+                      <AccordionItem value="it-support">
+                        <AccordionTrigger className="text-md font-medium">
+                          IT Support
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                            {[
+                              { id: 'it-helpdesk', label: 'IT Helpdesk' },
+                              { id: 'password-reset', label: 'Password Reset Assistance' },
+                              { id: 'software-help', label: 'Software Guidance' },
+                              { id: 'system-status', label: 'System Status Updates' }
+                            ].map((goal) => (
+                              <div key={goal.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={goal.id}
+                                  checked={formData.aiGoals.includes(goal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    } else {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={goal.id} className="cursor-pointer">{goal.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      {/* Business Intelligence Category */}
+                      <AccordionItem value="business-intelligence">
+                        <AccordionTrigger className="text-md font-medium">
+                          Business Intelligence
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                            {[
+                              { id: 'content-curation', label: 'Content Curation' },
+                              { id: 'report-generation', label: 'Report Generation' },
+                              { id: 'sentiment-analysis', label: 'Sentiment Analysis' },
+                              { id: 'data-insights', label: 'Data Insights & Trends' }
+                            ].map((goal) => (
+                              <div key={goal.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={goal.id}
+                                  checked={formData.aiGoals.includes(goal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    } else {
+                                      handleCheckboxChange('aiGoals', goal.id);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={goal.id} className="cursor-pointer">{goal.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                    
+                    {/* Custom Goal Option */}
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label htmlFor="custom-goal" className="flex items-center">
+                        <Checkbox
+                          id="custom-goal-checkbox"
+                          checked={formData.customGoalEnabled}
+                          onCheckedChange={(checked) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              customGoalEnabled: !!checked
+                            }));
+                          }}
+                          className="mr-2"
+                        />
+                        Add a custom goal not listed above
+                      </Label>
+                      
+                      {formData.customGoalEnabled && (
+                        <div className="mt-2">
+                          <Input 
+                            id="custom-goal" 
+                            placeholder="Describe your custom goal"
+                            value={formData.customGoal || ''}
+                            onChange={(e) => handleInputChange('customGoal', e.target.value)}
                           />
-                          <Label htmlFor={goal.id}>{goal.label}</Label>
                         </div>
-                      ))}
+                      )}
                     </div>
+                    
+                    {/* Selected Goals Detail Prompts */}
+                    {formData.aiGoals.length > 0 && (
+                      <div className="space-y-3 pt-4 border-t">
+                        <h3 className="font-medium">Goal Details</h3>
+                        <p className="text-sm text-muted-foreground">Provide more information about your selected goals:</p>
+                        
+                        {formData.aiGoals.includes('lead-generation') && (
+                          <div className="p-3 bg-muted rounded-md">
+                            <Label htmlFor="lead-generation-details" className="font-medium">Lead Generation Details</Label>
+                            <Input 
+                              id="lead-generation-details" 
+                              className="mt-1"
+                              placeholder="What information should your agent collect from leads?"
+                              value={formData.goalDetails?.['lead-generation'] || ''}
+                              onChange={(e) => handleGoalDetailChange('lead-generation', e.target.value)}
+                            />
+                          </div>
+                        )}
+                        
+                        {formData.aiGoals.includes('customer-support') && (
+                          <div className="p-3 bg-muted rounded-md">
+                            <Label htmlFor="customer-support-details" className="font-medium">Customer Support Details</Label>
+                            <Input 
+                              id="customer-support-details" 
+                              className="mt-1"
+                              placeholder="What type of support inquiries should your agent handle?"
+                              value={formData.goalDetails?.['customer-support'] || ''}
+                              onChange={(e) => handleGoalDetailChange('customer-support', e.target.value)}
+                            />
+                          </div>
+                        )}
+                        
+                        {formData.aiGoals.includes('it-helpdesk') && (
+                          <div className="p-3 bg-muted rounded-md">
+                            <Label htmlFor="it-helpdesk-details" className="font-medium">IT Helpdesk Details</Label>
+                            <Input 
+                              id="it-helpdesk-details" 
+                              className="mt-1"
+                              placeholder="Which IT systems should your agent have knowledge about?"
+                              value={formData.goalDetails?.['it-helpdesk'] || ''}
+                              onChange={(e) => handleGoalDetailChange('it-helpdesk', e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-2">
                     <Label htmlFor="autonomyLevel">How autonomous should it be?</Label>
                     <Select 
                       value={formData.autonomyLevel}
