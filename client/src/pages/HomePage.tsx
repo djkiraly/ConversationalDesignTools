@@ -48,8 +48,8 @@ export default function HomePage() {
     },
     {
       id: 'customer-journey',
-      title: 'Customer Journey',
-      description: 'Design and visualize customer interaction workflows with interactive flow diagrams',
+      title: 'Customer and User Journey',
+      description: 'Design and visualize customer and user interaction workflows with interactive flow diagrams',
       icon: <Map className="h-6 w-6" />,
       path: '/customer-journey',
       color: 'bg-blue-50 text-blue-700 border-blue-200'

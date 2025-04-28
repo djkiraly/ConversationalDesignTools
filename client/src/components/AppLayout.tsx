@@ -20,7 +20,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         isActive: location === '/action-plan'
       },
       {
-        name: "Customer Journey",
+        name: "Customer and User Journey",
         path: "/customer-journey",
         icon: <Map className="h-6 w-6" />,
         isActive: location === '/customer-journey'
