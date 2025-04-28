@@ -489,6 +489,74 @@ export class MemStorage implements IStorage {
     this.actionPlans.delete(id);
   }
   
+  // Iteration and Tuning methods
+  async getAllIterationTunings(): Promise<IterationTuning[]> {
+    return Array.from(this.iterationTunings.values()).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+  
+  async getIterationTuning(id: number): Promise<IterationTuning | undefined> {
+    return this.iterationTunings.get(id);
+  }
+  
+  async createIterationTuning(insertIterationTuning: InsertIterationTuning): Promise<IterationTuning> {
+    const id = this.iterationTuningCurrentId++;
+    const now = new Date();
+    const iterationTuning: IterationTuning = {
+      id,
+      title: insertIterationTuning.title,
+      customerId: insertIterationTuning.customerId || null,
+      iterationCadence: insertIterationTuning.iterationCadence || null,
+      nextIterationDate: insertIterationTuning.nextIterationDate || null,
+      dataCaptureMethods: Array.isArray(insertIterationTuning.dataCaptureMethods) ? insertIterationTuning.dataCaptureMethods : [],
+      dataMetrics: Array.isArray(insertIterationTuning.dataMetrics) ? insertIterationTuning.dataMetrics : [],
+      monitoringTools: insertIterationTuning.monitoringTools || null,
+      insightGenerationMethod: insertIterationTuning.insightGenerationMethod || null,
+      keyPerformanceIndicators: Array.isArray(insertIterationTuning.keyPerformanceIndicators) ? insertIterationTuning.keyPerformanceIndicators : [],
+      prioritizationFramework: insertIterationTuning.prioritizationFramework || null,
+      implementationPlan: insertIterationTuning.implementationPlan || null,
+      changeLog: Array.isArray(insertIterationTuning.changeLog) ? insertIterationTuning.changeLog : [],
+      status: insertIterationTuning.status || 'active',
+      createdAt: now,
+      updatedAt: now
+    };
+    this.iterationTunings.set(id, iterationTuning);
+    return iterationTuning;
+  }
+  
+  async updateIterationTuning(id: number, updateData: UpdateIterationTuning): Promise<IterationTuning> {
+    const existingTuning = this.iterationTunings.get(id);
+    if (!existingTuning) {
+      throw new Error(`Iteration tuning with id ${id} not found`);
+    }
+    
+    const updatedTuning: IterationTuning = {
+      ...existingTuning,
+      title: updateData.title || existingTuning.title,
+      customerId: updateData.customerId !== undefined ? updateData.customerId : existingTuning.customerId,
+      iterationCadence: updateData.iterationCadence !== undefined ? updateData.iterationCadence : existingTuning.iterationCadence,
+      nextIterationDate: updateData.nextIterationDate !== undefined ? updateData.nextIterationDate : existingTuning.nextIterationDate,
+      dataCaptureMethods: Array.isArray(updateData.dataCaptureMethods) ? updateData.dataCaptureMethods : existingTuning.dataCaptureMethods,
+      dataMetrics: Array.isArray(updateData.dataMetrics) ? updateData.dataMetrics : existingTuning.dataMetrics,
+      monitoringTools: updateData.monitoringTools !== undefined ? updateData.monitoringTools : existingTuning.monitoringTools,
+      insightGenerationMethod: updateData.insightGenerationMethod !== undefined ? updateData.insightGenerationMethod : existingTuning.insightGenerationMethod,
+      keyPerformanceIndicators: Array.isArray(updateData.keyPerformanceIndicators) ? updateData.keyPerformanceIndicators : existingTuning.keyPerformanceIndicators,
+      prioritizationFramework: updateData.prioritizationFramework !== undefined ? updateData.prioritizationFramework : existingTuning.prioritizationFramework,
+      implementationPlan: updateData.implementationPlan !== undefined ? updateData.implementationPlan : existingTuning.implementationPlan,
+      changeLog: Array.isArray(updateData.changeLog) ? updateData.changeLog : existingTuning.changeLog,
+      status: updateData.status || existingTuning.status,
+      updatedAt: new Date()
+    };
+    
+    this.iterationTunings.set(id, updatedTuning);
+    return updatedTuning;
+  }
+  
+  async deleteIterationTuning(id: number): Promise<void> {
+    this.iterationTunings.delete(id);
+  }
+  
   // Helper method to add default settings
   private addDefaultSettings(): void {
     const defaultSettings = [
