@@ -16,7 +16,7 @@ import {
   insertActionPlanSchema,
   updateActionPlanSchema
 } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, generateJourneyFromUseCase, OPENAI_API_KEY_SETTING } from "./openai";
 import { generateUseCaseDetails } from "./generateUseCaseDetails";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -560,6 +560,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error generating AI journey:", error);
+      return res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // Generate journey from use case
+  app.post('/api/generate-journey-from-use-case', async (req, res) => {
+    try {
+      const { useCaseId } = req.body;
+      
+      if (!useCaseId) {
+        return res.status(400).json({ error: "Use case ID is required" });
+      }
+      
+      // Get the use case details
+      const useCase = await storage.getUseCase(parseInt(useCaseId));
+      if (!useCase) {
+        return res.status(404).json({ error: "Use case not found" });
+      }
+      
+      // Get the OpenAI API key from settings
+      const apiKeySetting = await storage.getSetting(OPENAI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value || apiKeySetting.value.trim() === '') {
+        return res.status(400).json({ error: "OpenAI API key not configured. Please add it in Settings." });
+      }
+      
+      console.log(`Generating journey from use case: ${useCase.title} (ID: ${useCaseId})`);
+      
+      const result = await generateJourneyFromUseCase(apiKeySetting.value, useCase);
+      
+      if (!result.success || !result.journey) {
+        return res.status(500).json({ 
+          error: result.error || "Failed to generate journey from use case" 
+        });
+      }
+      
+      return res.json({
+        success: true,
+        journey: result.journey
+      });
+    } catch (error) {
+      console.error("Error generating journey from use case:", error);
       return res.status(500).json({ error: (error as Error).message });
     }
   });
