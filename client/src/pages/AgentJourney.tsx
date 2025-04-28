@@ -156,7 +156,7 @@ const AgentJourneyPage: React.FC = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   
   // UI state
-  const [nodeMenuOpen, setNodeMenuOpen] = useState(false);
+  const [nodeMenuOpen, setNodeMenuOpen] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   
@@ -471,8 +471,8 @@ const AgentJourneyPage: React.FC = () => {
     <div className="flex flex-col h-full">
       <div className="flex flex-col lg:flex-row h-full">
         {/* Left panel - Flow canvas */}
-        <div className="w-full lg:w-[75%] h-[60vh] lg:h-full min-h-[400px] relative">
-          <div ref={reactFlowWrapper} className="h-full">
+        <div className="w-full lg:w-[75%] h-[60vh] lg:h-[calc(100vh-140px)] min-h-[600px] relative">
+          <div ref={reactFlowWrapper} className="h-full w-full">
             <ReactFlow
               nodes={nodes}
               edges={edges}
