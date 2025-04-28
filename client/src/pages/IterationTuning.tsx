@@ -381,8 +381,8 @@ export default function IterationTuning() {
                     <FormItem>
                       <FormLabel>Customer</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(parseInt(value) || null)}
-                        value={field.value?.toString() || ""}
+                        onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
+                        value={field.value?.toString() || "null"}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -390,7 +390,7 @@ export default function IterationTuning() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="null">None</SelectItem>
                           {customers.map((customer: any) => (
                             <SelectItem key={customer.id} value={customer.id.toString()}>
                               {customer.companyName}
@@ -423,7 +423,7 @@ export default function IterationTuning() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             <SelectItem value="weekly">Weekly</SelectItem>
                             <SelectItem value="biweekly">Bi-weekly</SelectItem>
                             <SelectItem value="monthly">Monthly</SelectItem>
