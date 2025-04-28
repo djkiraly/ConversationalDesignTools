@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
-import { CheckCircle2, Settings, Map, Home, Users, ClipboardList, MessageSquare, GitBranch } from 'lucide-react';
+import { CheckCircle2, Settings, Map, Home, Users, ClipboardList, MessageSquare } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -36,12 +36,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         path: "/happy-path",
         icon: <CheckCircle2 className="h-6 w-6" />,
         isActive: location === '/happy-path'
-      },
-      {
-        name: "Iteration Tuning",
-        path: "/iteration-tuning",
-        icon: <GitBranch className="h-6 w-6" />,
-        isActive: location === '/iteration-tuning'
       },
       {
         name: "Use Cases",

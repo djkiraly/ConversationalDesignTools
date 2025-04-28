@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, json, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -292,74 +292,3 @@ export const updateActionPlanSchema = createInsertSchema(actionPlans).pick({
 export type InsertActionPlan = z.infer<typeof insertActionPlanSchema>;
 export type UpdateActionPlan = z.infer<typeof updateActionPlanSchema>;
 export type ActionPlan = typeof actionPlans.$inferSelect;
-
-// Iteration and Tuning model
-export const iterationTunings = pgTable("iteration_tunings", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  customerId: integer("customer_id").references(() => customers.id),
-  
-  // Iteration Configuration
-  iterationCadence: text("iteration_cadence"), // Daily, Weekly, Bi-weekly, Monthly
-  nextIterationDate: date("next_iteration_date"),
-  
-  // Data and Monitoring
-  dataCaptureMethods: json("data_capture_methods").notNull().$type<string[]>().default([]),
-  dataMetrics: json("data_metrics").notNull().$type<string[]>().default([]),
-  monitoringTools: text("monitoring_tools"),
-  
-  // Analysis and Insights
-  insightGenerationMethod: text("insight_generation_method"),
-  keyPerformanceIndicators: json("key_performance_indicators").notNull().$type<string[]>().default([]),
-  prioritizationFramework: text("prioritization_framework"),
-  
-  // Planning and Changelog
-  implementationPlan: text("implementation_plan"),
-  changeLog: json("change_log").notNull().$type<Array<{
-    date: string;
-    change: string;
-    impact: string;
-    status: string;
-  }>>().default([]),
-  
-  // Status and Metadata
-  status: text("status").default("active").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertIterationTuningSchema = createInsertSchema(iterationTunings).pick({
-  title: true,
-  customerId: true,
-  iterationCadence: true,
-  nextIterationDate: true,
-  dataCaptureMethods: true,
-  dataMetrics: true,
-  monitoringTools: true,
-  insightGenerationMethod: true,
-  keyPerformanceIndicators: true,
-  prioritizationFramework: true,
-  implementationPlan: true,
-  changeLog: true,
-  status: true,
-});
-
-export const updateIterationTuningSchema = createInsertSchema(iterationTunings).pick({
-  title: true,
-  customerId: true,
-  iterationCadence: true,
-  nextIterationDate: true,
-  dataCaptureMethods: true,
-  dataMetrics: true,
-  monitoringTools: true,
-  insightGenerationMethod: true,
-  keyPerformanceIndicators: true,
-  prioritizationFramework: true,
-  implementationPlan: true,
-  changeLog: true,
-  status: true,
-});
-
-export type InsertIterationTuning = z.infer<typeof insertIterationTuningSchema>;
-export type UpdateIterationTuning = z.infer<typeof updateIterationTuningSchema>;
-export type IterationTuning = typeof iterationTunings.$inferSelect;

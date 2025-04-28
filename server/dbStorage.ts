@@ -7,7 +7,6 @@ import {
   customerJourneys,
   customers,
   actionPlans,
-  iterationTunings,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -26,10 +25,7 @@ import {
   type UpdateCustomer,
   type ActionPlan,
   type InsertActionPlan,
-  type UpdateActionPlan,
-  type IterationTuning,
-  type InsertIterationTuning,
-  type UpdateIterationTuning
+  type UpdateActionPlan
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -413,73 +409,6 @@ export class DbStorage implements IStorage {
   
   async deleteActionPlan(id: number): Promise<void> {
     await db.delete(actionPlans).where(eq(actionPlans.id, id));
-  }
-  
-  // Iteration and Tuning methods
-  async getAllIterationTunings(): Promise<IterationTuning[]> {
-    const results = await db.select()
-      .from(iterationTunings)
-      .orderBy(iterationTunings.updatedAt);
-    return results;
-  }
-  
-  async getIterationTuning(id: number): Promise<IterationTuning | undefined> {
-    const results = await db.select().from(iterationTunings).where(eq(iterationTunings.id, id));
-    return results.length ? results[0] : undefined;
-  }
-  
-  async createIterationTuning(tuningData: InsertIterationTuning): Promise<IterationTuning> {
-    const now = new Date();
-    
-    // Process array fields to ensure type safety
-    const processedData = {
-      ...tuningData,
-      dataCaptureMethods: Array.isArray(tuningData.dataCaptureMethods) ? tuningData.dataCaptureMethods : [],
-      dataMetrics: Array.isArray(tuningData.dataMetrics) ? tuningData.dataMetrics : [],
-      keyPerformanceIndicators: Array.isArray(tuningData.keyPerformanceIndicators) ? tuningData.keyPerformanceIndicators : [],
-      changeLog: Array.isArray(tuningData.changeLog) ? tuningData.changeLog : [],
-      createdAt: now,
-      updatedAt: now
-    };
-    
-    const result = await db.insert(iterationTunings).values(processedData).returning();
-    return result[0];
-  }
-  
-  async updateIterationTuning(id: number, updateData: UpdateIterationTuning): Promise<IterationTuning> {
-    const existingTuning = await this.getIterationTuning(id);
-    if (!existingTuning) {
-      throw new Error(`Iteration tuning with id ${id} not found`);
-    }
-    
-    // Process array fields to ensure type safety
-    const processedData = {
-      ...updateData,
-      dataCaptureMethods: updateData.dataCaptureMethods !== undefined 
-        ? (Array.isArray(updateData.dataCaptureMethods) ? updateData.dataCaptureMethods : []) 
-        : existingTuning.dataCaptureMethods,
-      dataMetrics: updateData.dataMetrics !== undefined 
-        ? (Array.isArray(updateData.dataMetrics) ? updateData.dataMetrics : []) 
-        : existingTuning.dataMetrics,
-      keyPerformanceIndicators: updateData.keyPerformanceIndicators !== undefined 
-        ? (Array.isArray(updateData.keyPerformanceIndicators) ? updateData.keyPerformanceIndicators : []) 
-        : existingTuning.keyPerformanceIndicators,
-      changeLog: updateData.changeLog !== undefined 
-        ? (Array.isArray(updateData.changeLog) ? updateData.changeLog : []) 
-        : existingTuning.changeLog,
-      updatedAt: new Date()
-    };
-    
-    const result = await db.update(iterationTunings)
-      .set(processedData)
-      .where(eq(iterationTunings.id, id))
-      .returning();
-    
-    return result[0];
-  }
-  
-  async deleteIterationTuning(id: number): Promise<void> {
-    await db.delete(iterationTunings).where(eq(iterationTunings.id, id));
   }
 
   // Function to seed initial data after migrations

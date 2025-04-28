@@ -14,9 +14,7 @@ import {
   insertCustomerSchema,
   updateCustomerSchema,
   insertActionPlanSchema,
-  updateActionPlanSchema,
-  insertIterationTuningSchema,
-  updateIterationTuningSchema
+  updateActionPlanSchema
 } from "@shared/schema";
 import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, generateJourneyFromUseCase, OPENAI_API_KEY_SETTING } from "./openai";
 import { generateUseCaseDetails } from "./generateUseCaseDetails";
@@ -614,7 +612,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const useCases = await storage.getAllUseCases();
       const customerJourneys = await storage.getAllCustomerJourneys();
       const actionPlans = await storage.getAllActionPlans();
-      const iterationTunings = await storage.getAllIterationTunings();
       
       // Use a simpler approach with hardcoded stats for tables
       const mockTables = [
@@ -623,8 +620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { name: "flow_nodes", sizeMB: 0.09, rowCount: 12 },
         { name: "settings", sizeMB: 0.03, rowCount: 5 },
         { name: "customer_journeys", sizeMB: 0.15, rowCount: customerJourneys.length },
-        { name: "action_plans", sizeMB: 0.14, rowCount: actionPlans.length },
-        { name: "iteration_tunings", sizeMB: 0.13, rowCount: iterationTunings.length }
+        { name: "action_plans", sizeMB: 0.14, rowCount: actionPlans.length }
       ];
       
       // Calculate total values
@@ -649,7 +645,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useCaseCount: useCases.length,
         customerJourneyCount: customerJourneys.length,
         actionPlanCount: actionPlans.length,
-        iterationTuningCount: iterationTunings.length,
         database: {
           totalSizeMB: totalSizeMB,
           tables: mockTables,
@@ -1047,126 +1042,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         error: error.message || "Failed to generate action plan from use case"
       });
-    }
-  });
-
-  // Iteration and Tuning APIs
-  app.get('/api/iteration-tunings', async (_req, res) => {
-    try {
-      const iterationTunings = await storage.getAllIterationTunings();
-      res.json(iterationTunings);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.get('/api/iteration-tunings/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid ID format" });
-      }
-
-      const iterationTuning = await storage.getIterationTuning(id);
-      if (!iterationTuning) {
-        return res.status(404).json({ error: "Iteration tuning not found" });
-      }
-
-      res.json(iterationTuning);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.post('/api/iteration-tunings', async (req, res) => {
-    try {
-      const result = insertIterationTuningSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
-
-      const newIterationTuning = await storage.createIterationTuning(result.data);
-      res.status(201).json(newIterationTuning);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.put('/api/iteration-tunings/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid ID format" });
-      }
-
-      const existingIterationTuning = await storage.getIterationTuning(id);
-      if (!existingIterationTuning) {
-        return res.status(404).json({ error: "Iteration tuning not found" });
-      }
-
-      const result = updateIterationTuningSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
-
-      const updatedIterationTuning = await storage.updateIterationTuning(id, result.data);
-      res.json(updatedIterationTuning);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.patch('/api/iteration-tunings/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid ID format" });
-      }
-
-      const existingIterationTuning = await storage.getIterationTuning(id);
-      if (!existingIterationTuning) {
-        return res.status(404).json({ error: "Iteration tuning not found" });
-      }
-
-      // Handle simple status update
-      const updateData = req.body;
-      if (updateData.status && Object.keys(updateData).length === 1) {
-        const updatedIterationTuning = await storage.updateIterationTuning(id, {
-          ...existingIterationTuning,
-          status: updateData.status
-        });
-        return res.json(updatedIterationTuning);
-      } else {
-        // For more complex updates, validate with the schema
-        const result = updateIterationTuningSchema.safeParse(updateData);
-        if (!result.success) {
-          return res.status(400).json({ error: result.error.message });
-        }
-
-        const updatedIterationTuning = await storage.updateIterationTuning(id, result.data);
-        res.json(updatedIterationTuning);
-      }
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-
-  app.delete('/api/iteration-tunings/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid ID format" });
-      }
-
-      const existingIterationTuning = await storage.getIterationTuning(id);
-      if (!existingIterationTuning) {
-        return res.status(404).json({ error: "Iteration tuning not found" });
-      }
-
-      await storage.deleteIterationTuning(id);
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
     }
   });
 
