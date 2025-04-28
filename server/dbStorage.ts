@@ -7,6 +7,7 @@ import {
   customerJourneys,
   customers,
   actionPlans,
+  agentJourneys,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -25,7 +26,10 @@ import {
   type UpdateCustomer,
   type ActionPlan,
   type InsertActionPlan,
-  type UpdateActionPlan
+  type UpdateActionPlan,
+  type AgentJourney,
+  type InsertAgentJourney,
+  type UpdateAgentJourney
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -527,5 +531,92 @@ Agent: Great! Your account has been created successfully. Would you like to set 
 Customer: Yes, that sounds like a good idea.
 Agent: Excellent choice! I'll guide you through the two-factor authentication setup. Would you prefer to use SMS or an authenticator app for receiving codes?`
     });
+  }
+
+  // Agent Journey methods
+  async getAllAgentJourneys(): Promise<AgentJourney[]> {
+    const results = await db.select()
+      .from(agentJourneys)
+      .orderBy(agentJourneys.updatedAt);
+    return results;
+  }
+  
+  async getAgentJourney(id: number): Promise<AgentJourney | undefined> {
+    const results = await db.select().from(agentJourneys).where(eq(agentJourneys.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createAgentJourney(journeyData: InsertAgentJourney): Promise<AgentJourney> {
+    const now = new Date();
+
+    // Process array fields to ensure type safety
+    let backendSystems: string[] = [];
+    if (journeyData.backendSystems !== undefined) {
+      if (Array.isArray(journeyData.backendSystems)) {
+        backendSystems = journeyData.backendSystems;
+      } else if (typeof journeyData.backendSystems === 'object') {
+        try {
+          backendSystems = Array.from(Object.values(journeyData.backendSystems as any));
+        } catch (err) {
+          console.error("Failed to convert backendSystems to array:", err);
+          backendSystems = [];
+        }
+      }
+    }
+    
+    const result = await db.insert(agentJourneys).values({
+      ...journeyData,
+      agentName: journeyData.agentName || null,
+      purpose: journeyData.purpose || null,
+      notes: journeyData.notes || null,
+      summary: journeyData.summary || null,
+      inputInterpretation: journeyData.inputInterpretation || null,
+      guardrails: journeyData.guardrails || null,
+      backendSystems: backendSystems,
+      contextManagement: journeyData.contextManagement || null,
+      escalationRules: journeyData.escalationRules || null,
+      errorMonitoring: journeyData.errorMonitoring || null,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    
+    return result[0];
+  }
+  
+  async updateAgentJourney(id: number, updateData: UpdateAgentJourney): Promise<AgentJourney> {
+    const existingJourney = await this.getAgentJourney(id);
+    if (!existingJourney) {
+      throw new Error(`Agent journey with id ${id} not found`);
+    }
+    
+    // Process backendSystems array
+    let backendSystems = existingJourney.backendSystems;
+    if (updateData.backendSystems !== undefined) {
+      if (Array.isArray(updateData.backendSystems)) {
+        backendSystems = updateData.backendSystems;
+      } else if (typeof updateData.backendSystems === 'object') {
+        try {
+          backendSystems = Array.from(Object.values(updateData.backendSystems as any));
+        } catch (err) {
+          console.error("Failed to convert backendSystems to array:", err);
+          // Keep existing backendSystems
+        }
+      }
+    }
+    
+    const result = await db.update(agentJourneys)
+      .set({
+        ...updateData,
+        backendSystems,
+        updatedAt: new Date()
+      })
+      .where(eq(agentJourneys.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteAgentJourney(id: number): Promise<void> {
+    await db.delete(agentJourneys).where(eq(agentJourneys.id, id));
   }
 }

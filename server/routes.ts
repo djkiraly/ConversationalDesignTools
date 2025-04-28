@@ -1076,6 +1076,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create HTTP server
+  // Agent Journey APIs
+  app.get('/api/agent-journeys', async (_req, res) => {
+    try {
+      const journeys = await storage.getAllAgentJourneys();
+      res.json(journeys);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/agent-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const journey = await storage.getAgentJourney(id);
+      if (!journey) {
+        return res.status(404).json({ error: "Agent journey not found" });
+      }
+
+      res.json(journey);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/agent-journeys', async (req, res) => {
+    try {
+      const result = insertAgentJourneySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const newJourney = await storage.createAgentJourney(result.data);
+      res.status(201).json(newJourney);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.put('/api/agent-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourney = await storage.getAgentJourney(id);
+      if (!existingJourney) {
+        return res.status(404).json({ error: "Agent journey not found" });
+      }
+
+      const result = updateAgentJourneySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedJourney = await storage.updateAgentJourney(id, result.data);
+      res.json(updatedJourney);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  app.delete('/api/agent-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourney = await storage.getAgentJourney(id);
+      if (!existingJourney) {
+        return res.status(404).json({ error: "Agent journey not found" });
+      }
+
+      await storage.deleteAgentJourney(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
