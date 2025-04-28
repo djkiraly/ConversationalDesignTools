@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,28 +19,58 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Map, ShoppingCart, HelpCircle, Brain, Sparkles } from "lucide-react";
+import { PlusCircle, Map, ShoppingCart, HelpCircle, Brain, Sparkles, CheckCircle, Book } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { UseCase, fetchAllUseCases } from "../lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 interface NewFlowDialogProps {
   onCreateFlow: (flowName: string, templateType: string | null) => void;
   onCreateAIFlow?: (flowName: string, description: string) => void;
+  onCreateFromUseCase?: (flowName: string, useCase: UseCase) => void;
 }
 
-export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowDialogProps) {
+export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow, onCreateFromUseCase }: NewFlowDialogProps) {
   const [flowName, setFlowName] = useState("New Customer Journey");
   const [isOpen, setIsOpen] = useState(false);
   const [aiTemplateDescription, setAiTemplateDescription] = useState("");
-  const [isAiTabActive, setIsAiTabActive] = useState(false);
+  const [activeTab, setActiveTab] = useState<"templates" | "ai" | "usecase">("templates");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedUseCaseId, setSelectedUseCaseId] = useState<string>("");
+  
+  // Fetch use cases
+  const { 
+    data: useCases = [], 
+    isLoading: isLoadingUseCases 
+  } = useQuery({
+    queryKey: ['/api/use-cases'],
+    queryFn: fetchAllUseCases,
+    enabled: isOpen // Only fetch when the dialog is open
+  });
+  
+  // Set flow name based on selected use case
+  useEffect(() => {
+    if (selectedUseCaseId) {
+      const selectedUseCase = useCases.find(uc => uc.id.toString() === selectedUseCaseId);
+      if (selectedUseCase) {
+        setFlowName(`Journey from ${selectedUseCase.title}`);
+      }
+    }
+  }, [selectedUseCaseId, useCases]);
   
   const handleCreateFlow = (templateType: string | null) => {
     onCreateFlow(flowName, templateType);
     setIsOpen(false);
-    // Reset to default
-    setFlowName("New Customer Journey");
-    setAiTemplateDescription("");
-    setIsAiTabActive(false);
+    resetForm();
   };
   
   const handleCreateAIFlow = () => {
@@ -48,12 +78,28 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
       setIsGenerating(true);
       onCreateAIFlow(flowName, aiTemplateDescription);
       setIsOpen(false);
-      // Reset to default
-      setFlowName("New Customer Journey");
-      setAiTemplateDescription("");
-      setIsAiTabActive(false);
-      setIsGenerating(false);
+      resetForm();
     }
+  };
+  
+  const handleCreateFromUseCase = () => {
+    if (onCreateFromUseCase && selectedUseCaseId) {
+      const selectedUseCase = useCases.find(uc => uc.id.toString() === selectedUseCaseId);
+      if (selectedUseCase) {
+        onCreateFromUseCase(flowName, selectedUseCase);
+        setIsOpen(false);
+        resetForm();
+      }
+    }
+  };
+  
+  // Reset form state
+  const resetForm = () => {
+    setFlowName("New Customer Journey");
+    setAiTemplateDescription("");
+    setActiveTab("templates");
+    setIsGenerating(false);
+    setSelectedUseCaseId("");
   };
   
   return (
@@ -87,23 +133,31 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
           
           <div className="flex justify-between mb-4 border-b">
             <Button 
-              variant={!isAiTabActive ? "default" : "ghost"}
-              onClick={() => setIsAiTabActive(false)}
+              variant={activeTab === "templates" ? "default" : "ghost"}
+              onClick={() => setActiveTab("templates")}
               className="rounded-b-none border-b-0"
             >
               Templates
             </Button>
             <Button 
-              variant={isAiTabActive ? "default" : "ghost"}
-              onClick={() => setIsAiTabActive(true)}
+              variant={activeTab === "ai" ? "default" : "ghost"}
+              onClick={() => setActiveTab("ai")}
               className="rounded-b-none border-b-0 gap-1"
             >
               <Brain className="h-4 w-4" />
               AI Generator
             </Button>
+            <Button 
+              variant={activeTab === "usecase" ? "default" : "ghost"}
+              onClick={() => setActiveTab("usecase")}
+              className="rounded-b-none border-b-0 gap-1"
+            >
+              <Book className="h-4 w-4" />
+              From Use Case
+            </Button>
           </div>
           
-          {!isAiTabActive ? (
+          {activeTab === "templates" ? (
             <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
               <Card className="cursor-pointer transition-all hover:border-primary hover:shadow-md" onClick={() => handleCreateFlow(null)}>
                 <CardHeader className="pb-2">
@@ -162,7 +216,7 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
                 </CardFooter>
               </Card>
             </div>
-          ) : (
+          ) : activeTab === "ai" ? (
             <div className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
@@ -204,6 +258,82 @@ export default function NewFlowDialog({ onCreateFlow, onCreateAIFlow }: NewFlowD
                         Generate AI Journey
                       </>
                     )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          ) : (
+            // Use Case tab content
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <Book className="h-5 w-5 mr-2 text-amber-600" />
+                    Create from Use Case
+                  </CardTitle>
+                  <CardDescription>
+                    Create a new journey based on an existing use case
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingUseCases ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : useCases.length === 0 ? (
+                    <Alert className="bg-amber-50 border-amber-200">
+                      <AlertDescription>
+                        No use cases found. Create a use case first to use this option.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="use-case-select">Select a Use Case</Label>
+                        <Select
+                          value={selectedUseCaseId}
+                          onValueChange={setSelectedUseCaseId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a use case" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {useCases.map((useCase) => (
+                              <SelectItem key={useCase.id} value={useCase.id.toString()}>
+                                {useCase.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {selectedUseCaseId && (
+                        <div className="border rounded-md p-3 bg-muted/30">
+                          <p className="text-sm font-medium">
+                            Use Case Details:
+                          </p>
+                          {(() => {
+                            const selectedUseCase = useCases.find(uc => uc.id.toString() === selectedUseCaseId);
+                            return selectedUseCase ? (
+                              <div className="mt-2 space-y-2 text-sm">
+                                <p><span className="font-medium">Customer:</span> {selectedUseCase.customer || "N/A"}</p>
+                                <p><span className="font-medium">Description:</span> {selectedUseCase.description || "N/A"}</p>
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    onClick={handleCreateFromUseCase}
+                    disabled={!selectedUseCaseId || isLoadingUseCases || !onCreateFromUseCase}
+                    className="w-full gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Create Journey from Use Case
                   </Button>
                 </CardFooter>
               </Card>
