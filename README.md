@@ -2,6 +2,18 @@
 
 A sophisticated web application for designing, visualizing, and managing conversational AI workflows with advanced AI-assisted editing and intelligent interaction modeling capabilities.
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- [Quick Start Guide](docs/QUICKSTART.md) - Get up and running quickly
+- [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
+- [Docker Deployment](docs/DOCKER_DEPLOYMENT.md) - Docker-specific deployment guide
+- [Database Setup](docs/DATABASE_SETUP.md) - PostgreSQL configuration
+- [OpenAI Setup](docs/OPENAI_SETUP.md) - Setting up the OpenAI API integration
+- [FAQ](docs/FAQ.md) - Frequently asked questions
+- [Documentation Index](docs/DOCUMENTATION.md) - Complete documentation index
+
 ## Features
 
 - Interactive flow visualization with ReactFlow
