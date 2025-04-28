@@ -10,6 +10,7 @@ import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
 import ActionPlan from "@/pages/ActionPlan";
 import UseCase from "@/pages/UseCase";
+import IterationTuning from "@/pages/IterationTuning";
 import AppLayout from "@/components/AppLayout";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/customer-journey" component={CustomerJourney} />
         <Route path="/customers" component={Customers} />
         <Route path="/action-plan" component={ActionPlan} />
+        <Route path="/iteration-tuning" component={IterationTuning} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

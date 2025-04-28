@@ -614,6 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const useCases = await storage.getAllUseCases();
       const customerJourneys = await storage.getAllCustomerJourneys();
       const actionPlans = await storage.getAllActionPlans();
+      const iterationTunings = await storage.getAllIterationTunings();
       
       // Use a simpler approach with hardcoded stats for tables
       const mockTables = [
@@ -622,7 +623,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { name: "flow_nodes", sizeMB: 0.09, rowCount: 12 },
         { name: "settings", sizeMB: 0.03, rowCount: 5 },
         { name: "customer_journeys", sizeMB: 0.15, rowCount: customerJourneys.length },
-        { name: "action_plans", sizeMB: 0.14, rowCount: actionPlans.length }
+        { name: "action_plans", sizeMB: 0.14, rowCount: actionPlans.length },
+        { name: "iteration_tunings", sizeMB: 0.13, rowCount: iterationTunings.length }
       ];
       
       // Calculate total values
@@ -647,6 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useCaseCount: useCases.length,
         customerJourneyCount: customerJourneys.length,
         actionPlanCount: actionPlans.length,
+        iterationTuningCount: iterationTunings.length,
         database: {
           totalSizeMB: totalSizeMB,
           tables: mockTables,
