@@ -568,7 +568,7 @@ export default function CustomerJourney() {
       if (journeyId === currentJourneyId) {
         setNodes(initialNodes);
         setEdges([]);
-        setJourneyTitle("New Customer Journey");
+        setJourneyTitle("New Customer and User Journey");
         setCurrentJourneyId(null);
         
         // Reset metadata but preserve customer name
@@ -585,12 +585,12 @@ export default function CustomerJourney() {
   
   // Delete all journeys
   const handlePurgeAllJourneys = useCallback(async () => {
-    if (window.confirm("Are you sure you want to delete ALL saved Customer Journey Maps? This cannot be undone.")) {
+    if (window.confirm("Are you sure you want to delete ALL saved Customer and User Journey Maps? This cannot be undone.")) {
       try {
         await deleteAllJourneysMutation.mutateAsync();
         setNodes(initialNodes);
         setEdges([]);
-        setJourneyTitle("New Customer Journey");
+        setJourneyTitle("New Customer and User Journey");
         setCurrentJourneyId(null);
         
         // Reset metadata but preserve customer name
