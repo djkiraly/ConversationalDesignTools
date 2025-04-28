@@ -489,6 +489,68 @@ export class MemStorage implements IStorage {
     this.actionPlans.delete(id);
   }
   
+  // Agent Journey methods
+  async getAllAgentJourneys(): Promise<AgentJourney[]> {
+    return Array.from(this.agentJourneys.values()).sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+
+  async getAgentJourney(id: number): Promise<AgentJourney | undefined> {
+    return this.agentJourneys.get(id);
+  }
+
+  async createAgentJourney(insertJourney: InsertAgentJourney): Promise<AgentJourney> {
+    const id = this.agentJourneyCurrentId++;
+    const now = new Date();
+    const journey: AgentJourney = {
+      id,
+      title: insertJourney.title,
+      agentName: insertJourney.agentName || null,
+      purpose: insertJourney.purpose || null,
+      notes: insertJourney.notes || null,
+      summary: insertJourney.summary || null,
+      inputInterpretation: insertJourney.inputInterpretation || null,
+      guardrails: insertJourney.guardrails || null,
+      backendSystems: Array.isArray(insertJourney.backendSystems) ? insertJourney.backendSystems : [],
+      contextManagement: insertJourney.contextManagement || null,
+      escalationRules: insertJourney.escalationRules || null,
+      errorMonitoring: insertJourney.errorMonitoring || null,
+      nodes: insertJourney.nodes,
+      edges: insertJourney.edges,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.agentJourneys.set(id, journey);
+    return journey;
+  }
+
+  async updateAgentJourney(id: number, updateData: UpdateAgentJourney): Promise<AgentJourney> {
+    const existingJourney = this.agentJourneys.get(id);
+    if (!existingJourney) {
+      throw new Error(`Agent journey with id ${id} not found`);
+    }
+    
+    // Handle array fields properly to ensure type safety
+    const backendSystems = updateData.backendSystems !== undefined ? 
+      (Array.isArray(updateData.backendSystems) ? updateData.backendSystems : []) : 
+      existingJourney.backendSystems;
+    
+    const updatedJourney: AgentJourney = {
+      ...existingJourney,
+      ...updateData,
+      backendSystems,
+      updatedAt: new Date()
+    };
+    
+    this.agentJourneys.set(id, updatedJourney);
+    return updatedJourney;
+  }
+
+  async deleteAgentJourney(id: number): Promise<void> {
+    this.agentJourneys.delete(id);
+  }
+  
   // Helper method to add default settings
   private addDefaultSettings(): void {
     const defaultSettings = [
