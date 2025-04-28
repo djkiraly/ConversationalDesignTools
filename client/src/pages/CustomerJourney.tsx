@@ -1733,34 +1733,34 @@ export default function CustomerJourney() {
               />
             </Panel>
             
-            <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md">
+            <Panel position="bottom-center" className="bg-background/80 backdrop-blur-sm p-2 rounded-t-lg shadow-md w-4/5">
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between">
                   <div className="text-sm font-medium mb-1">Quick Add</div>
                   <NewNodeDialog onCreateNode={addCustomNode} />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => addNode('Awareness')}>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button size="default" variant="outline" onClick={() => addNode('Awareness')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Awareness
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Research')}>
+                  <Button size="default" variant="outline" onClick={() => addNode('Research')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Research
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Consideration')}>
+                  <Button size="default" variant="outline" onClick={() => addNode('Consideration')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Consideration
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Decision')}>
+                  <Button size="default" variant="outline" onClick={() => addNode('Decision')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Decision
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Purchase')}>
+                  <Button size="default" variant="outline" onClick={() => addNode('Purchase')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Purchase
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => addNode('Support')}>
+                  <Button size="default" variant="outline" onClick={() => addNode('Support')}>
                     <Plus className="mr-1 h-3 w-3" />
                     Support
                   </Button>
