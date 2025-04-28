@@ -110,7 +110,7 @@ export default function IterationTuning() {
   const { data: customers = [] } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
-      return await apiRequest("/api/customers", {});
+      return await apiRequest("GET", "/api/customers");
     }
   });
 
@@ -118,17 +118,14 @@ export default function IterationTuning() {
   const { data: iterationTunings = [], isLoading } = useQuery({
     queryKey: ["/api/iteration-tunings"],
     queryFn: async () => {
-      return await apiRequest("/api/iteration-tunings", {});
+      return await apiRequest("GET", "/api/iteration-tunings");
     }
   });
 
   // Mutation for creating new iteration tuning
   const createMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      return await apiRequest("/api/iteration-tunings", {
-        method: "POST",
-        data: values
-      });
+      return await apiRequest("POST", "/api/iteration-tunings", values);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/iteration-tunings"] });
@@ -153,10 +150,7 @@ export default function IterationTuning() {
   const updateMutation = useMutation({
     mutationFn: async (values: FormValues & { id: number }) => {
       const { id, ...data } = values;
-      return await apiRequest(`/api/iteration-tunings/${id}`, {
-        method: "PUT",
-        data: data
-      });
+      return await apiRequest("PUT", `/api/iteration-tunings/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/iteration-tunings"] });
@@ -178,10 +172,7 @@ export default function IterationTuning() {
   // Mutation for deleting iteration tuning
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/iteration-tunings/${id}`, {
-        method: "DELETE",
-        data: {}
-      });
+      return await apiRequest("DELETE", `/api/iteration-tunings/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/iteration-tunings"] });
