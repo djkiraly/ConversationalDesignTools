@@ -1141,6 +1141,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: (error as Error).message });
     }
   });
+  
+  app.patch('/api/agent-journeys/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const existingJourney = await storage.getAgentJourney(id);
+      if (!existingJourney) {
+        return res.status(404).json({ error: "Agent journey not found" });
+      }
+
+      const result = updateAgentJourneySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+
+      const updatedJourney = await storage.updateAgentJourney(id, result.data);
+      res.json(updatedJourney);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
 
   app.delete('/api/agent-journeys/:id', async (req, res) => {
     try {
