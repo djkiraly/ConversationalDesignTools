@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList, MessageSquare } from 'lucide-react';
+import { CheckCircle2, Map, Settings, Home as HomeIcon, ArrowRight, Database, BarChart3, FileText, FolderTree, ClipboardList, MessageSquare, Bot } from 'lucide-react';
 import { fetchAppStatistics, AppStatistics } from '../lib/api';
 
 // Define the structure for application pages
@@ -37,6 +37,14 @@ export default function HomePage() {
       icon: <ClipboardList className="h-6 w-6" />,
       path: '/action-plan',
       color: 'bg-purple-50 text-purple-700 border-purple-200'
+    },
+    {
+      id: 'agent-journey',
+      title: 'Agent Journey',
+      description: 'Define how AI agents interpret inputs, apply guardrails, access systems, and manage escalations',
+      icon: <Bot className="h-6 w-6" />,
+      path: '/agent-journey',
+      color: 'bg-teal-50 text-teal-700 border-teal-200'
     },
     {
       id: 'happy-path',
@@ -112,6 +120,7 @@ export default function HomePage() {
         </p>
         <ul className="list-disc pl-6 space-y-2 mb-6">
           <li>Build <strong>Action Plans</strong> to develop tailored AI deployment strategies</li>
+          <li>Create <strong>Agent Journeys</strong> to define how AI agents interpret inputs, apply guardrails, and manage interactions</li>
           <li>Define <strong>Use Cases</strong> with comprehensive details including problem statements, solutions, and requirements</li>
           <li>Use <strong>Happy Path</strong> to define the optimal conversation flows for your AI agents</li>
           <li>Create a <strong>Customer and User Journey</strong> map to visualize the end-to-end user experience</li>
