@@ -1550,7 +1550,7 @@ export default function CustomerJourney() {
             onClick={handlePurgeAllJourneys}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Purge All Journeys
+            Purge All Customer and User Journeys
           </Button>
           
           <ExportJourneyButton
@@ -1580,7 +1580,7 @@ export default function CustomerJourney() {
         <div className={`border-r bg-background transition-all duration-300 overflow-y-auto ${sidebarOpen ? 'w-80' : 'w-0'}`}>
           <div className="p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Saved Journeys</h3>
+              <h3 className="text-lg font-semibold">Saved Customer and User Journeys</h3>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -1594,11 +1594,11 @@ export default function CustomerJourney() {
             {isLoadingJourneys ? (
               <div className="text-center text-muted-foreground p-4">
                 <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                <p>Loading journeys...</p>
+                <p>Loading customer and user journeys...</p>
               </div>
             ) : savedJourneys.length === 0 ? (
               <div className="text-center text-muted-foreground p-4">
-                <p>No saved journeys yet.</p>
+                <p>No saved customer and user journeys yet.</p>
                 <p className="text-sm mt-2">Create and save a journey to see it here.</p>
               </div>
             ) : (
