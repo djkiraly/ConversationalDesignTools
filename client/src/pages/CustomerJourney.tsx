@@ -1102,62 +1102,54 @@ export default function CustomerJourney() {
         duration: 3000
       });
       
-      // Check if the use case has a conversation flow
-      if (useCase.conversationFlow) {
-        try {
-          // Try to parse the conversation flow into nodes and edges
-          // This assumes the conversationFlow format is compatible
-          const parsedFlow = JSON.parse(useCase.conversationFlow);
-          
-          if (parsedFlow && Array.isArray(parsedFlow.steps)) {
-            // Create nodes from the parsed flow steps
-            const newNodes: Node[] = parsedFlow.steps.map((step: any, index: number) => {
-              // Default to Entry Point for first node, standard node for others
-              const stepType = index === 0 ? "Entry Point" : "Interaction";
-              
-              return {
-                id: `node-${index}`,
-                type: 'journeyNode',
-                data: { 
-                  stepType: stepType,
-                  title: step.stepType || `Step ${index + 1}`,
-                  description: step.messages?.map((m: any) => `${m.role}: ${m.text}`).join('\n') || "",
-                  onNodeEdit: handleNodeEdit
-                },
-                position: step.position || { x: 100 + (index * 250), y: 100 }
-              };
-            });
-            
-            // Create edges connecting the nodes sequentially
-            const newEdges = newNodes.slice(0, -1).map((node: Node, index: number) => ({
-              id: `edge-${index}`,
-              source: node.id,
-              target: newNodes[index + 1].id,
-              type: 'smoothstep',
-              animated: true,
-              style: { stroke: '#2563eb' },
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-                color: '#2563eb',
-              }
-            }));
-            
-            // Set the nodes and edges
-            setNodes(newNodes);
-            setEdges(newEdges);
-          } else {
-            // If parsing fails or format is incompatible, create a default node
-            setNodes(initialNodes);
-          }
-        } catch (err) {
-          console.error("Error parsing conversation flow:", err);
-          // If parsing fails, create a default node
-          setNodes(initialNodes);
+      // Create a simple starting journey with one node based on the use case
+      const defaultNodes: Node[] = [
+        {
+          id: 'entry',
+          type: 'journeyNode',
+          data: { 
+            stepType: 'Entry Point',
+            title: useCase.title || 'Journey Start',
+            description: useCase.description || 'Start of customer journey based on use case',
+            onNodeEdit: handleNodeEdit
+          },
+          position: { x: 100, y: 100 }
         }
-      } else {
-        // If no conversation flow, create a default node
-        setNodes(initialNodes);
+      ];
+      
+      // Add a second node if we have a proposed solution
+      if (useCase.proposedSolution) {
+        defaultNodes.push({
+          id: 'solution',
+          type: 'journeyNode',
+          data: { 
+            stepType: 'Solution',
+            title: 'Proposed Solution',
+            description: useCase.proposedSolution,
+            onNodeEdit: handleNodeEdit
+          },
+          position: { x: 400, y: 100 }
+        });
+        
+        // Add an edge connecting the two nodes
+        const defaultEdges = [{
+          id: 'e-entry-solution',
+          source: 'entry',
+          target: 'solution',
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: '#2563eb' },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#2563eb',
+          }
+        }];
+        
+        setEdges(defaultEdges);
       }
+      
+      // Set the nodes
+      setNodes(defaultNodes);
       
       // Reset current journey ID as this is a new journey
       setCurrentJourneyId(null);
