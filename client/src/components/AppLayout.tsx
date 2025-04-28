@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
-import { CheckCircle2, Settings, Map, Home, Users, ClipboardList, MessageSquare } from 'lucide-react';
+import { CheckCircle2, Settings, Map, Home, Users, ClipboardList, MessageSquare, Bot } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -18,6 +18,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         path: "/action-plan",
         icon: <ClipboardList className="h-6 w-6" />,
         isActive: location === '/action-plan'
+      },
+      {
+        name: "Agent Journey",
+        path: "/agent-journey",
+        icon: <Bot className="h-6 w-6" />,
+        isActive: location === '/agent-journey' || location.startsWith('/agent-journey/')
       },
       {
         name: "Customer and User Journey",

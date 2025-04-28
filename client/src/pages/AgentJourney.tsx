@@ -246,10 +246,7 @@ const AgentJourneyPage: React.FC = () => {
   // Save mutations
   const createMutation = useMutation({
     mutationFn: (journey: InsertAgentJourney) => {
-      return apiRequest('/api/agent-journeys', {
-        method: 'POST',
-        body: JSON.stringify(journey)
-      });
+      return apiRequest('POST', '/api/agent-journeys', journey);
     },
     onSuccess: (data) => {
       toast({
@@ -271,10 +268,7 @@ const AgentJourneyPage: React.FC = () => {
 
   const updateMutation = useMutation({
     mutationFn: (journey: InsertAgentJourney) => {
-      return apiRequest(`/api/agent-journeys/${journeyId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(journey)
-      });
+      return apiRequest('PATCH', `/api/agent-journeys/${journeyId}`, journey);
     },
     onSuccess: () => {
       toast({
@@ -296,9 +290,7 @@ const AgentJourneyPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: () => {
-      return apiRequest(`/api/agent-journeys/${journeyId}`, {
-        method: 'DELETE'
-      });
+      return apiRequest('DELETE', `/api/agent-journeys/${journeyId}`);
     },
     onSuccess: () => {
       toast({
