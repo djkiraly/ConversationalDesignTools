@@ -68,7 +68,9 @@ import {
   CustomerJourney as CustomerJourneyType,
   getCustomerJourneys,
   generateJourneySummary,
-  generateAIJourney
+  generateAIJourney,
+  UseCase,
+  fetchUseCase
 } from "../lib/api";
 
 
@@ -1076,6 +1078,111 @@ export default function CustomerJourney() {
       setIsGeneratingAIJourney(false);
     }
   };
+  
+  // Create a new journey based on a use case
+  const handleCreateFromUseCase = async (flowName: string, useCase: UseCase) => {
+    try {
+      setIsLoading(true);
+      setJourneyTitle(flowName);
+      
+      // Reset edges
+      setEdges([]);
+      
+      // Use metadata from the use case
+      setJourneyMetadata({
+        customerName: useCase.customer || "",
+        workflowIntent: useCase.description || "",
+        notes: useCase.problemStatement || "",
+        summary: useCase.proposedSolution || ""
+      });
+      
+      toast({
+        title: "Creating Journey from Use Case",
+        description: "Preparing a new journey based on the selected use case...",
+        duration: 3000
+      });
+      
+      // Check if the use case has a conversation flow
+      if (useCase.conversationFlow) {
+        try {
+          // Try to parse the conversation flow into nodes and edges
+          // This assumes the conversationFlow format is compatible
+          const parsedFlow = JSON.parse(useCase.conversationFlow);
+          
+          if (parsedFlow && Array.isArray(parsedFlow.steps)) {
+            // Create nodes from the parsed flow steps
+            const newNodes: Node[] = parsedFlow.steps.map((step: any, index: number) => {
+              // Default to Entry Point for first node, standard node for others
+              const stepType = index === 0 ? "Entry Point" : "Interaction";
+              
+              return {
+                id: `node-${index}`,
+                type: 'journeyNode',
+                data: { 
+                  stepType: stepType,
+                  title: step.stepType || `Step ${index + 1}`,
+                  description: step.messages?.map((m: any) => `${m.role}: ${m.text}`).join('\n') || "",
+                  onNodeEdit: handleNodeEdit
+                },
+                position: step.position || { x: 100 + (index * 250), y: 100 }
+              };
+            });
+            
+            // Create edges connecting the nodes sequentially
+            const newEdges = newNodes.slice(0, -1).map((node: Node, index: number) => ({
+              id: `edge-${index}`,
+              source: node.id,
+              target: newNodes[index + 1].id,
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#2563eb' },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: '#2563eb',
+              }
+            }));
+            
+            // Set the nodes and edges
+            setNodes(newNodes);
+            setEdges(newEdges);
+          } else {
+            // If parsing fails or format is incompatible, create a default node
+            setNodes(initialNodes);
+          }
+        } catch (err) {
+          console.error("Error parsing conversation flow:", err);
+          // If parsing fails, create a default node
+          setNodes(initialNodes);
+        }
+      } else {
+        // If no conversation flow, create a default node
+        setNodes(initialNodes);
+      }
+      
+      // Reset current journey ID as this is a new journey
+      setCurrentJourneyId(null);
+      
+      toast({
+        title: "Journey Created",
+        description: `Created new journey from use case: ${useCase.title}`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error("Failed to create journey from use case:", error);
+      toast({
+        title: "Creation Failed",
+        description: error instanceof Error ? error.message : "Failed to create journey from use case",
+        variant: "destructive",
+        duration: 5000
+      });
+      
+      // Reset to default initial nodes
+      setNodes(initialNodes);
+      setEdges([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Template selection handler
   const handleTemplateChange = (value: string) => {
@@ -1359,6 +1466,7 @@ export default function CustomerJourney() {
           <NewFlowDialog 
             onCreateFlow={handleCreateFlow} 
             onCreateAIFlow={handleCreateAIFlow}
+            onCreateFromUseCase={handleCreateFromUseCase}
           />
           
           {/* AI Summary Button */}
