@@ -718,3 +718,145 @@ practical, and tailored to this business's unique needs based on their inputs.`;
     };
   }
 }
+// Generate journey flow from use case
+export async function generateJourneyFromUseCase(
+  apiKey: string,
+  useCase: {
+    id: number;
+    title: string;
+    description?: string | null;
+    customer?: string | null;
+    problemStatement?: string | null;
+    proposedSolution?: string | null;
+    keyObjectives?: string | null;
+    requiredDataInputs?: string | null;
+    expectedOutputs?: string | null;
+    keyStakeholders?: string | null;
+    scope?: string | null;
+    potentialRisks?: string | null;
+    estimatedImpact?: string | null;
+  }
+): Promise<{
+  success: boolean;
+  journey?: {
+    nodes: any[];
+    edges: any[];
+  };
+  error?: string;
+}> {
+  try {
+    const openai = new OpenAI({ apiKey });
+    
+    // Prepare a comprehensive description from use case fields
+    const descriptionParts = [
+      `Title: ${useCase.title}`,
+      useCase.customer ? `Customer: ${useCase.customer}` : null,
+      useCase.description ? `Description: ${useCase.description}` : null,
+      useCase.problemStatement ? `Problem Statement: ${useCase.problemStatement}` : null,
+      useCase.proposedSolution ? `Proposed Solution: ${useCase.proposedSolution}` : null,
+      useCase.keyObjectives ? `Key Objectives: ${useCase.keyObjectives}` : null,
+      useCase.expectedOutputs ? `Expected Outputs: ${useCase.expectedOutputs}` : null,
+      useCase.scope ? `Scope: ${useCase.scope}` : null
+    ].filter(Boolean).join('\n\n');
+    
+    // Prepare the prompt
+    const prompt = `You are an expert in designing customer journey maps. Create a detailed customer journey based on the following use case:
+
+${descriptionParts}
+
+Generate a complete customer journey map with appropriate stages that best fit this use case.
+Each step should have a type, title, and brief description that relates directly to the use case.
+
+Respond with JSON in the following format:
+{
+  "steps": [
+    {
+      "id": "node1",
+      "type": "Entry Point",
+      "title": "Step Title",
+      "description": "Brief description of this step"
+    },
+    ... more steps ...
+  ],
+  "connections": [
+    { 
+      "source": "node1", 
+      "target": "node2" 
+    },
+    ... more connections ...
+  ]
+}
+
+The journey should have 5-8 logical steps. Each step should have a descriptive title and a concise description.
+Valid step types include: "Entry Point", "Awareness", "Research", "Consideration", "Evaluation", "Decision", "Purchase", "Onboarding", "Support", "Feedback", "Retention".
+Connections should form a logical flow from one step to the next.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert in customer experience design and journey mapping." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7
+    });
+
+    const content = response.choices[0].message.content;
+    
+    if (!content) {
+      throw new Error('No journey was generated');
+    }
+    
+    const journeyData = JSON.parse(content);
+    
+    // Transform the returned data into ReactFlow nodes and edges
+    const nodes: any[] = journeyData.steps.map((step: any, index: number) => {
+      // Calculate position - place nodes in a horizontal line
+      const position = {
+        x: 100 + (index * 250),
+        y: 100
+      };
+      
+      return {
+        id: step.id,
+        type: 'journeyNode',
+        data: {
+          stepType: step.type,
+          title: step.title,
+          description: step.description
+        },
+        position
+      };
+    });
+    
+    const edges: any[] = journeyData.connections.map((connection: any, index: number) => ({
+      id: `e${connection.source}-${connection.target}`,
+      source: connection.source,
+      target: connection.target,
+      type: 'smoothstep',
+      animated: true,
+      style: { stroke: '#2563eb' },
+      markerEnd: {
+        type: 'arrow',
+        color: '#2563eb',
+      }
+    }));
+    
+    return {
+      success: true,
+      journey: {
+        nodes,
+        edges
+      }
+    };
+  } catch (error: any) {
+    console.error('Error generating journey from use case:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate journey from use case'
+    };
+  }
+}
