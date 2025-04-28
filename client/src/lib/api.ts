@@ -185,6 +185,25 @@ export async function generateAIJourney(description: string): Promise<GeneratedJ
   return response.data.journey;
 }
 
+// Generate a customer journey from a use case using AI
+export async function generateJourneyFromUseCase(useCaseId: number): Promise<GeneratedJourney> {
+  const response = await apiRequest<{ success: boolean; journey: GeneratedJourney }>(
+    '/api/generate-journey-from-use-case',
+    'POST',
+    { useCaseId }
+  );
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  
+  if (!response.data || !response.data.success) {
+    throw new Error('Failed to generate journey from use case');
+  }
+  
+  return response.data.journey;
+}
+
 // Customer API
 export interface Customer {
   id: number;

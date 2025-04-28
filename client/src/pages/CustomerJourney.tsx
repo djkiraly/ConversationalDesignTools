@@ -69,6 +69,7 @@ import {
   getCustomerJourneys,
   generateJourneySummary,
   generateAIJourney,
+  generateJourneyFromUseCase,
   UseCase,
   fetchUseCase
 } from "../lib/api";
@@ -1085,9 +1086,6 @@ export default function CustomerJourney() {
       setIsLoading(true);
       setJourneyTitle(flowName);
       
-      // Reset edges
-      setEdges([]);
-      
       // Use metadata from the use case
       setJourneyMetadata({
         customerName: useCase.customer || "",
@@ -1098,58 +1096,104 @@ export default function CustomerJourney() {
       
       toast({
         title: "Creating Journey from Use Case",
-        description: "Preparing a new journey based on the selected use case...",
-        duration: 3000
+        description: "Generating a comprehensive journey based on the selected use case...",
+        duration: 5000
       });
       
-      // Create a simple starting journey with one node based on the use case
-      const defaultNodes: Node[] = [
-        {
-          id: 'entry',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Entry Point',
-            title: useCase.title || 'Journey Start',
-            description: useCase.description || 'Start of customer journey based on use case',
-            onNodeEdit: handleNodeEdit
-          },
-          position: { x: 100, y: 100 }
-        }
-      ];
+      let journeyData: { nodes: Node[]; edges: Edge[] };
       
-      // Add a second node if we have a proposed solution
-      if (useCase.proposedSolution) {
-        defaultNodes.push({
-          id: 'solution',
-          type: 'journeyNode',
-          data: { 
-            stepType: 'Solution',
-            title: 'Proposed Solution',
-            description: useCase.proposedSolution,
-            onNodeEdit: handleNodeEdit
-          },
-          position: { x: 400, y: 100 }
+      try {
+        // First try to generate the journey using AI
+        const generatedJourney = await generateJourneyFromUseCase(useCase.id);
+        
+        if (generatedJourney && generatedJourney.nodes && generatedJourney.edges) {
+          // Add the onNodeEdit function to each node
+          const nodesWithEditing = generatedJourney.nodes.map((node: any) => ({
+            ...node,
+            data: {
+              ...node.data,
+              onNodeEdit: handleNodeEdit
+            }
+          }));
+          
+          journeyData = {
+            nodes: nodesWithEditing,
+            edges: generatedJourney.edges
+          };
+          
+          toast({
+            title: "AI Journey Generated",
+            description: "Successfully created an AI-enhanced journey from your use case",
+            duration: 3000
+          });
+        } else {
+          throw new Error("Failed to generate AI journey from use case");
+        }
+      } catch (aiError) {
+        console.warn("AI journey generation failed, falling back to basic journey:", aiError);
+        
+        toast({
+          title: "AI Generation Failed",
+          description: "Creating a basic journey instead. Check your OpenAI API key in settings.",
+          variant: "destructive",
+          duration: 5000
         });
         
-        // Add an edge connecting the two nodes
-        const defaultEdges = [{
-          id: 'e-entry-solution',
-          source: 'entry',
-          target: 'solution',
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#2563eb' },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#2563eb',
+        // Create a simple starting journey with one node based on the use case as fallback
+        const fallbackNodes: Node[] = [
+          {
+            id: 'entry',
+            type: 'journeyNode',
+            data: { 
+              stepType: 'Entry Point',
+              title: useCase.title || 'Journey Start',
+              description: useCase.description || 'Start of customer journey based on use case',
+              onNodeEdit: handleNodeEdit
+            },
+            position: { x: 100, y: 100 }
           }
-        }];
+        ];
         
-        setEdges(defaultEdges);
+        // Add a second node if we have a proposed solution
+        let fallbackEdges: Edge[] = [];
+        
+        if (useCase.proposedSolution) {
+          fallbackNodes.push({
+            id: 'solution',
+            type: 'journeyNode',
+            data: { 
+              stepType: 'Solution',
+              title: 'Proposed Solution',
+              description: useCase.proposedSolution,
+              onNodeEdit: handleNodeEdit
+            },
+            position: { x: 400, y: 100 }
+          });
+          
+          // Add an edge connecting the two nodes
+          fallbackEdges = [{
+            id: 'e-entry-solution',
+            source: 'entry',
+            target: 'solution',
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: '#2563eb' },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#2563eb',
+            }
+          }];
+        }
+        
+        journeyData = {
+          nodes: fallbackNodes,
+          edges: fallbackEdges
+        };
       }
       
-      // Set the nodes
-      setNodes(defaultNodes);
+      // Set the nodes and edges
+      setNodes(journeyData.nodes);
+      setEdges(journeyData.edges);
       
       // Reset current journey ID as this is a new journey
       setCurrentJourneyId(null);
