@@ -6,6 +6,7 @@ import {
   customerJourneys,
   customers,
   actionPlans,
+  agentJourneys,
   type User, 
   type InsertUser, 
   type UseCase, 
@@ -24,7 +25,10 @@ import {
   type UpdateCustomer,
   type ActionPlan,
   type InsertActionPlan,
-  type UpdateActionPlan
+  type UpdateActionPlan,
+  type AgentJourney,
+  type InsertAgentJourney,
+  type UpdateAgentJourney
 } from "@shared/schema";
 
 // Storage interface
@@ -74,6 +78,13 @@ export interface IStorage {
   createActionPlan(actionPlan: InsertActionPlan): Promise<ActionPlan>;
   updateActionPlan(id: number, actionPlan: UpdateActionPlan): Promise<ActionPlan>;
   deleteActionPlan(id: number): Promise<void>;
+  
+  // Agent Journey management
+  getAllAgentJourneys(): Promise<AgentJourney[]>;
+  getAgentJourney(id: number): Promise<AgentJourney | undefined>;
+  createAgentJourney(journey: InsertAgentJourney): Promise<AgentJourney>;
+  updateAgentJourney(id: number, journey: UpdateAgentJourney): Promise<AgentJourney>;
+  deleteAgentJourney(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -84,6 +95,7 @@ export class MemStorage implements IStorage {
   private customerJourneys: Map<number, CustomerJourney>;
   private customers: Map<number, Customer>;
   private actionPlans: Map<number, ActionPlan>;
+  private agentJourneys: Map<number, AgentJourney>;
   
   private userCurrentId: number;
   private useCaseCurrentId: number;
@@ -92,6 +104,7 @@ export class MemStorage implements IStorage {
   private customerJourneyCurrentId: number;
   private customerCurrentId: number;
   private actionPlanCurrentId: number;
+  private agentJourneyCurrentId: number;
 
   constructor() {
     this.users = new Map();
@@ -101,6 +114,7 @@ export class MemStorage implements IStorage {
     this.customerJourneys = new Map();
     this.customers = new Map();
     this.actionPlans = new Map();
+    this.agentJourneys = new Map();
     
     this.userCurrentId = 1;
     this.useCaseCurrentId = 1;
@@ -109,6 +123,7 @@ export class MemStorage implements IStorage {
     this.customerJourneyCurrentId = 1;
     this.customerCurrentId = 1;
     this.actionPlanCurrentId = 1;
+    this.agentJourneyCurrentId = 1;
     
     // Add some sample use cases for testing
     this.addSampleUseCases();

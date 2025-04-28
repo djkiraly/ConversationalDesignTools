@@ -292,3 +292,62 @@ export const updateActionPlanSchema = createInsertSchema(actionPlans).pick({
 export type InsertActionPlan = z.infer<typeof insertActionPlanSchema>;
 export type UpdateActionPlan = z.infer<typeof updateActionPlanSchema>;
 export type ActionPlan = typeof actionPlans.$inferSelect;
+
+// Agent Journey model
+export const agentJourneys = pgTable("agent_journeys", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  agentName: text("agent_name"),
+  purpose: text("purpose"),
+  notes: text("notes"),
+  summary: text("summary"), // AI-generated journey summary
+  
+  // Agent-specific fields
+  inputInterpretation: text("input_interpretation"), // How the agent interprets inputs
+  guardrails: text("guardrails"), // Rules and limitations for the agent
+  backendSystems: json("backend_systems").notNull().$type<string[]>().default([]), // External systems the agent needs to access
+  contextManagement: text("context_management"), // How the agent manages conversation context
+  escalationRules: text("escalation_rules"), // When and how to escalate to humans
+  errorMonitoring: text("error_monitoring"), // How errors are detected and handled
+  
+  nodes: json("nodes").notNull(), // Storing ReactFlow nodes
+  edges: json("edges").notNull(), // Storing ReactFlow edges
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAgentJourneySchema = createInsertSchema(agentJourneys).pick({
+  title: true,
+  agentName: true,
+  purpose: true,
+  notes: true,
+  summary: true,
+  inputInterpretation: true,
+  guardrails: true,
+  backendSystems: true,
+  contextManagement: true,
+  escalationRules: true,
+  errorMonitoring: true,
+  nodes: true,
+  edges: true,
+});
+
+export const updateAgentJourneySchema = createInsertSchema(agentJourneys).pick({
+  title: true,
+  agentName: true,
+  purpose: true,
+  notes: true,
+  summary: true,
+  inputInterpretation: true,
+  guardrails: true,
+  backendSystems: true,
+  contextManagement: true,
+  escalationRules: true,
+  errorMonitoring: true,
+  nodes: true,
+  edges: true,
+});
+
+export type InsertAgentJourney = z.infer<typeof insertAgentJourneySchema>;
+export type UpdateAgentJourney = z.infer<typeof updateAgentJourneySchema>;
+export type AgentJourney = typeof agentJourneys.$inferSelect;
