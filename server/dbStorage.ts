@@ -535,15 +535,25 @@ Agent: Excellent choice! I'll guide you through the two-factor authentication se
 
   // Agent Journey methods
   async getAllAgentJourneys(): Promise<AgentJourney[]> {
-    const results = await db.select()
-      .from(agentJourneys)
-      .orderBy(agentJourneys.updatedAt);
-    return results;
+    try {
+      const results = await db.select()
+        .from(agentJourneys)
+        .orderBy(agentJourneys.updatedAt);
+      return results;
+    } catch (error) {
+      console.error("Error in getAllAgentJourneys:", error);
+      return [];
+    }
   }
   
   async getAgentJourney(id: number): Promise<AgentJourney | undefined> {
-    const results = await db.select().from(agentJourneys).where(eq(agentJourneys.id, id));
-    return results.length ? results[0] : undefined;
+    try {
+      const results = await db.select().from(agentJourneys).where(eq(agentJourneys.id, id));
+      return results.length ? results[0] : undefined;
+    } catch (error) {
+      console.error(`Error in getAgentJourney(${id}):`, error);
+      return undefined;
+    }
   }
   
   async createAgentJourney(journeyData: InsertAgentJourney): Promise<AgentJourney> {
