@@ -216,7 +216,7 @@ export default function CustomerJourney() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [journeyTitle, setJourneyTitle] = useState<string>("New Customer Journey");
+  const [journeyTitle, setJourneyTitle] = useState<string>("New Customer and User Journey");
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [currentJourneyId, setCurrentJourneyId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -1470,10 +1470,10 @@ export default function CustomerJourney() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Map className="h-6 w-6" />
-            Customer Journey Design
+            Customer and User Journey Design
           </h1>
           <div className="flex items-center gap-4">
-            <p className="text-muted-foreground">Design AI-powered customer interaction flows</p>
+            <p className="text-muted-foreground">Design AI-powered customer and user interaction flows</p>
             
             {/* Journey metadata editor */}
             <JourneyMetadataDialog
@@ -1531,7 +1531,7 @@ export default function CustomerJourney() {
               setNodes(initialNodes);
               setEdges([]);
               setCurrentJourneyId(null);
-              setJourneyTitle("New Customer Journey");
+              setJourneyTitle("New Customer and User Journey");
               // Reset metadata but preserve customer name
               setJourneyMetadata({
                 customerName: journeyMetadata.customerName || "", // Preserve customer name

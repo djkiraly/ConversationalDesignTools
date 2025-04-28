@@ -114,7 +114,7 @@ export default function HomePage() {
           <li>Build <strong>Action Plans</strong> to develop tailored AI deployment strategies</li>
           <li>Define <strong>Use Cases</strong> with comprehensive details including problem statements, solutions, and requirements</li>
           <li>Use <strong>Happy Path</strong> to define the optimal conversation flows for your AI agents</li>
-          <li>Create a <strong>Customer Journey</strong> map to visualize the end-to-end user experience</li>
+          <li>Create a <strong>Customer and User Journey</strong> map to visualize the end-to-end user experience</li>
           <li>Configure AI behavior and system settings in the <strong>Settings</strong> page</li>
         </ul>
       </div>
@@ -171,7 +171,7 @@ export default function HomePage() {
                   
                   <div>
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">Customer Journeys</span>
+                      <span className="text-sm font-medium">Customer and User Journeys</span>
                       <Badge variant="outline">{statistics?.customerJourneyCount || 0}</Badge>
                     </div>
                     <Progress value={statistics?.customerJourneyCount ? Math.min(statistics.customerJourneyCount * 10, 100) : 0} className="h-2" />
