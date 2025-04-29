@@ -332,8 +332,8 @@ const AgentJourneyPage: React.FC = () => {
   const updateFormFlowState = useCallback(() => {
     setFormState((prev: InsertAgentJourney) => ({
       ...prev,
-      nodes: nodes,
-      edges: edges
+      nodes: nodes as any,
+      edges: edges as any
     }));
   }, [nodes, edges, setFormState]);
 
@@ -513,7 +513,8 @@ const AgentJourneyPage: React.FC = () => {
         nodesBounds,
         nodesBounds.width,
         nodesBounds.height,
-        0.9
+        0.9,
+        0 // Added padding argument
       );
       
       // Create a canvas from the flow
