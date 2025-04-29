@@ -34,7 +34,8 @@ import {
   Plus, 
   Map, 
   HelpCircle,
-  Loader2 
+  Loader2,
+  GitBranch
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -142,11 +143,44 @@ const GuardrailNode = ({ data, selected, id }: { data: any, selected: boolean, i
   );
 };
 
+const DecisionNode = ({ data, selected, id }: { data: any, selected: boolean, id: string }) => {
+  const { openNodeEditor } = data;
+  
+  return (
+    <div 
+      className={`node decision-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}
+      onClick={() => openNodeEditor(id, data)}
+    >
+      <div className="flex items-center space-x-2 mb-2">
+        <GitBranch size={20} className="text-purple-500" />
+        <div className="font-medium">{data.label}</div>
+      </div>
+      <div className="text-sm text-muted-foreground">{data.content}</div>
+      
+      {/* Multiple connection points - lots of output connections for decisions */}
+      <Handle type="target" position={Position.Left} id="target-left" style={{ top: '30%' }} />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      
+      {/* Multiple output points for decision branches */}
+      <Handle type="source" position={Position.Right} id="source-right-1" style={{ top: '20%' }} />
+      <Handle type="source" position={Position.Right} id="source-right-2" style={{ top: '40%' }} />
+      <Handle type="source" position={Position.Right} id="source-right-3" style={{ top: '60%' }} />
+      <Handle type="source" position={Position.Right} id="source-right-4" style={{ top: '80%' }} />
+      
+      {/* Bottom outputs */}
+      <Handle type="source" position={Position.Bottom} id="source-bottom-1" style={{ left: '25%' }} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom-2" style={{ left: '50%' }} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom-3" style={{ left: '75%' }} />
+    </div>
+  );
+};
+
 // Register custom nodes
 const nodeTypes: NodeTypes = {
   agent: AgentNode,
   system: SystemNode,
   guardrail: GuardrailNode,
+  decision: DecisionNode,
 };
 
 // Default node options when adding a new node
@@ -168,6 +202,12 @@ const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: str
       label: 'Guardrail Check',
       content: 'Define validation, safety checks, or constraints',
       type: 'guardrail',
+      openNodeEditor
+    },
+    decision: {
+      label: 'Decision Point',
+      content: 'Define a decision with multiple possible outcomes',
+      type: 'decision',
       openNodeEditor
     }
   };
