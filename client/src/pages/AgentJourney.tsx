@@ -299,8 +299,8 @@ const AgentJourneyPage: React.FC = () => {
         contextManagement: journey.contextManagement || '',
         escalationRules: journey.escalationRules || '',
         errorMonitoring: journey.errorMonitoring || '',
-        nodes: journey.nodes,
-        edges: journey.edges
+        nodes: journey.nodes as any,
+        edges: journey.edges as any
       });
 
       // Load nodes and edges into ReactFlow
@@ -433,7 +433,9 @@ const AgentJourneyPage: React.FC = () => {
     if (newBackendSystem.trim()) {
       setFormState((prev: InsertAgentJourney) => ({
         ...prev,
-        backendSystems: prev.backendSystems ? [...prev.backendSystems, newBackendSystem.trim()] : [newBackendSystem.trim()]
+        backendSystems: prev.backendSystems 
+          ? [...prev.backendSystems.map(s => String(s)), newBackendSystem.trim()] as string[]
+          : [newBackendSystem.trim()]
       }));
       setNewBackendSystem('');
       if (!isEditing) startEditing();
@@ -443,7 +445,11 @@ const AgentJourneyPage: React.FC = () => {
   const removeBackendSystem = useCallback((system: string) => {
     setFormState((prev: InsertAgentJourney) => ({
       ...prev,
-      backendSystems: prev.backendSystems ? prev.backendSystems.filter((s: string) => s !== system) : []
+      backendSystems: prev.backendSystems 
+        ? prev.backendSystems
+            .filter(s => String(s) !== system)
+            .map(s => String(s)) as string[]
+        : []
     }));
     if (!isEditing) startEditing();
   }, [setFormState, isEditing, startEditing]);
@@ -782,7 +788,7 @@ const AgentJourneyPage: React.FC = () => {
                       <Textarea
                         id="inputInterpretation"
                         name="inputInterpretation"
-                        value={formState.inputInterpretation}
+                        value={formState.inputInterpretation || ''}
                         onChange={handleInputChange}
                         placeholder="How does this agent interpret user inputs?"
                         rows={3}
@@ -794,7 +800,7 @@ const AgentJourneyPage: React.FC = () => {
                       <Textarea
                         id="guardrails"
                         name="guardrails"
-                        value={formState.guardrails}
+                        value={formState.guardrails || ''}
                         onChange={handleInputChange}
                         placeholder="What safety measures or guardrails are in place?"
                         rows={3}
@@ -822,13 +828,13 @@ const AgentJourneyPage: React.FC = () => {
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {formState.backendSystems && formState.backendSystems.length > 0 ? (
-                          formState.backendSystems.map((system: string, index: number) => (
+                          formState.backendSystems.map((system, index) => (
                             <Badge key={index} variant="secondary" className="flex items-center gap-1">
                               <Database size={12} />
-                              {system}
+                              {String(system)}
                               <button
                                 type="button"
-                                onClick={() => removeBackendSystem(system)}
+                                onClick={() => removeBackendSystem(String(system))}
                                 className="text-muted-foreground hover:text-foreground ml-1"
                               >
                                 <Trash2 size={12} />
