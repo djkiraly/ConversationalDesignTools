@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Users, ShoppingCart, Bot, Repeat, HelpCircle, Brain, Star, Search, Check } from 'lucide-react';
+import { MapPin, Users, ShoppingCart, Bot, Repeat, HelpCircle, Brain, Star, Search, Check, AlertTriangle } from 'lucide-react';
 
 interface JourneyNodeData {
   stepType: string;
@@ -98,6 +98,15 @@ function getStepTypeStyles(stepType: string): {
       text: 'text-pink-700',
       borderColor: 'border-pink-200',
       icon: <Repeat className="h-4 w-4" />
+    };
+  }
+  
+  if (normalizedType.includes('escalation')) {
+    return {
+      bg: 'bg-orange-50',
+      text: 'text-orange-700',
+      borderColor: 'border-orange-200',
+      icon: <AlertTriangle className="h-4 w-4" />
     };
   }
   
