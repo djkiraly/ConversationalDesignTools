@@ -964,51 +964,57 @@ const AgentJourneyPage: React.FC = () => {
       </div>
 
       {/* Node Editor Dialog */}
-      <Dialog open={nodeEditorOpen} onOpenChange={setNodeEditorOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Node</DialogTitle>
-            <DialogDescription>
-              Update the content and properties of this node
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="nodeName" className="text-right">
-                Label
-              </Label>
-              <Input
-                id="nodeName"
-                value={nodeEditorData.label}
-                onChange={(e) => setNodeEditorData({...nodeEditorData, label: e.target.value})}
-                className="col-span-3"
-              />
+      {nodeEditorOpen && (
+        <Dialog open={nodeEditorOpen} onOpenChange={(open) => {
+          if (!open) {
+            setNodeEditorOpen(false);
+          }
+        }}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Node</DialogTitle>
+              <DialogDescription>
+                Update the content and properties of this node
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nodeName" className="text-right">
+                  Label
+                </Label>
+                <Input
+                  id="nodeName"
+                  value={nodeEditorData.label}
+                  onChange={(e) => setNodeEditorData({...nodeEditorData, label: e.target.value})}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nodeContent" className="text-right">
+                  Content
+                </Label>
+                <Textarea
+                  id="nodeContent"
+                  value={nodeEditorData.content}
+                  onChange={(e) => setNodeEditorData({...nodeEditorData, content: e.target.value})}
+                  className="col-span-3"
+                  rows={4}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="nodeContent" className="text-right">
-                Content
-              </Label>
-              <Textarea
-                id="nodeContent"
-                value={nodeEditorData.content}
-                onChange={(e) => setNodeEditorData({...nodeEditorData, content: e.target.value})}
-                className="col-span-3"
-                rows={4}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNodeEditorOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveNodeEdits}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNodeEditorOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveNodeEdits}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };
