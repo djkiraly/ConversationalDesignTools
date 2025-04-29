@@ -1719,6 +1719,7 @@ export default function CustomerJourney() {
                 const type = node.data?.stepType?.toLowerCase() || '';
                 if (type.includes('entry')) return '#10B981';
                 if (type.includes('decision')) return '#F59E0B';
+                if (type.includes('escalation')) return '#F97316';
                 return '#3B82F6';
               }}
             />
@@ -1763,6 +1764,15 @@ export default function CustomerJourney() {
                   <Button size="default" variant="outline" onClick={() => addNode('Support')}>
                     <Plus className="mr-1 h-4 w-4" />
                     Support
+                  </Button>
+                  <Button 
+                    size="default" 
+                    variant="outline"
+                    className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:text-orange-800"
+                    onClick={() => addNode('Escalation Point')}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Escalation Point
                   </Button>
                   <Button 
                     size="default" 

@@ -228,7 +228,7 @@ export function parseConversationFlowWithTypes(text: string): ParsedFlow {
   const enhancedSteps = basicParsed.steps.map((step, index, allSteps) => {
     // Check for special step types - preserve them
     const stepType = step.stepType || '';
-    const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point'].includes(stepType);
+    const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point', 'Escalation Point'].includes(stepType);
     if (isSpecialStepType) {
       return step; // Keep special step types as is
     }

@@ -349,6 +349,21 @@ function detectStepType(
   // Combine all message text for analysis
   const allText = messages.map(msg => msg.text).join(' ').toLowerCase();
   
+  // Check for escalation situations
+  if (
+    allText.includes("escalate") || 
+    allText.includes("supervisor") ||
+    allText.includes("manager") ||
+    allText.includes("human agent") ||
+    allText.includes("speak to someone") ||
+    allText.includes("transfer") ||
+    allText.includes("complaint") ||
+    allText.includes("unhappy") ||
+    allText.includes("frustrated")
+  ) {
+    return "Escalation Point";
+  }
+  
   // Check for pricing questions
   if (
     allText.includes("price") || 
