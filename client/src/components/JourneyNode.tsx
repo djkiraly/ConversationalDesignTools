@@ -156,13 +156,74 @@ export default function JourneyNode({ data, id }: NodeProps<JourneyNodeData>) {
     }
   };
   
+  // Check which type of node this is to determine connection points
+  const normalizedType = stepType.toLowerCase();
+  const isEscalationPoint = normalizedType.includes('escalation');
+  const isDecisionPoint = normalizedType.includes('decision');
+  const isIntegrationPoint = normalizedType.includes('integration');
+  const isExitPoint = normalizedType.includes('exit');
+  const hasMultipleConnections = isEscalationPoint || isDecisionPoint || isIntegrationPoint;
+
   return (
     <div className="journey-node">
+      {/* Default input target handle */}
       <Handle
         type="target"
         position={Position.Left}
         className="w-3 h-3 bg-blue-600"
       />
+      
+      {/* Add additional input target handles based on node type */}
+      {isEscalationPoint && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Top}
+            id="target-top"
+            className="w-3 h-3 bg-orange-500"
+          />
+          <Handle
+            type="target"
+            position={Position.Bottom}
+            id="target-bottom"
+            className="w-3 h-3 bg-orange-500"
+          />
+        </>
+      )}
+      
+      {isDecisionPoint && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Top}
+            id="target-decision-top"
+            className="w-3 h-3 bg-amber-500"
+          />
+          <Handle
+            type="target"
+            position={Position.Bottom}
+            id="target-decision-bottom"
+            className="w-3 h-3 bg-amber-500"
+          />
+        </>
+      )}
+      
+      {isIntegrationPoint && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Top}
+            id="target-integration-top"
+            className="w-3 h-3 bg-purple-500"
+          />
+          <Handle
+            type="target"
+            position={Position.Bottom}
+            id="target-integration-bottom"
+            className="w-3 h-3 bg-purple-500"
+          />
+        </>
+      )}
       
       <Card 
         className={`w-64 shadow-md border-2 ${styles.borderColor} ${styles.bg} hover:shadow-lg transition-shadow cursor-pointer relative`}
@@ -190,11 +251,112 @@ export default function JourneyNode({ data, id }: NodeProps<JourneyNodeData>) {
         </CardContent>
       </Card>
       
+      {/* Default output source handle */}
       <Handle
         type="source"
         position={Position.Right}
         className="w-3 h-3 bg-blue-600"
       />
+      
+      {/* Add additional output source handles for different node types */}
+      {isEscalationPoint && (
+        <>
+          <Handle
+            type="source"
+            position={Position.Top}
+            id="source-top"
+            className="w-3 h-3 bg-orange-500"
+            style={{ left: '75%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-right-top"
+            className="w-3 h-3 bg-orange-500"
+            style={{ top: '35%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-right-bottom"
+            className="w-3 h-3 bg-orange-500"
+            style={{ top: '65%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="source-bottom"
+            className="w-3 h-3 bg-orange-500"
+            style={{ left: '75%' }}
+          />
+        </>
+      )}
+      
+      {isDecisionPoint && (
+        <>
+          <Handle
+            type="source"
+            position={Position.Top}
+            id="source-decision-top"
+            className="w-3 h-3 bg-amber-500"
+            style={{ left: '75%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-decision-right-top"
+            className="w-3 h-3 bg-amber-500"
+            style={{ top: '35%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-decision-right-bottom"
+            className="w-3 h-3 bg-amber-500"
+            style={{ top: '65%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="source-decision-bottom"
+            className="w-3 h-3 bg-amber-500"
+            style={{ left: '75%' }}
+          />
+        </>
+      )}
+      
+      {isIntegrationPoint && (
+        <>
+          <Handle
+            type="source"
+            position={Position.Top}
+            id="source-integration-top"
+            className="w-3 h-3 bg-purple-500"
+            style={{ left: '75%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-integration-right-top"
+            className="w-3 h-3 bg-purple-500"
+            style={{ top: '35%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-integration-right-bottom"
+            className="w-3 h-3 bg-purple-500"
+            style={{ top: '65%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="source-integration-bottom"
+            className="w-3 h-3 bg-purple-500"
+            style={{ left: '75%' }}
+          />
+        </>
+      )}
     </div>
   );
 }

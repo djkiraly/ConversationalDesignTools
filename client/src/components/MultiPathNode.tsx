@@ -70,12 +70,44 @@ export default function MultiPathNode({ data, id }: NodeProps<MultiPathNodeData>
     );
   }
   
-  return (
-    <div className="multi-path-node">
+  // Generate the input handles (3 by default)
+  const inputHandles = [];
+  const numInputs = 3; // Fixed number of input handles
+  const inputSpacing = cardHeight / (numInputs + 1);
+  
+  for (let i = 1; i <= numInputs; i++) {
+    const topPosition = `${i * inputSpacing}px`;
+    inputHandles.push(
       <Handle
+        key={`input-${i}`}
         type="target"
         position={Position.Left}
+        id={`input-${i}`}
         className="w-3 h-3 bg-blue-600"
+        style={{ top: topPosition, left: '-4px' }}
+      />
+    );
+  }
+
+  return (
+    <div className="multi-path-node">
+      {/* Render multiple input handles */}
+      {inputHandles}
+      
+      {/* Additional target handles on top and bottom */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="target-top"
+        className="w-3 h-3 bg-yellow-500"
+        style={{ left: '25%' }}
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="target-bottom"
+        className="w-3 h-3 bg-yellow-500"
+        style={{ left: '25%' }}
       />
       
       <Card 
@@ -109,6 +141,22 @@ export default function MultiPathNode({ data, id }: NodeProps<MultiPathNodeData>
       
       {/* Render multiple output handles */}
       {outputHandles}
+      
+      {/* Additional source handles on top and bottom */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="source-top"
+        className="w-3 h-3 bg-yellow-500"
+        style={{ left: '75%' }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="source-bottom"
+        className="w-3 h-3 bg-yellow-500"
+        style={{ left: '75%' }}
+      />
     </div>
   );
 }
