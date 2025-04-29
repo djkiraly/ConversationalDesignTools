@@ -211,7 +211,7 @@ export function parseConversationFlow(text: string): ParsedFlow {
   return {
     steps: steps.filter(step => {
       const stepType = step.stepType || '';
-      const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point'].includes(stepType);
+      const isSpecialStepType = ['Entry Point', 'Exit Point', 'Integration', 'Decision Point', 'Escalation Point'].includes(stepType);
       return step.messages.length > 0 || isSpecialStepType;
     })
   };
@@ -246,6 +246,21 @@ export function parseConversationFlowWithTypes(text: string): ParsedFlow {
       // Last step is usually completion or checkout
       if (index === allSteps.length - 1) {
         return { ...step, stepType: "Completion" };
+      }
+      
+      // Detect escalation situations
+      if (
+        allText.includes("escalate") || 
+        allText.includes("supervisor") ||
+        allText.includes("manager") ||
+        allText.includes("human agent") ||
+        allText.includes("speak to someone") ||
+        allText.includes("transfer") ||
+        allText.includes("complaint") ||
+        allText.includes("unhappy") ||
+        allText.includes("frustrated")
+      ) {
+        return { ...step, stepType: "Escalation Point" };
       }
       
       // Detect step type based on content
