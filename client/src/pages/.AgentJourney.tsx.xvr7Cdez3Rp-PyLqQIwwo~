@@ -748,7 +748,7 @@ const AgentJourneyPage: React.FC = () => {
                       <Input
                         id="title"
                         name="title"
-                        value={formState.title || ''}
+                        value={formState.title}
                         onChange={handleInputChange}
                         placeholder="Enter a title for this agent journey"
                       />
@@ -759,7 +759,7 @@ const AgentJourneyPage: React.FC = () => {
                       <Input
                         id="agentName"
                         name="agentName"
-                        value={formState.agentName || ''}
+                        value={formState.agentName}
                         onChange={handleInputChange}
                         placeholder="Enter a name for this agent"
                       />
@@ -770,7 +770,7 @@ const AgentJourneyPage: React.FC = () => {
                       <Textarea
                         id="purpose"
                         name="purpose"
-                        value={formState.purpose || ''}
+                        value={formState.purpose}
                         onChange={handleInputChange}
                         placeholder="What's the main purpose of this agent?"
                         rows={3}
@@ -882,7 +882,7 @@ const AgentJourneyPage: React.FC = () => {
                       <Textarea
                         id="notes"
                         name="notes"
-                        value={formState.notes || ''}
+                        value={formState.notes}
                         onChange={handleInputChange}
                         placeholder="Additional notes about this agent journey"
                         rows={3}
