@@ -95,6 +95,7 @@ export default function NewNodeDialog({ onCreateNode }: NewNodeDialogProps) {
                     <SelectItem value="Identification">Identification</SelectItem>
                     <SelectItem value="Resolution">Resolution</SelectItem>
                     <SelectItem value="Follow-up">Follow-up</SelectItem>
+                    <SelectItem value="Escalation Point">Escalation Point</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
