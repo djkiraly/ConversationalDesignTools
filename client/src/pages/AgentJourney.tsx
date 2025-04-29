@@ -35,7 +35,8 @@ import {
   Map, 
   HelpCircle,
   Loader2,
-  GitBranch
+  GitBranch,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -175,12 +176,40 @@ const DecisionNode = ({ data, selected, id }: { data: any, selected: boolean, id
   );
 };
 
+const EscalationNode = ({ data, selected, id }: { data: any, selected: boolean, id: string }) => {
+  const { openNodeEditor } = data;
+  
+  return (
+    <div 
+      className={`node escalation-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}
+      onClick={() => openNodeEditor(id, data)}
+    >
+      <div className="flex items-center space-x-2 mb-2">
+        <AlertTriangle size={20} className="text-orange-500" />
+        <div className="font-medium">{data.label}</div>
+      </div>
+      <div className="text-sm text-muted-foreground">{data.content}</div>
+      
+      {/* Connection points */}
+      <Handle type="target" position={Position.Left} id="target-left" style={{ top: '30%' }} />
+      <Handle type="target" position={Position.Left} id="target-left-bottom" style={{ top: '70%' }} />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      
+      {/* Output points */}
+      <Handle type="source" position={Position.Right} id="source-right" style={{ top: '30%' }} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" />
+      <Handle type="source" position={Position.Bottom} id="source-bottom-human" style={{ left: '75%' }} />
+    </div>
+  );
+};
+
 // Register custom nodes
 const nodeTypes: NodeTypes = {
   agent: AgentNode,
   system: SystemNode,
   guardrail: GuardrailNode,
   decision: DecisionNode,
+  escalation: EscalationNode,
 };
 
 // Default node options when adding a new node
@@ -208,6 +237,12 @@ const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: str
       label: 'Decision Point',
       content: 'Define a decision with multiple possible outcomes',
       type: 'decision',
+      openNodeEditor
+    },
+    escalation: {
+      label: 'Escalation Point',
+      content: 'Define when and how to escalate to human agents',
+      type: 'escalation',
       openNodeEditor
     }
   };
@@ -681,6 +716,14 @@ const AgentJourneyPage: React.FC = () => {
                         >
                           <GitBranch size={14} className="mr-2 text-purple-500" />
                           Decision Point
+                        </div>
+                        <div
+                          onDragStart={(event) => onDragStart(event, 'escalation')}
+                          draggable
+                          className="bg-background hover:bg-accent text-sm p-2 rounded cursor-grab flex items-center"
+                        >
+                          <AlertTriangle size={14} className="mr-2 text-orange-500" />
+                          Escalation Point
                         </div>
                       </div>
                     )}
