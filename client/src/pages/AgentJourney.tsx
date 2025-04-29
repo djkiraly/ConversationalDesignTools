@@ -66,41 +66,79 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 
 // Custom node components
-const AgentNode = ({ data, selected }: { data: any, selected: boolean }) => (
-  <div className={`node agent-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}>
-    <div className="flex items-center space-x-2 mb-2">
-      <Bot size={20} className="text-primary" />
-      <div className="font-medium">{data.label}</div>
+const AgentNode = ({ data, selected, id }: { data: any, selected: boolean, id: string }) => {
+  const { openNodeEditor } = data;
+  
+  return (
+    <div 
+      className={`node agent-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}
+      onClick={() => openNodeEditor(id, data)}
+    >
+      <div className="flex items-center space-x-2 mb-2">
+        <Bot size={20} className="text-primary" />
+        <div className="font-medium">{data.label}</div>
+      </div>
+      <div className="text-sm text-muted-foreground">{data.content}</div>
+      
+      {/* Multiple connection points */}
+      <Handle type="target" position={Position.Left} id="target-left" style={{ top: '30%' }} />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" />
+      <Handle type="source" position={Position.Right} id="source-right" style={{ top: '30%' }} />
+      <Handle type="source" position={Position.Right} id="source-right-bottom" style={{ top: '70%' }} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" />
     </div>
-    <div className="text-sm text-muted-foreground">{data.content}</div>
-    <Handle type="target" position={Position.Left} />
-    <Handle type="source" position={Position.Right} />
-  </div>
-);
+  );
+};
 
-const SystemNode = ({ data, selected }: { data: any, selected: boolean }) => (
-  <div className={`node system-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}>
-    <div className="flex items-center space-x-2 mb-2">
-      <Database size={20} className="text-blue-500" />
-      <div className="font-medium">{data.label}</div>
+const SystemNode = ({ data, selected, id }: { data: any, selected: boolean, id: string }) => {
+  const { openNodeEditor } = data;
+  
+  return (
+    <div 
+      className={`node system-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}
+      onClick={() => openNodeEditor(id, data)}
+    >
+      <div className="flex items-center space-x-2 mb-2">
+        <Database size={20} className="text-blue-500" />
+        <div className="font-medium">{data.label}</div>
+      </div>
+      <div className="text-sm text-muted-foreground">{data.content}</div>
+      
+      {/* Multiple connection points */}
+      <Handle type="target" position={Position.Left} id="target-left" style={{ top: '30%' }} />
+      <Handle type="target" position={Position.Left} id="target-left-bottom" style={{ top: '70%' }} />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      <Handle type="source" position={Position.Right} id="source-right" style={{ top: '30%' }} />
+      <Handle type="source" position={Position.Right} id="source-right-bottom" style={{ top: '70%' }} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" />
     </div>
-    <div className="text-sm text-muted-foreground">{data.content}</div>
-    <Handle type="target" position={Position.Left} />
-    <Handle type="source" position={Position.Right} />
-  </div>
-);
+  );
+};
 
-const GuardrailNode = ({ data, selected }: { data: any, selected: boolean }) => (
-  <div className={`node guardrail-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}>
-    <div className="flex items-center space-x-2 mb-2">
-      <Shield size={20} className="text-red-500" />
-      <div className="font-medium">{data.label}</div>
+const GuardrailNode = ({ data, selected, id }: { data: any, selected: boolean, id: string }) => {
+  const { openNodeEditor } = data;
+  
+  return (
+    <div 
+      className={`node guardrail-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background`}
+      onClick={() => openNodeEditor(id, data)}
+    >
+      <div className="flex items-center space-x-2 mb-2">
+        <Shield size={20} className="text-red-500" />
+        <div className="font-medium">{data.label}</div>
+      </div>
+      <div className="text-sm text-muted-foreground">{data.content}</div>
+      
+      {/* Multiple connection points */}
+      <Handle type="target" position={Position.Left} id="target-left" style={{ top: '30%' }} />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      <Handle type="source" position={Position.Right} id="source-right" style={{ top: '30%' }} />
+      <Handle type="source" position={Position.Right} id="source-right-bottom" style={{ top: '70%' }} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" />
     </div>
-    <div className="text-sm text-muted-foreground">{data.content}</div>
-    <Handle type="target" position={Position.Left} />
-    <Handle type="source" position={Position.Right} />
-  </div>
-);
+  );
+};
 
 // Register custom nodes
 const nodeTypes: NodeTypes = {
@@ -110,22 +148,25 @@ const nodeTypes: NodeTypes = {
 };
 
 // Default node options when adding a new node
-const getNewNode = (type: string, position: XYPosition): Node => {
+const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: string, data: any) => void): Node => {
   const nodeData = {
     agent: {
       label: 'Agent Process',
       content: 'Describe how the agent handles this step',
-      type: 'agent'
+      type: 'agent',
+      openNodeEditor
     },
     system: {
       label: 'Backend System',
       content: 'Integration with external system or database',
-      type: 'system'
+      type: 'system',
+      openNodeEditor
     },
     guardrail: {
       label: 'Guardrail Check',
       content: 'Define validation, safety checks, or constraints',
-      type: 'guardrail'
+      type: 'guardrail',
+      openNodeEditor
     }
   };
 
@@ -159,6 +200,14 @@ const AgentJourneyPage: React.FC = () => {
   const [nodeMenuOpen, setNodeMenuOpen] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  
+  // Node editor state
+  const [nodeEditorOpen, setNodeEditorOpen] = useState(false);
+  const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
+  const [nodeEditorData, setNodeEditorData] = useState<{ label: string; content: string }>({
+    label: '',
+    content: ''
+  });
   
   // Journey form state using useEditingState hook
   const initialJourney: InsertAgentJourney = {
@@ -376,6 +425,41 @@ const AgentJourneyPage: React.FC = () => {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  // Node editor handlers
+  const openNodeEditor = useCallback((id: string, data: any) => {
+    setCurrentNodeId(id);
+    setNodeEditorData({
+      label: data.label || '',
+      content: data.content || ''
+    });
+    setNodeEditorOpen(true);
+    if (!isEditing) startEditing();
+  }, [isEditing, startEditing]);
+
+  const saveNodeEdits = useCallback(() => {
+    if (!currentNodeId) return;
+    
+    setNodes(nodes => nodes.map(node => {
+      if (node.id === currentNodeId) {
+        // Create a new data object with updated values while preserving other fields
+        const updatedData = {
+          ...node.data,
+          label: nodeEditorData.label,
+          content: nodeEditorData.content
+        };
+        
+        return {
+          ...node,
+          data: updatedData
+        };
+      }
+      return node;
+    }));
+    
+    setNodeEditorOpen(false);
+    setCurrentNodeId(null);
+  }, [currentNodeId, nodeEditorData, setNodes]);
+
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
@@ -393,11 +477,11 @@ const AgentJourneyPage: React.FC = () => {
         y: event.clientY - reactFlowBounds.top,
       });
 
-      const newNode = getNewNode(type, position);
+      const newNode = getNewNode(type, position, openNodeEditor);
       setNodes(nodes => [...nodes, newNode]);
       if (!isEditing) startEditing();
     },
-    [setNodes, isEditing, startEditing]
+    [setNodes, isEditing, startEditing, openNodeEditor]
   );
 
   // Export to PDF
