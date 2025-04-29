@@ -674,6 +674,14 @@ const AgentJourneyPage: React.FC = () => {
                           <Shield size={14} className="mr-2 text-red-500" />
                           Guardrail Check
                         </div>
+                        <div
+                          onDragStart={(event) => onDragStart(event, 'decision')}
+                          draggable
+                          className="bg-background hover:bg-accent text-sm p-2 rounded cursor-grab flex items-center"
+                        >
+                          <GitBranch size={14} className="mr-2 text-purple-500" />
+                          Decision Point
+                        </div>
                       </div>
                     )}
                   </div>
