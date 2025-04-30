@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Route, useRoute, useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactFlow, {
@@ -344,26 +344,35 @@ const AgentJourneyPage: React.FC = () => {
   const saveNodeEdits = useCallback(() => {
     if (!currentNodeId) return;
     
-    setNodes(nodes => nodes.map(node => {
-      if (node.id === currentNodeId) {
-        // Create a new data object with updated values while preserving other fields
-        const updatedData = {
-          ...node.data,
-          label: nodeEditorData.label,
-          content: nodeEditorData.content
-        };
-        
-        return {
-          ...node,
-          data: updatedData
-        };
-      }
-      return node;
-    }));
-    
-    setNodeEditorOpen(false);
-    setCurrentNodeId(null);
-  }, [currentNodeId, nodeEditorData, setNodes]);
+    try {
+      setNodes(nodes => nodes.map(node => {
+        if (node.id === currentNodeId) {
+          // Create a new data object with updated values while preserving other fields
+          const updatedData = {
+            ...node.data,
+            label: nodeEditorData?.label || node.data.label || '',
+            content: nodeEditorData?.content || node.data.content || ''
+          };
+          
+          return {
+            ...node,
+            data: updatedData
+          };
+        }
+        return node;
+      }));
+      
+      setNodeEditorOpen(false);
+      setCurrentNodeId(null);
+    } catch (error) {
+      console.error("Error saving node edits:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save node edits. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [currentNodeId, nodeEditorData, setNodes, toast]);
 
   // Query journey data if in edit mode
   const { data: journeyData, isLoading: isLoadingJourney } = useQuery({
