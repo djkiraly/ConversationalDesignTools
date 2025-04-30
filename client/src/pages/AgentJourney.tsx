@@ -249,6 +249,12 @@ const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: str
       content: 'Define when and how to escalate to human agents',
       type: 'escalation',
       openNodeEditor
+    },
+    note: {
+      label: 'Note',
+      content: 'Add a note or comment about the agent journey',
+      type: 'note',
+      openNodeEditor
     }
   };
 
@@ -729,6 +735,14 @@ const AgentJourneyPage: React.FC = () => {
                         >
                           <AlertTriangle size={14} className="mr-2 text-orange-500" />
                           Escalation Point
+                        </div>
+                        <div
+                          onDragStart={(event) => onDragStart(event, 'note')}
+                          draggable
+                          className="bg-background hover:bg-accent text-sm p-2 rounded cursor-grab flex items-center"
+                        >
+                          <StickyNote size={14} className="mr-2 text-yellow-500" />
+                          Note
                         </div>
                       </div>
                     )}
