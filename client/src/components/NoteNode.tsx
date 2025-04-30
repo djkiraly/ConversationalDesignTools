@@ -1,7 +1,4 @@
-import { useState, useRef } from 'react';
 import { NodeProps } from 'reactflow';
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StickyNote } from 'lucide-react';
 
 interface NoteNodeData {
@@ -13,10 +10,19 @@ interface NoteNodeData {
 const NoteNode = ({ data, id, selected }: NodeProps<NoteNodeData>) => {
   const { label, content, openNodeEditor } = data;
 
+  const handleClick = (event: React.MouseEvent) => {
+    // Prevent event propagation
+    event.stopPropagation();
+    // Call the openNodeEditor function with the node id and data
+    if (openNodeEditor && typeof openNodeEditor === 'function') {
+      openNodeEditor(id, { label, content });
+    }
+  };
+
   return (
     <div 
       className={`node note-node rounded-md p-4 w-[300px] ${selected ? 'border-2 border-primary' : 'border border-border'}`}
-      onClick={() => openNodeEditor(id, data)}
+      onClick={handleClick}
       style={{ 
         background: 'rgba(255, 251, 235, 0.95)', 
         border: '1px solid #fde68a',

@@ -207,16 +207,6 @@ const EscalationNode = ({ data, selected, id }: { data: any, selected: boolean, 
 // Import NoteNode component
 import NoteNode from '../components/NoteNode';
 
-// Register custom nodes
-const nodeTypes: NodeTypes = {
-  agent: AgentNode,
-  system: SystemNode,
-  guardrail: GuardrailNode,
-  decision: DecisionNode,
-  escalation: EscalationNode,
-  note: NoteNode
-};
-
 // Default node options when adding a new node
 const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: string, data: any) => void): Node => {
   const nodeData = {
@@ -328,14 +318,28 @@ const AgentJourneyPage: React.FC = () => {
 
   // Node editor handlers
   const openNodeEditor = useCallback((id: string, data: any) => {
-    setCurrentNodeId(id);
-    setNodeEditorData({
-      label: data.label || '',
-      content: data.content || ''
-    });
-    setNodeEditorOpen(true);
-    if (!isEditing) startEditing();
-  }, [isEditing, startEditing]);
+    try {
+      if (id && data) {
+        setCurrentNodeId(id);
+        setNodeEditorData({
+          label: data.label || '',
+          content: data.content || ''
+        });
+        setNodeEditorOpen(true);
+        if (!isEditing) startEditing();
+      } else {
+        console.error("Invalid node data or ID for editor", { id, data });
+      }
+    } catch (error) {
+      console.error("Error opening node editor:", error);
+      // Handle error gracefully
+      toast({
+        title: "Error",
+        description: "Failed to open node editor. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [isEditing, startEditing, toast]);
 
   const saveNodeEdits = useCallback(() => {
     if (!currentNodeId) return;
@@ -647,6 +651,16 @@ const AgentJourneyPage: React.FC = () => {
       setIsExporting(false);
     }
   }, [nodes, formState, toast]);
+
+  // Memoize nodeTypes to avoid React Flow warning
+  const nodeTypes = useMemo<NodeTypes>(() => ({
+    agent: AgentNode,
+    system: SystemNode,
+    guardrail: GuardrailNode,
+    decision: DecisionNode,
+    escalation: EscalationNode,
+    note: NoteNode
+  }), []);
 
   // Generate a node for dragging
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: string) => {
@@ -1047,8 +1061,8 @@ const AgentJourneyPage: React.FC = () => {
                 </Label>
                 <Input
                   id="nodeName"
-                  value={nodeEditorData.label}
-                  onChange={(e) => setNodeEditorData({...nodeEditorData, label: e.target.value})}
+                  value={nodeEditorData?.label || ''}
+                  onChange={(e) => setNodeEditorData((prev) => ({...prev, label: e.target.value}))}
                   className="col-span-3"
                 />
               </div>
@@ -1058,8 +1072,8 @@ const AgentJourneyPage: React.FC = () => {
                 </Label>
                 <Textarea
                   id="nodeContent"
-                  value={nodeEditorData.content}
-                  onChange={(e) => setNodeEditorData({...nodeEditorData, content: e.target.value})}
+                  value={nodeEditorData?.content || ''}
+                  onChange={(e) => setNodeEditorData((prev) => ({...prev, content: e.target.value}))}
                   className="col-span-3"
                   rows={4}
                 />
