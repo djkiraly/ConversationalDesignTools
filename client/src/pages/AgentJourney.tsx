@@ -36,7 +36,8 @@ import {
   HelpCircle,
   Loader2,
   GitBranch,
-  AlertTriangle
+  AlertTriangle,
+  StickyNote
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -203,6 +204,9 @@ const EscalationNode = ({ data, selected, id }: { data: any, selected: boolean, 
   );
 };
 
+// Import NoteNode component
+import NoteNode from '../components/NoteNode';
+
 // Register custom nodes
 const nodeTypes: NodeTypes = {
   agent: AgentNode,
@@ -210,6 +214,7 @@ const nodeTypes: NodeTypes = {
   guardrail: GuardrailNode,
   decision: DecisionNode,
   escalation: EscalationNode,
+  note: NoteNode
 };
 
 // Default node options when adding a new node
