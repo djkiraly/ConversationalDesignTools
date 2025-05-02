@@ -1,79 +1,65 @@
-import React, { ReactNode, CSSProperties } from 'react';
-import { Handle, Position } from 'reactflow';
-import { ResizableBox, ResizableBoxProps } from 'react-resizable';
+import React from 'react';
+import { Handle, HandleProps, Position } from 'reactflow';
+import { ResizableBox, ResizeCallbackData } from 'react-resizable';
+import 'react-resizable/css/styles.css';
 
 interface ResizableNodeProps {
-  children: ReactNode;
-  minWidth?: number;
-  minHeight?: number;
-  width?: number;
-  height?: number;
-  selected?: boolean;
+  children: React.ReactNode;
   className?: string;
-  style?: CSSProperties;
-  handles?: {
-    type: 'source' | 'target';
-    position: Position;
-    id: string;
-    style?: CSSProperties;
-  }[];
-  onResize?: (size: { width: number; height: number }) => void;
+  width: number;
+  height: number;
+  minWidth: number;
+  minHeight: number;
+  handles: HandleProps[];
+  selected: boolean;
+  onResize: (size: { width: number; height: number }) => void;
 }
 
 const ResizableNode: React.FC<ResizableNodeProps> = ({
   children,
-  minWidth = 200,
-  minHeight = 100,
-  width = 300,
-  height = 'auto',
-  selected = false,
   className = '',
-  style = {},
-  handles = [],
-  onResize,
+  width,
+  height,
+  minWidth,
+  minHeight,
+  handles,
+  selected,
+  onResize
 }) => {
-  const defaultHandleStyle: CSSProperties = {
-    background: '#555',
-    width: 8,
-    height: 8,
-  };
-
-  const resizableProps: ResizableBoxProps = {
-    width: typeof width === 'number' ? width : 300,
-    height: typeof height === 'number' ? height : 150,
-    minConstraints: [minWidth, minHeight],
-    onResize: (e, { size }) => {
-      if (onResize) {
-        onResize(size);
-      }
-    },
-    resizeHandles: ['se'],
-    handle: (
-      <div
-        className={`resize-handle ${selected ? 'visible' : 'invisible'} w-3 h-3 bg-primary/70 rounded-sm absolute bottom-0 right-0 cursor-se-resize border border-background`}
-      />
-    ),
+  const handleResize = (
+    _e: React.SyntheticEvent,
+    { size }: ResizeCallbackData
+  ) => {
+    onResize(size);
   };
 
   return (
-    <div className="relative">
-      <ResizableBox {...resizableProps}>
+    <div className={`${selected ? 'border-primary border-2' : ''}`}>
+      <ResizableBox
+        width={width}
+        height={height}
+        minConstraints={[minWidth, minHeight]}
+        onResize={handleResize}
+        resizeHandles={['se']}
+        className="react-resizable"
+      >
         <div
-          className={`p-4 ${selected ? 'border-2 border-primary' : 'border border-border'} bg-background rounded-md overflow-hidden ${className}`}
-          style={style}
+          className={`${className} w-full h-full p-4 overflow-hidden bg-card border shadow-sm`}
+          style={{ width: width, height: height }}
         >
-          {children}
+          <div className="resizable-node-content">
+            {children}
+          </div>
         </div>
       </ResizableBox>
-      
-      {/* Render all connection handles */}
+
       {handles.map((handle) => (
         <Handle
           key={handle.id}
           type={handle.type}
           position={handle.position}
           id={handle.id}
-          style={{ ...defaultHandleStyle, ...handle.style }}
+          style={handle.style}
         />
       ))}
     </div>
