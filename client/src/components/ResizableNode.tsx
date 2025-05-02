@@ -39,31 +39,27 @@ const ResizableNode: React.FC<ResizableNodeProps> = ({
 
   return (
     <div className={`${selected ? 'border-primary border-2' : ''}`}>
-      <ResizableBox
-        width={width}
-        height={height}
-        minConstraints={[minWidth, minHeight]}
-        onResize={handleResize}
-        resizeHandles={['se']}
-        className="react-resizable"
-      >
-        <div
-          className={`${className} w-full h-full p-4 overflow-hidden bg-card border shadow-sm relative`}
-          style={{ width: width, height: height }}
+      {/* Use React Flow's draggability only for the node content */}
+      <div className="nodrag">
+        <ResizableBox
+          width={width}
+          height={height}
+          minConstraints={[minWidth, minHeight]}
+          onResize={handleResize}
+          resizeHandles={['se']}
+          className="react-resizable"
         >
-          <div className="resizable-node-content">
-            {children}
+          <div
+            className={`${className} w-full h-full p-4 overflow-hidden bg-card border shadow-sm`}
+            style={{ width: width, height: height }}
+          >
+            {/* Re-enable dragging for the node content */}
+            <div className="drag resizable-node-content">
+              {children}
+            </div>
           </div>
-          
-          {/* Custom resize handle with greater visibility */}
-          <div 
-            className="absolute bottom-1 right-1 w-3 h-3 bg-blue-500 rounded-br-sm opacity-50 hover:opacity-100 cursor-se-resize z-50"
-            style={{ 
-              backgroundImage: 'linear-gradient(135deg, transparent 50%, #3b82f6 50%)',
-            }}
-          />
-        </div>
-      </ResizableBox>
+        </ResizableBox>
+      </div>
 
       {handles.map((handle) => (
         <Handle
