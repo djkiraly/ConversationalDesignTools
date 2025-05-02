@@ -34,12 +34,12 @@ import ResizableDecisionNode from '../components/ResizableDecisionNode';
 import ResizableGuardrailNode from '../components/ResizableGuardrailNode';
 import ResizableEscalationNode from '../components/ResizableEscalationNode';
 
-// Import simple resizable components (new implementation)
-import SimpleResizableAgentNode from '../components/SimpleResizableAgentNode';
-import SimpleResizableSystemNode from '../components/SimpleResizableSystemNode';
-import SimpleResizableDecisionNode from '../components/SimpleResizableDecisionNode';
-import SimpleResizableGuardrailNode from '../components/SimpleResizableGuardrailNode';
-import SimpleResizableEscalationNode from '../components/SimpleResizableEscalationNode';
+// Import auto-sizing components (better implementation)
+import AutoSizingAgentNode from '../components/AutoSizingAgentNode';
+import AutoSizingSystemNode from '../components/AutoSizingSystemNode';
+import AutoSizingDecisionNode from '../components/AutoSizingDecisionNode';
+import AutoSizingGuardrailNode from '../components/AutoSizingGuardrailNode';
+import AutoSizingEscalationNode from '../components/AutoSizingEscalationNode';
 import { 
   Bot, 
   Database, 
@@ -1042,11 +1042,11 @@ const AgentJourneyPage: React.FC = () => {
 
   // Memoize nodeTypes to avoid React Flow warning
   const nodeTypes = useMemo<NodeTypes>(() => ({
-    agent: SimpleResizableAgentNode,
-    system: SimpleResizableSystemNode,
-    guardrail: SimpleResizableGuardrailNode,
-    decision: SimpleResizableDecisionNode,
-    escalation: SimpleResizableEscalationNode,
+    agent: AutoSizingAgentNode,
+    system: AutoSizingSystemNode,
+    guardrail: AutoSizingGuardrailNode,
+    decision: AutoSizingDecisionNode,
+    escalation: AutoSizingEscalationNode,
     note: NoteNode,
     start: StartNode,
     end: EndNode,
