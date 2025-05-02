@@ -312,6 +312,7 @@ const AgentJourneyPage: React.FC = () => {
   
   // AI Suggestion state
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [isGeneratingFlow, setIsGeneratingFlow] = useState(false);
   
   // Journey form state using useEditingState hook
   const initialJourney: InsertAgentJourney = {
@@ -869,6 +870,146 @@ const AgentJourneyPage: React.FC = () => {
       setIsLoadingSuggestion(false);
     }
   }, [isLoadingSuggestion, isEditMode, formState.title, nodes.length, setFormState, setNodes, setEdges, isEditing, startEditing, toast, openNodeEditor]);
+
+  // Generate flow visualization based on the journey metadata
+  const generateFlowFromMetadata = useCallback(async () => {
+    if (isGeneratingFlow || nodes.length > 0 || !formState.title) return;
+    
+    try {
+      setIsGeneratingFlow(true);
+      
+      // Create initial nodes based on the journey metadata
+      const newNodes: Node[] = [];
+      const spacing = 200;  // spacing between nodes
+      const startPosition = { x: 100, y: 100 };
+      
+      // Add start node
+      const startNode = getNewNode('start', startPosition, openNodeEditor);
+      startNode.id = 'start-node';
+      newNodes.push(startNode);
+      
+      // Add agent node based on input interpretation
+      if (formState.inputInterpretation) {
+        const inputNode = getNewNode('agent', { x: startPosition.x + spacing, y: startPosition.y }, openNodeEditor);
+        inputNode.id = 'input-node';
+        inputNode.data.label = 'Input Processing';
+        inputNode.data.content = formState.inputInterpretation.substring(0, 150) + (formState.inputInterpretation.length > 150 ? '...' : '');
+        newNodes.push(inputNode);
+      }
+      
+      // Add guardrail node if present
+      if (formState.guardrails) {
+        const guardrailsNode = getNewNode('guardrail', { x: startPosition.x + spacing * 2, y: startPosition.y }, openNodeEditor);
+        guardrailsNode.id = 'guardrails-node';
+        guardrailsNode.data.label = 'Content Guardrails';
+        guardrailsNode.data.content = formState.guardrails.substring(0, 150) + (formState.guardrails.length > 150 ? '...' : '');
+        newNodes.push(guardrailsNode);
+      }
+      
+      // Add backend systems if present
+      if (Array.isArray(formState.backendSystems) && formState.backendSystems.length > 0) {
+        const systemsNode = getNewNode('system', { x: startPosition.x + spacing * 2, y: startPosition.y + spacing }, openNodeEditor);
+        systemsNode.id = 'backend-systems-node';
+        systemsNode.data.label = 'Backend Systems';
+        systemsNode.data.content = formState.backendSystems.join(', ');
+        newNodes.push(systemsNode);
+      }
+      
+      // Add context management node if present
+      if (formState.contextManagement) {
+        const contextNode = getNewNode('agent', { x: startPosition.x + spacing * 3, y: startPosition.y }, openNodeEditor);
+        contextNode.id = 'context-node';
+        contextNode.data.label = 'Context Management';
+        contextNode.data.content = formState.contextManagement.substring(0, 150) + (formState.contextManagement.length > 150 ? '...' : '');
+        newNodes.push(contextNode);
+      }
+      
+      // Add escalation node if present
+      if (formState.escalationRules) {
+        const escalationNode = getNewNode('escalation', { x: startPosition.x + spacing * 3, y: startPosition.y + spacing }, openNodeEditor);
+        escalationNode.id = 'escalation-node';
+        escalationNode.data.label = 'Escalation Path';
+        escalationNode.data.content = formState.escalationRules.substring(0, 150) + (formState.escalationRules.length > 150 ? '...' : '');
+        newNodes.push(escalationNode);
+      }
+      
+      // Add error monitoring
+      if (formState.errorMonitoring) {
+        const errorNode = getNewNode('note', { x: startPosition.x + spacing * 4, y: startPosition.y + spacing }, openNodeEditor);
+        errorNode.id = 'error-node';
+        errorNode.data.label = 'Error Monitoring';
+        errorNode.data.content = formState.errorMonitoring.substring(0, 150) + (formState.errorMonitoring.length > 150 ? '...' : '');
+        newNodes.push(errorNode);
+      }
+      
+      // Add end node
+      const endNode = getNewNode('end', { x: startPosition.x + spacing * 4, y: startPosition.y }, openNodeEditor);
+      endNode.id = 'end-node';
+      newNodes.push(endNode);
+      
+      // Create edges to connect the nodes
+      const newEdges = [];
+      for (let i = 0; i < newNodes.length - 1; i++) {
+        // Don't add edges from note nodes
+        if (newNodes[i].type === 'note') continue;
+        
+        // Skip over note nodes when connecting
+        let nextIdx = i + 1;
+        while (nextIdx < newNodes.length && newNodes[nextIdx].type === 'note') {
+          nextIdx++;
+        }
+        
+        if (nextIdx < newNodes.length) {
+          newEdges.push({
+            id: `edge-${newNodes[i].id}-${newNodes[nextIdx].id}`,
+            source: newNodes[i].id,
+            target: newNodes[nextIdx].id,
+            type: 'smoothstep',
+            animated: true,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+            },
+          });
+        }
+      }
+      
+      // Connect escalation node to end node if both exist
+      const escalationNode = newNodes.find(node => node.id === 'escalation-node');
+      if (escalationNode) {
+        newEdges.push({
+          id: `edge-escalation-end`,
+          source: 'escalation-node',
+          target: 'end-node',
+          type: 'smoothstep',
+          animated: true,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+          },
+        });
+      }
+      
+      // Update the flow with new nodes and edges
+      setNodes(newNodes);
+      setEdges(newEdges);
+      
+      // Mark the form as edited
+      startEditing();
+      
+      toast({
+        title: "Success",
+        description: "Flow generated from journey metadata!",
+      });
+    } catch (error) {
+      console.error('Error generating flow from metadata:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate flow. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingFlow(false);
+    }
+  }, [formState, setNodes, setEdges, startEditing, toast, isGeneratingFlow, nodes.length, openNodeEditor]);
 
   // Memoize nodeTypes to avoid React Flow warning
   const nodeTypes = useMemo<NodeTypes>(() => ({
