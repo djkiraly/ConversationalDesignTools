@@ -309,6 +309,9 @@ const AgentJourneyPage: React.FC = () => {
     content: ''
   });
   
+  // AI Suggestion state
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  
   // Journey form state using useEditingState hook
   const initialJourney: InsertAgentJourney = {
     title: '',
@@ -682,6 +685,115 @@ const AgentJourneyPage: React.FC = () => {
       setIsExporting(false);
     }
   }, [nodes, formState, toast]);
+  
+  // AI Suggestion function
+  const fetchAiSuggestion = useCallback(async (agentType?: string) => {
+    if (isLoadingSuggestion) return;
+    
+    setIsLoadingSuggestion(true);
+    try {
+      // Confirm with the user if they want to overwrite existing data
+      if (!isEditMode && (formState.title || nodes.length > 0)) {
+        if (!window.confirm('This will replace your current form data and nodes. Continue?')) {
+          setIsLoadingSuggestion(false);
+          return;
+        }
+      }
+      
+      // Construct the query params
+      const queryParams = agentType ? `?type=${encodeURIComponent(agentType)}` : '';
+      
+      // Fetch suggestion from API
+      const response = await fetch(`/api/agent-journeys/suggestion${queryParams}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get AI suggestion');
+      }
+      
+      const suggestion = await response.json();
+      
+      // Update form with suggestion data
+      setFormState({
+        title: suggestion.title || '',
+        agentName: suggestion.agentName || '',
+        purpose: suggestion.purpose || '',
+        notes: suggestion.notes || '',
+        summary: suggestion.summary || '',
+        inputInterpretation: suggestion.inputInterpretation || '',
+        guardrails: suggestion.guardrails || '',
+        backendSystems: Array.isArray(suggestion.backendSystems) ? suggestion.backendSystems : [],
+        contextManagement: suggestion.contextManagement || '',
+        escalationRules: suggestion.escalationRules || '',
+        errorMonitoring: suggestion.errorMonitoring || '',
+        nodes: [], // Will populate nodes separately
+        edges: []  // Will auto-generate edges
+      });
+      
+      // Create flow nodes from suggestion
+      if (Array.isArray(suggestion.nodesSuggestion) && suggestion.nodesSuggestion.length > 0) {
+        // Clear existing nodes
+        setNodes([]);
+        setEdges([]);
+        
+        // Create new nodes from suggestion
+        const newNodes = suggestion.nodesSuggestion.map((nodeSuggestion: any, index: number) => {
+          // Generate a stable ID based on node type and position
+          const id = `node_${nodeSuggestion.type}_${index}`;
+          
+          return {
+            id,
+            type: nodeSuggestion.type,
+            position: nodeSuggestion.position || { x: 100 + index * 200, y: 100 + (index % 2) * 100 },
+            data: {
+              label: nodeSuggestion.label || `Node ${index + 1}`,
+              content: nodeSuggestion.content || '',
+              openNodeEditor
+            }
+          };
+        });
+        
+        // Add the nodes to the canvas
+        setNodes(newNodes);
+        
+        // Create edges connecting nodes in sequence (you could make this more complex)
+        const newEdges = [];
+        for (let i = 0; i < newNodes.length - 1; i++) {
+          newEdges.push({
+            id: `edge_${i}_${i+1}`,
+            source: newNodes[i].id,
+            target: newNodes[i+1].id,
+            type: 'smoothstep',
+            animated: true,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+            }
+          });
+        }
+        
+        // Add the edges to the canvas
+        setEdges(newEdges);
+      }
+      
+      // Start editing
+      if (!isEditing) startEditing();
+      
+      toast({
+        title: "Success",
+        description: "AI suggestion applied successfully! Review and customize as needed."
+      });
+      
+    } catch (error) {
+      console.error('Error fetching AI suggestion:', error);
+      toast({
+        title: "Error",
+        description: `Failed to get AI suggestion: ${(error as Error).message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingSuggestion(false);
+    }
+  }, [isLoadingSuggestion, isEditMode, formState.title, nodes.length, setFormState, setNodes, setEdges, isEditing, startEditing, toast, openNodeEditor]);
 
   // Memoize nodeTypes to avoid React Flow warning
   const nodeTypes = useMemo<NodeTypes>(() => ({
@@ -866,6 +978,20 @@ const AgentJourneyPage: React.FC = () => {
                     Export
                   </Button>
                   
+                  <Button
+                    onClick={() => fetchAiSuggestion()}
+                    variant="secondary"
+                    size="sm"
+                    disabled={isLoadingSuggestion}
+                  >
+                    {isLoadingSuggestion ? (
+                      <Loader2 size={16} className="mr-1 animate-spin" />
+                    ) : (
+                      <Bot size={16} className="mr-1" />
+                    )}
+                    AI Suggestion
+                  </Button>
+                  
                   {isEditMode && (
                     <Dialog>
                       <DialogTrigger asChild>
@@ -929,6 +1055,7 @@ const AgentJourneyPage: React.FC = () => {
                     <p><strong>3.</strong> Click on nodes to edit their contents.</p>
                     <p><strong>4.</strong> Complete all fields in the form.</p>
                     <p><strong>5.</strong> Save your journey when finished.</p>
+                    <p><strong>Tip:</strong> Use the <strong>AI Suggestion</strong> button for a complete example journey!</p>
                   </CardContent>
                 </Card>
               )}
