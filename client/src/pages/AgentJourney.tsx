@@ -34,12 +34,8 @@ import ResizableDecisionNode from '../components/ResizableDecisionNode';
 import ResizableGuardrailNode from '../components/ResizableGuardrailNode';
 import ResizableEscalationNode from '../components/ResizableEscalationNode';
 
-// Import auto-sizing components (better implementation)
+// Import auto-sizing agent node component
 import AutoSizingAgentNode from '../components/AutoSizingAgentNode';
-import AutoSizingSystemNode from '../components/AutoSizingSystemNode';
-import AutoSizingDecisionNode from '../components/AutoSizingDecisionNode';
-import AutoSizingGuardrailNode from '../components/AutoSizingGuardrailNode';
-import AutoSizingEscalationNode from '../components/AutoSizingEscalationNode';
 import { 
   Bot, 
   Database, 
@@ -1043,10 +1039,10 @@ const AgentJourneyPage: React.FC = () => {
   // Memoize nodeTypes to avoid React Flow warning
   const nodeTypes = useMemo<NodeTypes>(() => ({
     agent: AutoSizingAgentNode,
-    system: AutoSizingSystemNode,
-    guardrail: AutoSizingGuardrailNode,
-    decision: AutoSizingDecisionNode,
-    escalation: AutoSizingEscalationNode,
+    system: SystemNode,
+    guardrail: GuardrailNode,
+    decision: DecisionNode,
+    escalation: EscalationNode,
     note: NoteNode,
     start: StartNode,
     end: EndNode,
