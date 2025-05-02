@@ -33,6 +33,13 @@ import ResizableSystemNode from '../components/ResizableSystemNode';
 import ResizableDecisionNode from '../components/ResizableDecisionNode';
 import ResizableGuardrailNode from '../components/ResizableGuardrailNode';
 import ResizableEscalationNode from '../components/ResizableEscalationNode';
+
+// Import simple resizable components (new implementation)
+import SimpleResizableAgentNode from '../components/SimpleResizableAgentNode';
+import SimpleResizableSystemNode from '../components/SimpleResizableSystemNode';
+import SimpleResizableDecisionNode from '../components/SimpleResizableDecisionNode';
+import SimpleResizableGuardrailNode from '../components/SimpleResizableGuardrailNode';
+import SimpleResizableEscalationNode from '../components/SimpleResizableEscalationNode';
 import { 
   Bot, 
   Database, 
@@ -1022,11 +1029,11 @@ const AgentJourneyPage: React.FC = () => {
 
   // Memoize nodeTypes to avoid React Flow warning
   const nodeTypes = useMemo<NodeTypes>(() => ({
-    agent: ResizableAgentNode,
-    system: ResizableSystemNode,
-    guardrail: ResizableGuardrailNode,
-    decision: ResizableDecisionNode,
-    escalation: ResizableEscalationNode,
+    agent: SimpleResizableAgentNode,
+    system: SimpleResizableSystemNode,
+    guardrail: SimpleResizableGuardrailNode,
+    decision: SimpleResizableDecisionNode,
+    escalation: SimpleResizableEscalationNode,
     note: NoteNode,
     start: StartNode,
     end: EndNode,
