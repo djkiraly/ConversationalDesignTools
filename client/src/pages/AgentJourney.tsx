@@ -986,20 +986,6 @@ const AgentJourneyPage: React.FC = () => {
                     Export
                   </Button>
                   
-                  <Button
-                    onClick={() => fetchAiSuggestion()}
-                    variant="secondary"
-                    size="sm"
-                    disabled={isLoadingSuggestion}
-                  >
-                    {isLoadingSuggestion ? (
-                      <Loader2 size={16} className="mr-1 animate-spin" />
-                    ) : (
-                      <Bot size={16} className="mr-1" />
-                    )}
-                    AI Suggestion
-                  </Button>
-                  
                   {isEditMode && (
                     <Dialog>
                       <DialogTrigger asChild>
@@ -1043,81 +1029,136 @@ const AgentJourneyPage: React.FC = () => {
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Agent Journey Details</h2>
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="secondary" 
-                        size="sm"
-                      >
-                        <Bot size={16} className="mr-1" />
-                        AI Suggest
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
-                      <DialogHeader>
-                        <DialogTitle>AI Journey Suggestion</DialogTitle>
-                        <DialogDescription>
-                          Get an AI-generated example agent journey with all form fields populated.
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="agentType">Agent Type (Optional)</Label>
-                          <Input
-                            id="agentType"
-                            placeholder="e.g., Customer Service, Technical Support, Travel, etc."
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Specify a type of agent or leave blank for a general example.
-                          </p>
-                        </div>
-                        
-                        <div className="bg-muted/50 p-3 rounded-md">
-                          <p className="text-sm font-medium">What will be generated:</p>
-                          <ul className="text-xs mt-2 space-y-1 list-disc pl-4">
-                            <li>Detailed agent journey with title, purpose, and all metadata</li>
-                            <li>Sample nodes with appropriate connections</li>
-                            <li>Example guardrails, context management rules, and escalation policies</li>
-                          </ul>
-                          <p className="text-xs mt-2 text-muted-foreground">
-                            Note: This will replace your current journey data. Make sure to save any important information first.
-                          </p>
-                        </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowGuide(!showGuide)}
+                >
+                  <HelpCircle size={16} />
+                </Button>
+              </div>
+              
+              <div className="mb-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Bot size={16} className="mr-2" />
+                      AI Suggest Journey Details
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>AI Journey Suggestion</DialogTitle>
+                      <DialogDescription>
+                        Get AI-generated example fields for your agent journey.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="agentType">Agent Type (Optional)</Label>
+                        <Input
+                          id="agentType"
+                          placeholder="e.g., Customer Service, Technical Support, Travel, etc."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Specify a type of agent or leave blank for a general example.
+                        </p>
                       </div>
                       
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                        <Button 
-                          onClick={() => {
-                            const agentTypeInput = document.getElementById('agentType') as HTMLInputElement;
-                            const agentType = agentTypeInput?.value?.trim();
-                            fetchAiSuggestion(agentType);
-                          }}
-                          disabled={isLoadingSuggestion}
-                        >
-                          {isLoadingSuggestion ? (
-                            <Loader2 size={16} className="mr-1 animate-spin" />
-                          ) : (
-                            <Bot size={16} className="mr-1" />
-                          )}
-                          Generate Journey
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setShowGuide(!showGuide)}
-                  >
-                    <HelpCircle size={16} />
-                  </Button>
-                </div>
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <p className="text-sm font-medium">What will be generated:</p>
+                        <ul className="text-xs mt-2 space-y-1 list-disc pl-4">
+                          <li>Detailed form fields including title, purpose, and all metadata</li>
+                          <li>Example guardrails and context management rules</li>
+                          <li>Sample backend systems and escalation policies</li>
+                        </ul>
+                        <p className="text-xs mt-2 text-muted-foreground italic">
+                          This will only update the form fields and will NOT make any changes to your canvas.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <Button 
+                        onClick={() => {
+                          const agentTypeInput = document.getElementById('agentType') as HTMLInputElement;
+                          const agentType = agentTypeInput?.value?.trim();
+                          
+                          // Use a modified version that doesn't touch the canvas
+                          setIsLoadingSuggestion(true);
+                          fetch(`/api/agent-journeys/suggestion${agentType ? `?type=${encodeURIComponent(agentType)}` : ''}`)
+                            .then(res => {
+                              if (!res.ok) throw new Error('Failed to get suggestion');
+                              return res.json();
+                            })
+                            .then(suggestion => {
+                              // Only update form fields, not canvas
+                              setFormState(prev => ({
+                                ...prev,
+                                title: suggestion.title || '',
+                                agentName: suggestion.agentName || '',
+                                purpose: suggestion.purpose || '',
+                                notes: suggestion.notes || '',
+                                summary: suggestion.summary || '',
+                                inputInterpretation: suggestion.inputInterpretation || '',
+                                guardrails: suggestion.guardrails || '',
+                                backendSystems: Array.isArray(suggestion.backendSystems) ? suggestion.backendSystems : [],
+                                contextManagement: suggestion.contextManagement || '',
+                                escalationRules: suggestion.escalationRules || '',
+                                errorMonitoring: suggestion.errorMonitoring || '',
+                                // Keep existing nodes and edges
+                                nodes: prev.nodes,
+                                edges: prev.edges
+                              }));
+                              
+                              // Start editing mode if not already
+                              if (!isEditing) startEditing();
+                              
+                              // Close dialog
+                              const closeButtons = document.querySelectorAll('[data-radix-collection-item]');
+                              closeButtons.forEach((button: any) => {
+                                if (button.textContent.includes('Cancel')) {
+                                  button.click();
+                                }
+                              });
+                              
+                              toast({
+                                title: "Success",
+                                description: "AI suggestion applied to form fields. Canvas remains unchanged."
+                              });
+                            })
+                            .catch(error => {
+                              console.error('Error fetching AI suggestion:', error);
+                              toast({
+                                title: "Error",
+                                description: error.message || 'Failed to get AI suggestion',
+                                variant: "destructive"
+                              });
+                            })
+                            .finally(() => {
+                              setIsLoadingSuggestion(false);
+                            });
+                        }}
+                        disabled={isLoadingSuggestion}
+                      >
+                        {isLoadingSuggestion ? (
+                          <Loader2 size={16} className="mr-1 animate-spin" />
+                        ) : (
+                          <Bot size={16} className="mr-1" />
+                        )}
+                        Generate Fields
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               
               {showGuide && (
@@ -1131,7 +1172,7 @@ const AgentJourneyPage: React.FC = () => {
                     <p><strong>3.</strong> Click on nodes to edit their contents.</p>
                     <p><strong>4.</strong> Complete all fields in the form.</p>
                     <p><strong>5.</strong> Save your journey when finished.</p>
-                    <p><strong>Tip:</strong> Use the <strong>AI Suggestion</strong> button for a complete example journey!</p>
+                    <p><strong>Tip:</strong> Use the <strong>AI Suggest Journey Details</strong> button to get AI-generated form fields!</p>
                   </CardContent>
                 </Card>
               )}
