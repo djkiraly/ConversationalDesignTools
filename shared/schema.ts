@@ -305,7 +305,7 @@ export const agentJourneys = pgTable("agent_journeys", {
   // Agent-specific fields
   inputInterpretation: text("input_interpretation"), // How the agent interprets inputs
   guardrails: text("guardrails"), // Rules and limitations for the agent
-  backendSystems: json("backend_systems"), // Store as JSON string
+  backendSystems: text("backend_systems").array(), // PostgreSQL text array
   contextManagement: text("context_management"), // How the agent manages conversation context
   escalationRules: text("escalation_rules"), // When and how to escalate to humans
   errorMonitoring: text("error_monitoring"), // How errors are detected and handled

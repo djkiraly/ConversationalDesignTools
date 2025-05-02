@@ -578,21 +578,26 @@ Agent: Excellent choice! I'll guide you through the two-factor authentication se
         updatedAt: now
       };
       
-      // Handle special fields - backendSystems
+      // Handle special fields - backendSystems (PostgreSQL native array type)
       if (journeyData.backendSystems !== undefined) {
         let systems = [];
         
         if (Array.isArray(journeyData.backendSystems)) {
+          // For a native PostgreSQL array, we can directly pass an array of strings
           systems = journeyData.backendSystems.map(item => String(item));
         } else if (typeof journeyData.backendSystems === 'string') {
           try {
-            systems = JSON.parse(journeyData.backendSystems);
+            const parsed = JSON.parse(journeyData.backendSystems);
+            if (Array.isArray(parsed)) {
+              systems = parsed.map(item => String(item));
+            }
           } catch (e) {
-            console.warn('Failed to parse backendSystems string, using empty array:', e);
+            console.warn('Failed to parse backendSystems string, using empty array');
             systems = [];
           }
         }
         
+        // Direct assignment for PostgreSQL array type
         processedData.backendSystems = systems;
       } else {
         processedData.backendSystems = [];
@@ -654,21 +659,26 @@ Agent: Excellent choice! I'll guide you through the two-factor authentication se
       
       // Handle special JSON fields
       
-      // Handle backendSystems
+      // Handle backendSystems (PostgreSQL native array type)
       if (updateData.backendSystems !== undefined) {
         let systems = [];
         
         if (Array.isArray(updateData.backendSystems)) {
+          // For a native PostgreSQL array, we can directly pass an array of strings
           systems = updateData.backendSystems.map(item => String(item));
         } else if (typeof updateData.backendSystems === 'string') {
           try {
-            systems = JSON.parse(updateData.backendSystems);
+            const parsed = JSON.parse(updateData.backendSystems);
+            if (Array.isArray(parsed)) {
+              systems = parsed.map(item => String(item));
+            }
           } catch (e) {
             console.warn('Failed to parse backendSystems string, using empty array');
             systems = [];
           }
         }
         
+        // Direct assignment for PostgreSQL array type
         updateFields.backendSystems = systems;
       }
       
