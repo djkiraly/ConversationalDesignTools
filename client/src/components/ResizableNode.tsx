@@ -48,12 +48,20 @@ const ResizableNode: React.FC<ResizableNodeProps> = ({
         className="react-resizable"
       >
         <div
-          className={`${className} w-full h-full p-4 overflow-hidden bg-card border shadow-sm`}
+          className={`${className} w-full h-full p-4 overflow-hidden bg-card border shadow-sm relative`}
           style={{ width: width, height: height }}
         >
           <div className="resizable-node-content">
             {children}
           </div>
+          
+          {/* Custom resize handle with greater visibility */}
+          <div 
+            className="absolute bottom-1 right-1 w-3 h-3 bg-blue-500 rounded-br-sm opacity-50 hover:opacity-100 cursor-se-resize z-50"
+            style={{ 
+              backgroundImage: 'linear-gradient(135deg, transparent 50%, #3b82f6 50%)',
+            }}
+          />
         </div>
       </ResizableBox>
 
