@@ -79,26 +79,27 @@
 
 .react-resizable-handle {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  bottom: 3px;
-  right: 3px;
+  width: 12px;
+  height: 12px;
+  bottom: 4px;
+  right: 4px;
   cursor: se-resize;
-  background-color: transparent; /* Important! */
-  z-index: 999; /* Keep it on top */
+  background-color: transparent;
+  z-index: 20; /* Not too high to conflict with React Flow */
   transition: opacity 0.2s;
 }
 
-/* Special class to style the corner resize handle with more defined appearance */
+/* Special class to style the corner resize handle for better visibility */
 .react-resizable-handle-se {
-  width: 14px;
-  height: 14px;
-  bottom: 3px;
-  right: 3px;
+  width: 12px;
+  height: 12px;
+  bottom: 2px;
+  right: 2px;
   cursor: se-resize;
-  border-bottom: 2px solid #3b82f6;
-  border-right: 2px solid #3b82f6;
   opacity: 0.6;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path d="M10.5,3 L3,10.5 M7.5,3 L3,7.5 M10.5,6 L6,10.5" stroke="%233b82f6" stroke-width="1.5"/></svg>');
+  background-position: bottom right;
+  background-repeat: no-repeat;
 }
 
 .react-resizable:hover .react-resizable-handle {
@@ -108,15 +109,11 @@
 /* Active state when resizing */
 .react-resizable-handle:active {
   opacity: 1;
-  border-bottom: 2px solid #2563eb;
-  border-right: 2px solid #2563eb;
 }
 
 /* Always make handle visible on node selection */
 .border-primary .react-resizable-handle {
   opacity: 1;
-  border-bottom: 3px solid #2563eb;
-  border-right: 3px solid #2563eb;
 }
 
 /* Keep handles on top of connections */
