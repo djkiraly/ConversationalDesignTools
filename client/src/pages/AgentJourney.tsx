@@ -778,6 +778,14 @@ const AgentJourneyPage: React.FC = () => {
       // Start editing
       if (!isEditing) startEditing();
       
+      // Close any open dialogs
+      const closeButtons = document.querySelectorAll('[data-radix-collection-item]');
+      closeButtons.forEach((button: any) => {
+        if (button.textContent.includes('Cancel')) {
+          button.click();
+        }
+      });
+      
       toast({
         title: "Success",
         description: "AI suggestion applied successfully! Review and customize as needed."
@@ -1035,13 +1043,81 @@ const AgentJourneyPage: React.FC = () => {
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Agent Journey Details</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowGuide(!showGuide)}
-                >
-                  <HelpCircle size={16} />
-                </Button>
+                <div className="flex gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="secondary" 
+                        size="sm"
+                      >
+                        <Bot size={16} className="mr-1" />
+                        AI Suggest
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                      <DialogHeader>
+                        <DialogTitle>AI Journey Suggestion</DialogTitle>
+                        <DialogDescription>
+                          Get an AI-generated example agent journey with all form fields populated.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="agentType">Agent Type (Optional)</Label>
+                          <Input
+                            id="agentType"
+                            placeholder="e.g., Customer Service, Technical Support, Travel, etc."
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Specify a type of agent or leave blank for a general example.
+                          </p>
+                        </div>
+                        
+                        <div className="bg-muted/50 p-3 rounded-md">
+                          <p className="text-sm font-medium">What will be generated:</p>
+                          <ul className="text-xs mt-2 space-y-1 list-disc pl-4">
+                            <li>Detailed agent journey with title, purpose, and all metadata</li>
+                            <li>Sample nodes with appropriate connections</li>
+                            <li>Example guardrails, context management rules, and escalation policies</li>
+                          </ul>
+                          <p className="text-xs mt-2 text-muted-foreground">
+                            Note: This will replace your current journey data. Make sure to save any important information first.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button 
+                          onClick={() => {
+                            const agentTypeInput = document.getElementById('agentType') as HTMLInputElement;
+                            const agentType = agentTypeInput?.value?.trim();
+                            fetchAiSuggestion(agentType);
+                          }}
+                          disabled={isLoadingSuggestion}
+                        >
+                          {isLoadingSuggestion ? (
+                            <Loader2 size={16} className="mr-1 animate-spin" />
+                          ) : (
+                            <Bot size={16} className="mr-1" />
+                          )}
+                          Generate Journey
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowGuide(!showGuide)}
+                  >
+                    <HelpCircle size={16} />
+                  </Button>
+                </div>
               </div>
               
               {showGuide && (
