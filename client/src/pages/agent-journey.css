@@ -71,3 +71,37 @@
   height: 100%;
   position: relative;
 }
+
+/* Resizable node styles */
+.react-resizable {
+  position: relative;
+}
+
+.react-resizable-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  background-color: var(--primary);
+  border-radius: 2px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.react-resizable:hover .react-resizable-handle {
+  opacity: 0.7;
+}
+
+/* Keep handles on top of connections */
+.react-flow__handle {
+  z-index: 20;
+}
+
+/* Node size transition */
+.resizable-node-content {
+  transition: width 0.1s, height 0.1s;
+  overflow: hidden;
+}

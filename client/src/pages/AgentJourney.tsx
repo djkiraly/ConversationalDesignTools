@@ -20,6 +20,8 @@ import ReactFlow, {
   getRectOfNodes,
   getTransformForBounds
 } from 'reactflow';
+import { ResizableBox } from 'react-resizable';
+import 'react-resizable/css/styles.css';
 import 'reactflow/dist/style.css';
 import './agent-journey.css';
 import { jsPDF } from 'jspdf';
