@@ -558,39 +558,72 @@ Agent: Excellent choice! I'll guide you through the two-factor authentication se
   
   async createAgentJourney(journeyData: InsertAgentJourney): Promise<AgentJourney> {
     const now = new Date();
+    
+    console.log('Creating agent journey with title:', journeyData.title);
 
-    // Process array fields to ensure type safety
-    let backendSystems: string[] = [];
-    if (journeyData.backendSystems !== undefined) {
-      if (Array.isArray(journeyData.backendSystems)) {
-        backendSystems = journeyData.backendSystems;
-      } else if (typeof journeyData.backendSystems === 'object') {
-        try {
-          backendSystems = Array.from(Object.values(journeyData.backendSystems as any));
-        } catch (err) {
-          console.error("Failed to convert backendSystems to array:", err);
-          backendSystems = [];
+    try {
+      // Prepare the data to be inserted
+      const processedData: any = {
+        title: journeyData.title,
+        agentName: journeyData.agentName || null,
+        purpose: journeyData.purpose || null,
+        notes: journeyData.notes || null,
+        summary: journeyData.summary || null,
+        inputInterpretation: journeyData.inputInterpretation || null,
+        guardrails: journeyData.guardrails || null,
+        contextManagement: journeyData.contextManagement || null,
+        escalationRules: journeyData.escalationRules || null,
+        errorMonitoring: journeyData.errorMonitoring || null,
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      // Handle special fields - backendSystems
+      if (journeyData.backendSystems !== undefined) {
+        let systems = [];
+        
+        if (Array.isArray(journeyData.backendSystems)) {
+          systems = journeyData.backendSystems.map(item => String(item));
+        } else if (typeof journeyData.backendSystems === 'string') {
+          try {
+            systems = JSON.parse(journeyData.backendSystems);
+          } catch (e) {
+            console.warn('Failed to parse backendSystems string, using empty array:', e);
+            systems = [];
+          }
         }
+        
+        processedData.backendSystems = systems;
+      } else {
+        processedData.backendSystems = [];
       }
+      
+      // Handle nodes and edges
+      if (journeyData.nodes !== undefined) {
+        processedData.nodes = typeof journeyData.nodes === 'string' 
+          ? journeyData.nodes 
+          : JSON.stringify(journeyData.nodes);
+      } else {
+        processedData.nodes = '[]';
+      }
+      
+      if (journeyData.edges !== undefined) {
+        processedData.edges = typeof journeyData.edges === 'string' 
+          ? journeyData.edges 
+          : JSON.stringify(journeyData.edges);
+      } else {
+        processedData.edges = '[]';
+      }
+      
+      console.log('Inserting agent journey with processed data...');
+      
+      // Insert the journey with properly processed data
+      const result = await db.insert(agentJourneys).values(processedData).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error in createAgentJourney:', error);
+      throw error;
     }
-    
-    const result = await db.insert(agentJourneys).values({
-      ...journeyData,
-      agentName: journeyData.agentName || null,
-      purpose: journeyData.purpose || null,
-      notes: journeyData.notes || null,
-      summary: journeyData.summary || null,
-      inputInterpretation: journeyData.inputInterpretation || null,
-      guardrails: journeyData.guardrails || null,
-      backendSystems: backendSystems,
-      contextManagement: journeyData.contextManagement || null,
-      escalationRules: journeyData.escalationRules || null,
-      errorMonitoring: journeyData.errorMonitoring || null,
-      createdAt: now,
-      updatedAt: now
-    }).returning();
-    
-    return result[0];
   }
   
   async updateAgentJourney(id: number, updateData: UpdateAgentJourney): Promise<AgentJourney> {
@@ -599,31 +632,73 @@ Agent: Excellent choice! I'll guide you through the two-factor authentication se
       throw new Error(`Agent journey with id ${id} not found`);
     }
     
-    // Process backendSystems array
-    let backendSystems = existingJourney.backendSystems;
-    if (updateData.backendSystems !== undefined) {
-      if (Array.isArray(updateData.backendSystems)) {
-        backendSystems = updateData.backendSystems;
-      } else if (typeof updateData.backendSystems === 'object') {
-        try {
-          backendSystems = Array.from(Object.values(updateData.backendSystems as any));
-        } catch (err) {
-          console.error("Failed to convert backendSystems to array:", err);
-          // Keep existing backendSystems
-        }
-      }
-    }
+    console.log('Updating agent journey with id:', id);
     
-    const result = await db.update(agentJourneys)
-      .set({
-        ...updateData,
-        backendSystems,
+    try {
+      // Prepare data for update with proper handling of optional fields
+      const updateFields: Record<string, any> = {
         updatedAt: new Date()
-      })
-      .where(eq(agentJourneys.id, id))
-      .returning();
-    
-    return result[0];
+      };
+      
+      // Only include standard fields that are defined
+      if (updateData.title !== undefined) updateFields.title = updateData.title;
+      if (updateData.agentName !== undefined) updateFields.agentName = updateData.agentName || null;
+      if (updateData.purpose !== undefined) updateFields.purpose = updateData.purpose || null;
+      if (updateData.notes !== undefined) updateFields.notes = updateData.notes || null;
+      if (updateData.summary !== undefined) updateFields.summary = updateData.summary || null;
+      if (updateData.inputInterpretation !== undefined) updateFields.inputInterpretation = updateData.inputInterpretation || null;
+      if (updateData.guardrails !== undefined) updateFields.guardrails = updateData.guardrails || null;
+      if (updateData.contextManagement !== undefined) updateFields.contextManagement = updateData.contextManagement || null;
+      if (updateData.escalationRules !== undefined) updateFields.escalationRules = updateData.escalationRules || null;
+      if (updateData.errorMonitoring !== undefined) updateFields.errorMonitoring = updateData.errorMonitoring || null;
+      
+      // Handle special JSON fields
+      
+      // Handle backendSystems
+      if (updateData.backendSystems !== undefined) {
+        let systems = [];
+        
+        if (Array.isArray(updateData.backendSystems)) {
+          systems = updateData.backendSystems.map(item => String(item));
+        } else if (typeof updateData.backendSystems === 'string') {
+          try {
+            systems = JSON.parse(updateData.backendSystems);
+          } catch (e) {
+            console.warn('Failed to parse backendSystems string, using empty array');
+            systems = [];
+          }
+        }
+        
+        updateFields.backendSystems = systems;
+      }
+      
+      // Handle nodes
+      if (updateData.nodes !== undefined) {
+        updateFields.nodes = typeof updateData.nodes === 'string' 
+          ? updateData.nodes 
+          : JSON.stringify(updateData.nodes);
+      }
+      
+      // Handle edges
+      if (updateData.edges !== undefined) {
+        updateFields.edges = typeof updateData.edges === 'string' 
+          ? updateData.edges 
+          : JSON.stringify(updateData.edges);
+      }
+      
+      console.log('Updating journey in database...');
+      
+      // Update the journey with properly processed data
+      const result = await db.update(agentJourneys)
+        .set(updateFields)
+        .where(eq(agentJourneys.id, id))
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error('Error in updateAgentJourney:', error);
+      throw error;
+    }
   }
   
   async deleteAgentJourney(id: number): Promise<void> {

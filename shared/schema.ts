@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, json, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -305,13 +305,14 @@ export const agentJourneys = pgTable("agent_journeys", {
   // Agent-specific fields
   inputInterpretation: text("input_interpretation"), // How the agent interprets inputs
   guardrails: text("guardrails"), // Rules and limitations for the agent
-  backendSystems: json("backend_systems").notNull().$type<string[]>().default([]), // External systems the agent needs to access
+  backendSystems: json("backend_systems"), // Store as JSON string
   contextManagement: text("context_management"), // How the agent manages conversation context
   escalationRules: text("escalation_rules"), // When and how to escalate to humans
   errorMonitoring: text("error_monitoring"), // How errors are detected and handled
   
-  nodes: json("nodes").notNull(), // Storing ReactFlow nodes
-  edges: json("edges").notNull(), // Storing ReactFlow edges
+  // Store nodes and edges as JSON
+  nodes: json("nodes").default('[]'), 
+  edges: json("edges").default('[]'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
