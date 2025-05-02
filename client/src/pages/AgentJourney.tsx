@@ -40,7 +40,8 @@ import {
   StickyNote,
   Play,
   Square,
-  RotateCcw
+  RotateCcw,
+  Wand2 as MagicWand
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -1406,6 +1407,28 @@ const AgentJourneyPage: React.FC = () => {
                         placeholder="Summary of the agent journey (can be AI-generated)"
                         rows={3}
                       />
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="mt-1"
+                          onClick={generateFlowFromMetadata}
+                          disabled={nodes.length > 0 || !formState.title || isGeneratingFlow}
+                        >
+                          {isGeneratingFlow ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating Flow...
+                            </>
+                          ) : (
+                            <>
+                              <MagicWand className="mr-2 h-4 w-4" />
+                              Generate Flow from Metadata
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </ScrollArea>
