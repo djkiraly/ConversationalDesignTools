@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Handle } from 'reactflow';
 
 interface SimpleResizableNodeProps {
@@ -26,6 +26,54 @@ const SimpleResizableNode: React.FC<SimpleResizableNodeProps> = ({
   const { openNodeEditor } = data;
   const [size, setSize] = useState({ width: 300, height: 150 });
   const [isDraggingCorner, setIsDraggingCorner] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-resize based on content
+  useEffect(() => {
+    if (contentRef.current && labelRef.current && data) {
+      // Create a temporary div to measure text size
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.visibility = 'hidden';
+      tempDiv.style.width = '300px'; // Initial width to calculate height
+      tempDiv.style.padding = '16px'; // Same as p-4
+      tempDiv.style.fontFamily = getComputedStyle(document.body).fontFamily;
+      
+      // Add content styles
+      const contentDiv = document.createElement('div');
+      contentDiv.style.fontSize = '0.875rem'; // text-sm
+      contentDiv.style.marginTop = '8px'; // mb-2
+      contentDiv.innerText = data.content || '';
+      tempDiv.appendChild(contentDiv);
+      
+      // Add label styles
+      const labelDiv = document.createElement('div');
+      labelDiv.style.fontWeight = 'bold';
+      labelDiv.style.fontSize = '1rem';
+      labelDiv.innerText = data.label || '';
+      tempDiv.insertBefore(labelDiv, contentDiv);
+      
+      document.body.appendChild(tempDiv);
+      
+      // Calculate height based on content (plus padding and some extra space for handles)
+      const contentHeight = tempDiv.scrollHeight + 24; // Add extra padding
+      
+      // Get approximate content width
+      const contentWidth = Math.max(
+        300, // Minimum width
+        tempDiv.scrollWidth + 16 // Add padding
+      );
+      
+      document.body.removeChild(tempDiv);
+      
+      // Set size based on content
+      setSize({ 
+        width: contentWidth, 
+        height: Math.max(120, contentHeight) // Ensure minimum height
+      });
+    }
+  }, [data.label, data.content]);
   
   // Handle mouse down on resize corner
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -70,12 +118,12 @@ const SimpleResizableNode: React.FC<SimpleResizableNodeProps> = ({
         }
       }}
     >
-      <div className="p-4 bg-card h-full overflow-hidden">
-        <div className="flex items-center space-x-2 mb-2">
+      <div className="p-4 bg-card h-full overflow-auto">
+        <div className="flex items-center space-x-2 mb-2" ref={labelRef}>
           {icon}
           <div className="font-medium">{data.label}</div>
         </div>
-        <div className="text-sm text-muted-foreground">{data.content}</div>
+        <div className="text-sm text-muted-foreground" ref={contentRef}>{data.content}</div>
       </div>
       
       {/* Resize handle */}
