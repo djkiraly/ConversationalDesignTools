@@ -1085,6 +1085,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: (error as Error).message });
     }
   });
+  
+  // AI Suggestion endpoint for agent journeys - must come before :id route
+  app.get('/api/agent-journeys/suggestion', async (req, res) => {
+    try {
+      // Extract agent type from query if provided
+      const agentType = req.query.type as string | undefined;
+      
+      console.log(`Generating AI suggestion for agent journey${agentType ? ` with type: ${agentType}` : ''}`);
+      
+      // Check for OpenAI API key
+      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please check your environment variables." 
+        });
+      }
+      
+      // Generate suggestion using OpenAI
+      const suggestion = await generateAgentJourneySuggestion(agentType);
+      
+      // Return the suggested journey data
+      res.json(suggestion);
+    } catch (error) {
+      console.error('Error generating agent journey suggestion:', error);
+      res.status(500).json({ 
+        error: `Failed to generate agent journey suggestion: ${(error as Error).message}` 
+      });
+    }
+  });
 
   app.get('/api/agent-journeys/:id', async (req, res) => {
     try {
