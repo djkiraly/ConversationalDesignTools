@@ -1134,20 +1134,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/agent-journeys', async (req, res) => {
     try {
-      const result = insertAgentJourneySchema.safeParse(req.body);
+      console.log('Creating agent journey...');
+      
+      // Ensure proper handling of arrays in the journey data
+      const journeyData = {
+        ...req.body,
+        // Ensure backendSystems is a valid array
+        backendSystems: Array.isArray(req.body.backendSystems) 
+          ? req.body.backendSystems 
+          : [],
+        // Ensure nodes and edges are serializable
+        nodes: Array.isArray(req.body.nodes) ? req.body.nodes : [],
+        edges: Array.isArray(req.body.edges) ? req.body.edges : []
+      };
+      
+      const result = insertAgentJourneySchema.safeParse(journeyData);
       if (!result.success) {
+        console.error('Validation error:', result.error.message);
         return res.status(400).json({ error: result.error.message });
       }
 
       const newJourney = await storage.createAgentJourney(result.data);
       res.status(201).json(newJourney);
     } catch (error) {
+      console.error('Error creating agent journey:', error);
       res.status(500).json({ error: (error as Error).message });
     }
   });
 
   app.put('/api/agent-journeys/:id', async (req, res) => {
     try {
+      console.log('Updating agent journey (PUT)...');
+      
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid ID format" });
@@ -1157,21 +1175,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingJourney) {
         return res.status(404).json({ error: "Agent journey not found" });
       }
+      
+      // Ensure proper handling of arrays in the journey data
+      const journeyData = {
+        ...req.body,
+        // Ensure backendSystems is a valid array
+        backendSystems: Array.isArray(req.body.backendSystems) 
+          ? req.body.backendSystems 
+          : [],
+        // Ensure nodes and edges are serializable
+        nodes: Array.isArray(req.body.nodes) ? req.body.nodes : [],
+        edges: Array.isArray(req.body.edges) ? req.body.edges : []
+      };
 
-      const result = updateAgentJourneySchema.safeParse(req.body);
+      const result = updateAgentJourneySchema.safeParse(journeyData);
       if (!result.success) {
+        console.error('Validation error:', result.error.message);
         return res.status(400).json({ error: result.error.message });
       }
 
       const updatedJourney = await storage.updateAgentJourney(id, result.data);
       res.json(updatedJourney);
     } catch (error) {
+      console.error('Error updating agent journey:', error);
       res.status(500).json({ error: (error as Error).message });
     }
   });
   
   app.patch('/api/agent-journeys/:id', async (req, res) => {
     try {
+      console.log('Updating agent journey (PATCH)...');
+      
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid ID format" });
@@ -1181,15 +1215,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingJourney) {
         return res.status(404).json({ error: "Agent journey not found" });
       }
+      
+      // Ensure proper handling of arrays in the journey data
+      const journeyData = {
+        ...req.body,
+        // Ensure backendSystems is a valid array
+        backendSystems: Array.isArray(req.body.backendSystems) 
+          ? req.body.backendSystems 
+          : [],
+        // Ensure nodes and edges are serializable
+        nodes: Array.isArray(req.body.nodes) ? req.body.nodes : [],
+        edges: Array.isArray(req.body.edges) ? req.body.edges : []
+      };
 
-      const result = updateAgentJourneySchema.safeParse(req.body);
+      const result = updateAgentJourneySchema.safeParse(journeyData);
       if (!result.success) {
+        console.error('Validation error:', result.error.message);
         return res.status(400).json({ error: result.error.message });
       }
 
       const updatedJourney = await storage.updateAgentJourney(id, result.data);
       res.json(updatedJourney);
     } catch (error) {
+      console.error('Error updating agent journey:', error);
       res.status(500).json({ error: (error as Error).message });
     }
   });

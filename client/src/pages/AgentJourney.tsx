@@ -454,11 +454,32 @@ const AgentJourneyPage: React.FC = () => {
 
   // Save nodes and edges to form state before saving
   const updateFormFlowState = useCallback(() => {
-    setFormState((prev: InsertAgentJourney) => ({
-      ...prev,
-      nodes: nodes as any,
-      edges: edges as any
-    }));
+    // Ensure nodes and edges are properly serialized
+    setFormState((prev: InsertAgentJourney) => {
+      // Make sure we have valid arrays, with stringified positions and data
+      const formattedNodes = nodes.map(node => ({
+        ...node,
+        position: {
+          x: node.position.x,
+          y: node.position.y
+        },
+        // Ensure any nested objects are properly serialized
+        data: {
+          ...node.data
+        }
+      }));
+      
+      // Make sure edges are properly serialized
+      const formattedEdges = edges.map(edge => ({
+        ...edge
+      }));
+      
+      return {
+        ...prev,
+        nodes: formattedNodes,
+        edges: formattedEdges
+      };
+    });
   }, [nodes, edges, setFormState]);
 
   // Save mutations
@@ -530,17 +551,54 @@ const AgentJourneyPage: React.FC = () => {
 
   // Save handler
   const handleSave = useCallback(() => {
+    // Update the form state with current flow
     updateFormFlowState();
     
     // Use timeout to ensure form state has updated
     setTimeout(() => {
-      if (isEditMode) {
-        updateMutation.mutate(formState);
-      } else {
-        createMutation.mutate(formState);
+      try {
+        // Validate and clean the journey data before saving
+        const journeyToSave = {
+          ...formState,
+          // Ensure backendSystems is always a proper array
+          backendSystems: Array.isArray(formState.backendSystems) 
+            ? formState.backendSystems.map(s => String(s))
+            : [],
+          // Ensure nodes and edges are properly formatted
+          nodes: nodes.map(node => ({
+            ...node,
+            position: {
+              x: node.position.x,
+              y: node.position.y
+            },
+            data: {
+              ...node.data,
+              // Remove any circular references or functions
+              openNodeEditor: undefined
+            }
+          })),
+          edges: edges.map(edge => ({
+            ...edge,
+            // Remove any circular references or functions if needed
+          }))
+        };
+        
+        // Save to API
+        if (isEditMode) {
+          updateMutation.mutate(journeyToSave);
+        } else {
+          createMutation.mutate(journeyToSave);
+        }
+      } catch (error) {
+        console.error("Error preparing journey data for save:", error);
+        toast({
+          title: "Error",
+          description: "Failed to prepare journey data for saving. Please try again.",
+          variant: "destructive"
+        });
       }
     }, 0);
-  }, [formState, isEditMode, updateFormFlowState, updateMutation, createMutation]);
+  }, [formState, isEditMode, updateFormFlowState, updateMutation, createMutation, nodes, edges, toast]);
 
   // Handle form changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -555,26 +613,34 @@ const AgentJourneyPage: React.FC = () => {
   // Handle backend systems
   const addBackendSystem = useCallback(() => {
     if (newBackendSystem.trim()) {
-      setFormState((prev: InsertAgentJourney) => ({
-        ...prev,
-        backendSystems: prev.backendSystems 
-          ? [...prev.backendSystems.map(s => String(s)), newBackendSystem.trim()] as string[]
-          : [newBackendSystem.trim()]
-      }));
+      setFormState((prev: InsertAgentJourney) => {
+        // Ensure we always have a proper array
+        const currentSystems = Array.isArray(prev.backendSystems) 
+          ? prev.backendSystems.map(s => String(s)) 
+          : [];
+          
+        return {
+          ...prev,
+          backendSystems: [...currentSystems, newBackendSystem.trim()]
+        };
+      });
       setNewBackendSystem('');
       if (!isEditing) startEditing();
     }
   }, [newBackendSystem, setFormState, isEditing, startEditing]);
 
   const removeBackendSystem = useCallback((system: string) => {
-    setFormState((prev: InsertAgentJourney) => ({
-      ...prev,
-      backendSystems: prev.backendSystems 
-        ? prev.backendSystems
-            .filter(s => String(s) !== system)
-            .map(s => String(s)) as string[]
-        : []
-    }));
+    setFormState((prev: InsertAgentJourney) => {
+      // Ensure we always have a proper array
+      const currentSystems = Array.isArray(prev.backendSystems) 
+        ? prev.backendSystems.map(s => String(s))
+        : [];
+        
+      return {
+        ...prev,
+        backendSystems: currentSystems.filter(s => s !== system)
+      };
+    });
     if (!isEditing) startEditing();
   }, [setFormState, isEditing, startEditing]);
 
