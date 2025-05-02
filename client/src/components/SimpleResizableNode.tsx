@@ -57,23 +57,24 @@ const SimpleResizableNode: React.FC<SimpleResizableNodeProps> = ({
       document.body.appendChild(tempDiv);
       
       // Calculate height based on content (plus padding and some extra space for handles)
-      const contentHeight = tempDiv.scrollHeight + 24; // Add extra padding
+      // Add more padding to ensure all text is visible without scrolling
+      const contentHeight = tempDiv.scrollHeight + 40; // Add extra padding for better visibility
       
       // Get approximate content width
       const contentWidth = Math.max(
         300, // Minimum width
-        tempDiv.scrollWidth + 16 // Add padding
+        Math.min(800, tempDiv.scrollWidth + 32) // Add padding, limit max width
       );
       
       document.body.removeChild(tempDiv);
       
-      // Set size based on content
+      // Set size based on content - prioritize showing all content vertically
       setSize({ 
         width: contentWidth, 
-        height: Math.max(120, contentHeight) // Ensure minimum height
+        height: Math.max(150, contentHeight) // Ensure minimum height and show all content
       });
     }
-  }, [data.label, data.content]);
+  }, [data.label, data.content, data._update]);
   
   // Handle mouse down on resize corner
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -118,7 +119,7 @@ const SimpleResizableNode: React.FC<SimpleResizableNodeProps> = ({
         }
       }}
     >
-      <div className="p-4 bg-card h-full overflow-auto">
+      <div className="p-4 bg-card h-full overflow-visible">
         <div className="flex items-center space-x-2 mb-2" ref={labelRef}>
           {icon}
           <div className="font-medium">{data.label}</div>

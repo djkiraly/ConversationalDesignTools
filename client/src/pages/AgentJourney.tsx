@@ -388,13 +388,26 @@ const AgentJourneyPage: React.FC = () => {
     if (!currentNodeId) return;
     
     try {
+      // Collect previous data to check if content actually changed
+      let contentChanged = false;
+      
       setNodes(nodes => nodes.map(node => {
         if (node.id === currentNodeId) {
+          // Check if content changed (to trigger size recalculation)
+          const previousLabel = node.data.label || '';
+          const previousContent = node.data.content || '';
+          const newLabel = nodeEditorData?.label || '';
+          const newContent = nodeEditorData?.content || '';
+          
+          contentChanged = previousLabel !== newLabel || previousContent !== newContent;
+          
           // Create a new data object with updated values while preserving other fields
           const updatedData = {
             ...node.data,
-            label: nodeEditorData?.label || node.data.label || '',
-            content: nodeEditorData?.content || node.data.content || ''
+            label: newLabel,
+            content: newContent,
+            // Add a timestamp to force the component to re-measure if content changed
+            _update: contentChanged ? Date.now() : node.data._update
           };
           
           return {
