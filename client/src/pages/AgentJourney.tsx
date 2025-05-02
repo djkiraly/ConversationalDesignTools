@@ -37,7 +37,10 @@ import {
   Loader2,
   GitBranch,
   AlertTriangle,
-  StickyNote
+  StickyNote,
+  Play,
+  Square,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -204,8 +207,9 @@ const EscalationNode = ({ data, selected, id }: { data: any, selected: boolean, 
   );
 };
 
-// Import NoteNode component
+// Import custom node components
 import NoteNode from '../components/NoteNode';
+import { StartNode, EndNode, ReturnNode } from '../components/StartEndNodes';
 
 // Default node options when adding a new node
 const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: string, data: any) => void): Node => {
@@ -244,6 +248,24 @@ const getNewNode = (type: string, position: XYPosition, openNodeEditor: (id: str
       label: 'Note',
       content: 'Add a note or comment about the agent journey',
       type: 'note',
+      openNodeEditor
+    },
+    start: {
+      label: 'Start',
+      content: 'Entry point for the agent journey flow',
+      type: 'start',
+      openNodeEditor
+    },
+    end: {
+      label: 'End',
+      content: 'Final destination for the agent journey flow',
+      type: 'end',
+      openNodeEditor
+    },
+    return: {
+      label: 'Return Point',
+      content: 'Return point or loop in the agent journey',
+      type: 'return',
       openNodeEditor
     }
   };
@@ -668,7 +690,10 @@ const AgentJourneyPage: React.FC = () => {
     guardrail: GuardrailNode,
     decision: DecisionNode,
     escalation: EscalationNode,
-    note: NoteNode
+    note: NoteNode,
+    start: StartNode,
+    end: EndNode,
+    return: ReturnNode
   }), []);
 
   // Generate a node for dragging
@@ -719,6 +744,35 @@ const AgentJourneyPage: React.FC = () => {
                     
                     {nodeMenuOpen && (
                       <div className="flex flex-col gap-1 mt-1">
+                        {/* Flow control nodes */}
+                        <div className="text-xs text-muted-foreground font-medium mt-1 mb-1 px-2">Flow Control:</div>
+                        <div
+                          onDragStart={(event) => onDragStart(event, 'start')}
+                          draggable
+                          className="bg-background hover:bg-accent text-sm p-2 rounded cursor-grab flex items-center"
+                        >
+                          <Play size={14} className="mr-2 text-green-500" />
+                          Start
+                        </div>
+                        <div
+                          onDragStart={(event) => onDragStart(event, 'end')}
+                          draggable
+                          className="bg-background hover:bg-accent text-sm p-2 rounded cursor-grab flex items-center"
+                        >
+                          <Square size={14} className="mr-2 text-red-500" />
+                          End
+                        </div>
+                        <div
+                          onDragStart={(event) => onDragStart(event, 'return')}
+                          draggable
+                          className="bg-background hover:bg-accent text-sm p-2 rounded cursor-grab flex items-center"
+                        >
+                          <RotateCcw size={14} className="mr-2 text-indigo-500" />
+                          Return Point
+                        </div>
+
+                        {/* Agent process nodes */}
+                        <div className="text-xs text-muted-foreground font-medium mt-3 mb-1 px-2">Agent Processes:</div>
                         <div
                           onDragStart={(event) => onDragStart(event, 'agent')}
                           draggable
@@ -759,6 +813,9 @@ const AgentJourneyPage: React.FC = () => {
                           <AlertTriangle size={14} className="mr-2 text-orange-500" />
                           Escalation Point
                         </div>
+                        
+                        {/* Documentation */}
+                        <div className="text-xs text-muted-foreground font-medium mt-3 mb-1 px-2">Documentation:</div>
                         <div
                           onDragStart={(event) => onDragStart(event, 'note')}
                           draggable
