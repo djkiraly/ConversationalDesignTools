@@ -3,6 +3,10 @@ import { Handle, HandleProps, Position } from 'reactflow';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 
+interface HandleWithStyle extends Omit<HandleProps, 'style'> {
+  style?: React.CSSProperties;
+}
+
 interface ResizableNodeProps {
   children: React.ReactNode;
   className?: string;
@@ -10,7 +14,7 @@ interface ResizableNodeProps {
   height: number;
   minWidth: number;
   minHeight: number;
-  handles: HandleProps[];
+  handles: HandleWithStyle[];
   selected: boolean;
   onResize: (size: { width: number; height: number }) => void;
 }

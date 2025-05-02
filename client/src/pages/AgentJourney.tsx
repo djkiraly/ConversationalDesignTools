@@ -26,6 +26,13 @@ import 'reactflow/dist/style.css';
 import './agent-journey.css';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+
+// Import resizable node components
+import ResizableAgentNode from '../components/ResizableAgentNode';
+import ResizableSystemNode from '../components/ResizableSystemNode';
+import ResizableDecisionNode from '../components/ResizableDecisionNode';
+import ResizableGuardrailNode from '../components/ResizableGuardrailNode';
+import ResizableEscalationNode from '../components/ResizableEscalationNode';
 import { 
   Bot, 
   Database, 
@@ -1015,11 +1022,11 @@ const AgentJourneyPage: React.FC = () => {
 
   // Memoize nodeTypes to avoid React Flow warning
   const nodeTypes = useMemo<NodeTypes>(() => ({
-    agent: AgentNode,
-    system: SystemNode,
-    guardrail: GuardrailNode,
-    decision: DecisionNode,
-    escalation: EscalationNode,
+    agent: ResizableAgentNode,
+    system: ResizableSystemNode,
+    guardrail: ResizableGuardrailNode,
+    decision: ResizableDecisionNode,
+    escalation: ResizableEscalationNode,
     note: NoteNode,
     start: StartNode,
     end: EndNode,
