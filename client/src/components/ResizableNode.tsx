@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Handle, HandleProps, Position } from 'reactflow';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import 'react-resizable/css/styles.css';
@@ -30,15 +30,36 @@ const ResizableNode: React.FC<ResizableNodeProps> = ({
   selected,
   onResize
 }) => {
+  const nodeRef = useRef<HTMLDivElement>(null);
+  
   const handleResize = (
     _e: React.SyntheticEvent,
     { size }: ResizeCallbackData
   ) => {
     onResize(size);
   };
+  
+  // After mount, add special classes to the resize handle to ensure it doesn't interfere with ReactFlow
+  useEffect(() => {
+    if (nodeRef.current) {
+      const resizeHandle = nodeRef.current.querySelector('.react-resizable-handle');
+      if (resizeHandle) {
+        // Add nodrag class to prevent ReactFlow from handling drag on this element
+        resizeHandle.classList.add('nodrag');
+        
+        // Prevent node selection when resizing
+        resizeHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+        });
+      }
+    }
+  }, []);
 
   return (
-    <div className={`${selected ? 'border-primary border-2' : ''}`}>
+    <div 
+      ref={nodeRef}
+      className={`${selected ? 'border-primary border-2' : ''}`}
+    >
       <ResizableBox
         width={width}
         height={height}
@@ -46,6 +67,9 @@ const ResizableNode: React.FC<ResizableNodeProps> = ({
         onResize={handleResize}
         resizeHandles={['se']}
         className="react-resizable"
+        draggableOpts={{ 
+          enableUserSelectHack: false,
+        }}
       >
         <div
           className={`${className} w-full h-full p-4 overflow-hidden bg-card border shadow-sm`}

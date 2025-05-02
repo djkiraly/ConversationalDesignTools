@@ -78,28 +78,28 @@
 }
 
 .react-resizable-handle {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  bottom: 4px;
-  right: 4px;
-  cursor: se-resize;
-  background-color: transparent;
-  z-index: 20; /* Not too high to conflict with React Flow */
-  transition: opacity 0.2s;
+  position: absolute !important;
+  width: 16px !important;
+  height: 16px !important;
+  bottom: 4px !important;
+  right: 4px !important;
+  cursor: se-resize !important;
+  background-color: transparent !important;
+  z-index: 100 !important; /* Keep on top */
+  transition: opacity 0.2s !important;
 }
 
 /* Special class to style the corner resize handle for better visibility */
 .react-resizable-handle-se {
-  width: 12px;
-  height: 12px;
-  bottom: 2px;
-  right: 2px;
-  cursor: se-resize;
-  opacity: 0.6;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path d="M10.5,3 L3,10.5 M7.5,3 L3,7.5 M10.5,6 L6,10.5" stroke="%233b82f6" stroke-width="1.5"/></svg>');
-  background-position: bottom right;
-  background-repeat: no-repeat;
+  width: 16px !important;
+  height: 16px !important;
+  bottom: 2px !important;
+  right: 2px !important;
+  cursor: se-resize !important;
+  opacity: 0.8 !important;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><path d="M11,3 L3,11 M8,3 L3,8 M11,7 L7,11" stroke="%233b82f6" stroke-width="2"/></svg>') !important;
+  background-position: bottom right !important;
+  background-repeat: no-repeat !important;
 }
 
 .react-resizable:hover .react-resizable-handle {
