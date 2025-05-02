@@ -860,3 +860,80 @@ Connections should form a logical flow from one step to the next.`;
     };
   }
 }
+
+// Generate an example agent journey with OpenAI
+export async function generateAgentJourneySuggestion(agentType?: string): Promise<{
+  title: string;
+  agentName: string;
+  purpose: string;
+  notes: string;
+  summary: string;
+  inputInterpretation: string;
+  guardrails: string;
+  backendSystems: string[];
+  contextManagement: string;
+  escalationRules: string;
+  errorMonitoring: string;
+  nodesSuggestion: { type: string; label: string; content: string; position: { x: number; y: number } }[];
+}> {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    const openai = new OpenAI({ apiKey });
+    
+    // Create a prompt based on the agent type or make a general request
+    const agentContext = agentType 
+      ? `Create an example agent journey for a ${agentType} AI agent.` 
+      : 'Create an example agent journey for an AI assistant that helps users.';
+    
+    const prompt = `
+${agentContext}
+
+Please provide a comprehensive example of an agent journey with all these details:
+1. A concise title for the journey
+2. A name for the agent
+3. The purpose of this agent journey (2-3 sentences)
+4. Brief notes about implementation (1-2 sentences)
+5. A high-level summary of the journey flow (2-3 sentences)
+6. How the agent interprets user input (2-3 sentences)
+7. Guardrails and safety measures for the agent (2-3 sentences)
+8. A list of 3-5 backend systems the agent might integrate with (just names)
+9. How the agent manages context during conversations (2-3 sentences)
+10. Rules for when to escalate to human agents (2-3 sentences)
+11. How errors are monitored and handled (2-3 sentences)
+12. A suggestion of 4-6 nodes that would make up this journey, including:
+   - Type of each node (start, agent, system, guardrail, decision, escalation, end)
+   - Label for each node
+   - Brief description of what happens in that node
+   - A suggested x,y position for the node in a flow diagram
+
+Format your response as a JSON object with these keys:
+title, agentName, purpose, notes, summary, inputInterpretation, guardrails, backendSystems (array), contextManagement, escalationRules, errorMonitoring, nodesSuggestion (an array of objects with type, label, content, and position properties).
+
+Make the example realistic and practical, with specific details that would be useful in a production AI agent.
+`;
+
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are an AI expert that helps design agent journeys and workflows." },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    // Parse the generated content
+    const responseText = response.choices[0].message.content || '';
+    const journeySuggestion = JSON.parse(responseText);
+
+    // Return the suggestion
+    return journeySuggestion;
+  } catch (error: any) {
+    console.error('Error generating agent journey suggestion:', error);
+    throw new Error(`Failed to generate agent journey suggestion: ${error.message}`);
+  }
+}

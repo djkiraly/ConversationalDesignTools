@@ -18,7 +18,7 @@ import {
   insertAgentJourneySchema,
   updateAgentJourneySchema
 } from "@shared/schema";
-import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, generateJourneyFromUseCase, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, generateJourneyFromUseCase, generateAgentJourneySuggestion, OPENAI_API_KEY_SETTING } from "./openai";
 import { generateUseCaseDetails } from "./generateUseCaseDetails";
 
 export async function registerRoutes(app: Express): Promise<Server> {
