@@ -55,9 +55,7 @@ const AgentJourneyList: React.FC = () => {
   // Handle deleting an agent journey
   const deleteMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest('/api/agent-journeys/' + id, {
-        method: 'DELETE'
-      });
+      return apiRequest('DELETE', `/api/agent-journeys/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/agent-journeys'] });
@@ -202,7 +200,7 @@ const AgentJourneyList: React.FC = () => {
                 <CardTitle className="truncate">{journey.title}</CardTitle>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <CalendarDays className="h-3 w-3 mr-1" />
-                  <span>Updated: {formatDate(journey.updatedAt)}</span>
+                  <span>Updated: {formatDate(journey.updatedAt.toString())}</span>
                 </div>
               </CardHeader>
 

@@ -43,7 +43,7 @@ export default function HomePage() {
       title: 'Agent Journey',
       description: 'Define how AI agents interpret inputs, apply guardrails, access systems, and manage escalations',
       icon: <Bot className="h-6 w-6" />,
-      path: '/agent-journey',
+      path: '/agent-journeys',
       color: 'bg-teal-50 text-teal-700 border-teal-200'
     },
     {

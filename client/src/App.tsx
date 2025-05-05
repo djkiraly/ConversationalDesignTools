@@ -24,6 +24,7 @@ function Router() {
         <Route path="/use-case" component={UseCase} />
         <Route path="/use-case/:id" component={Home} />
         <Route path="/customer-journey" component={CustomerJourney} />
+        <Route path="/agent-journeys" component={AgentJourneyList} />
         <Route path="/agent-journey" component={AgentJourney} />
         <Route path="/agent-journey/:id" component={AgentJourney} />
         <Route path="/customers" component={Customers} />
