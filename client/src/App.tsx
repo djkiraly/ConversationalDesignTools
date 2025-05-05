@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import HomePage from "@/pages/HomePage";
 import CustomerJourney from "@/pages/CustomerJourney";
 import AgentJourney from "@/pages/AgentJourney";
+import AgentJourneyList from "@/pages/AgentJourneyList";
 import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
 import ActionPlan from "@/pages/ActionPlan";
