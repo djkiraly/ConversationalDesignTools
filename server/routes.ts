@@ -19,6 +19,7 @@ import {
   updateAgentJourneySchema
 } from "@shared/schema";
 import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, generateJourneyFromUseCase, generateAgentJourneySuggestion, OPENAI_API_KEY_SETTING } from "./openai";
+import { validateGeminiKey, GEMINI_API_KEY_SETTING } from "./gemini";
 import { generateUseCaseDetails } from "./generateUseCaseDetails";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -231,6 +232,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validationResult = await validateOpenAIKey(apiKey);
+      res.json(validationResult);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Gemini Validation API
+  app.post('/api/gemini/validate', async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      
+      if (!apiKey) {
+        return res.status(400).json({ error: "API key is required" });
+      }
+      
+      const validationResult = await validateGeminiKey(apiKey);
       res.json(validationResult);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });

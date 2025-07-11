@@ -45,6 +45,7 @@ const formSchema = z.object({
   openai_api_key: z.string().optional(),
   openai_system_prompt: z.string().min(1, "System prompt is required"),
   openai_user_prompt: z.string().min(1, "User prompt is required"),
+  gemini_api_key: z.string().optional(),
   // ROI calculation parameters
   roi_agent_hourly_cost: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
     message: "Must be a valid dollar amount (e.g., 25.50)"
@@ -97,6 +98,11 @@ export default function Settings() {
     valid: boolean;
     message: string;
   } | null>(null);
+  const [validatingGeminiKey, setValidatingGeminiKey] = useState(false);
+  const [geminiValidationResult, setGeminiValidationResult] = useState<{
+    valid: boolean;
+    message: string;
+  } | null>(null);
   
   // Query to fetch settings
   const { 
@@ -123,6 +129,7 @@ export default function Settings() {
       openai_api_key: '',
       openai_system_prompt: '',
       openai_user_prompt: '',
+      gemini_api_key: '',
       // Default ROI parameters
       roi_agent_hourly_cost: '25',
       roi_implementation_cost_min: '15000',
@@ -148,6 +155,7 @@ export default function Settings() {
         openai_api_key: getSettingValue('openai_api_key'),
         openai_system_prompt: getSettingValue('openai_system_prompt'),
         openai_user_prompt: getSettingValue('openai_user_prompt'),
+        gemini_api_key: getSettingValue('gemini_api_key'),
         // ROI calculation parameters
         roi_agent_hourly_cost: getSettingValue('roi_agent_hourly_cost') || '25',
         roi_implementation_cost_min: getSettingValue('roi_implementation_cost_min') || '15000',
@@ -183,6 +191,44 @@ export default function Settings() {
       });
     }
   });
+
+  // Validate Gemini API key
+  async function validateGeminiApiKey() {
+    const apiKey = form.getValues('gemini_api_key');
+    
+    if (!apiKey) {
+      setGeminiValidationResult({
+        valid: false,
+        message: "Please enter an API key to validate"
+      });
+      return;
+    }
+    
+    setValidatingGeminiKey(true);
+    setGeminiValidationResult(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/gemini/validate', { apiKey });
+      if (response.valid) {
+        setGeminiValidationResult({
+          valid: true,
+          message: "API key is valid! Models available: " + (response.models?.join(', ') || 'Unknown')
+        });
+      } else {
+        setGeminiValidationResult({
+          valid: false,
+          message: response.error || "API key validation failed"
+        });
+      }
+    } catch (error) {
+      setGeminiValidationResult({
+        valid: false,
+        message: (error as Error).message || "API key validation failed"
+      });
+    } finally {
+      setValidatingGeminiKey(false);
+    }
+  }
 
   // Validate OpenAI API key
   async function validateApiKey() {
@@ -237,6 +283,10 @@ export default function Settings() {
       await updateSetting.mutateAsync({ 
         key: 'openai_user_prompt', 
         value: values.openai_user_prompt 
+      });
+      await updateSetting.mutateAsync({ 
+        key: 'gemini_api_key', 
+        value: values.gemini_api_key || '' 
       });
       
       // Update ROI calculation parameters
@@ -335,7 +385,7 @@ export default function Settings() {
         <CardHeader>
           <CardTitle>Settings</CardTitle>
           <CardDescription>
-            Configure your OpenAI integration and ROI calculation parameters.
+            Configure your AI integrations (OpenAI and Google Gemini) and ROI calculation parameters.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -450,6 +500,75 @@ export default function Settings() {
                               This prompt is used to format the user's message before sending to the AI.
                             </FormDescription>
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                {/* Gemini Integration Section */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="gemini-section">
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <div className="flex flex-col items-start">
+                        <h3 className="text-lg font-medium">Google Gemini Integration</h3>
+                        <p className="text-sm text-muted-foreground font-normal text-left">
+                          Configure alternative AI features using Google Gemini
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="gemini_api_key"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Gemini API Key</FormLabel>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter your Gemini API key"
+                                  {...field} 
+                                  type="password"
+                                  className="flex-1"
+                                />
+                              </FormControl>
+                              <Button 
+                                type="button"
+                                variant="outline"
+                                onClick={validateGeminiApiKey}
+                                disabled={validatingGeminiKey}
+                                className="shrink-0"
+                              >
+                                {validatingGeminiKey ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Validating...
+                                  </>
+                                ) : "Validate Key"}
+                              </Button>
+                            </div>
+                            <FormDescription>
+                              Your Google Gemini API key for alternative AI features. Get one from Google AI Studio.
+                            </FormDescription>
+                            <FormMessage />
+                            
+                            {geminiValidationResult && (
+                              <Alert className={geminiValidationResult.valid ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
+                                {geminiValidationResult.valid ? (
+                                  <Check className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                )}
+                                <AlertTitle>
+                                  {geminiValidationResult.valid ? "Valid API Key" : "Invalid API Key"}
+                                </AlertTitle>
+                                <AlertDescription>
+                                  {geminiValidationResult.message}
+                                </AlertDescription>
+                              </Alert>
+                            )}
                           </FormItem>
                         )}
                       />
