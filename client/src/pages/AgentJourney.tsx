@@ -896,80 +896,109 @@ const AgentJourneyPage: React.FC = () => {
     }
   }, [isLoadingSuggestion, isEditMode, formState.title, nodes.length, setFormState, setNodes, setEdges, isEditing, startEditing, toast, openNodeEditor]);
 
+  // Check if all required detail fields are completed
+  const areAllDetailFieldsCompleted = useMemo(() => {
+    return !!(
+      formState.title &&
+      formState.agentName &&
+      formState.purpose &&
+      formState.inputInterpretation &&
+      formState.guardrails &&
+      formState.contextManagement &&
+      formState.escalationRules &&
+      formState.errorMonitoring
+    );
+  }, [formState]);
+
   // Generate flow visualization based on the journey metadata
   const generateFlowFromMetadata = useCallback(async () => {
-    if (isGeneratingFlow || nodes.length > 0 || !formState.title) return;
+    // Check if all required fields are completed
+    const allFieldsCompleted = !!(
+      formState.title &&
+      formState.agentName &&
+      formState.purpose &&
+      formState.inputInterpretation &&
+      formState.guardrails &&
+      formState.contextManagement &&
+      formState.escalationRules &&
+      formState.errorMonitoring
+    );
+    
+    if (isGeneratingFlow || nodes.length > 0 || !allFieldsCompleted) return;
     
     try {
       setIsGeneratingFlow(true);
       
-      // Create initial nodes based on the journey metadata
+      // Create comprehensive nodes based on the complete journey metadata
       const newNodes: Node[] = [];
-      const spacing = 200;  // spacing between nodes
-      const startPosition = { x: 100, y: 100 };
+      const spacing = 300;  // spacing between nodes
+      const startPosition = { x: 50, y: 50 };
+      let currentY = startPosition.y;
+      let nodeIndex = 0;
       
       // Add start node
-      const startNode = getNewNode('start', startPosition, openNodeEditor);
+      const startNode = getNewNode('start', { x: startPosition.x, y: currentY }, openNodeEditor);
       startNode.id = 'start-node';
+      startNode.data.label = 'Journey Start';
+      startNode.data.content = `${formState.agentName} - ${formState.purpose.substring(0, 100)}...`;
       newNodes.push(startNode);
       
-      // Add agent node based on input interpretation
-      if (formState.inputInterpretation) {
-        const inputNode = getNewNode('agent', { x: startPosition.x + spacing, y: startPosition.y }, openNodeEditor);
-        inputNode.id = 'input-node';
-        inputNode.data.label = 'Input Processing';
-        inputNode.data.content = formState.inputInterpretation.substring(0, 150) + (formState.inputInterpretation.length > 150 ? '...' : '');
-        newNodes.push(inputNode);
+      // Add input interpretation node
+      currentY += 150;
+      const inputNode = getNewNode('agent', { x: startPosition.x + spacing, y: currentY }, openNodeEditor);
+      inputNode.id = 'input-interpretation-node';
+      inputNode.data.label = 'Input Interpretation';
+      inputNode.data.content = formState.inputInterpretation.substring(0, 200) + (formState.inputInterpretation.length > 200 ? '...' : '');
+      newNodes.push(inputNode);
+      
+      // Add guardrails node
+      currentY += 150;
+      const guardrailNode = getNewNode('guardrail', { x: startPosition.x, y: currentY }, openNodeEditor);
+      guardrailNode.id = 'guardrails-node';
+      guardrailNode.data.label = 'Safety Guardrails';
+      guardrailNode.data.content = formState.guardrails.substring(0, 200) + (formState.guardrails.length > 200 ? '...' : '');
+      newNodes.push(guardrailNode);
+      
+      // Add context management node
+      const contextNode = getNewNode('agent', { x: startPosition.x + spacing, y: currentY }, openNodeEditor);
+      contextNode.id = 'context-management-node';
+      contextNode.data.label = 'Context Management';
+      contextNode.data.content = formState.contextManagement.substring(0, 200) + (formState.contextManagement.length > 200 ? '...' : '');
+      newNodes.push(contextNode);
+      
+      // Add backend systems integration nodes if present
+      if (formState.backendSystems && formState.backendSystems.length > 0) {
+        currentY += 150;
+        formState.backendSystems.forEach((system, index) => {
+          const systemNode = getNewNode('system', { x: startPosition.x + (index * 250), y: currentY }, openNodeEditor);
+          systemNode.id = `backend-system-${index}`;
+          systemNode.data.label = `Backend: ${system}`;
+          systemNode.data.content = `Integration with ${system} system`;
+          newNodes.push(systemNode);
+        });
       }
       
-      // Add guardrail node if present
-      if (formState.guardrails) {
-        const guardrailsNode = getNewNode('guardrail', { x: startPosition.x + spacing * 2, y: startPosition.y }, openNodeEditor);
-        guardrailsNode.id = 'guardrails-node';
-        guardrailsNode.data.label = 'Content Guardrails';
-        guardrailsNode.data.content = formState.guardrails.substring(0, 150) + (formState.guardrails.length > 150 ? '...' : '');
-        newNodes.push(guardrailsNode);
-      }
+      // Add escalation node
+      currentY += 150;
+      const escalationNode = getNewNode('escalation', { x: startPosition.x + spacing/2, y: currentY }, openNodeEditor);
+      escalationNode.id = 'escalation-node';
+      escalationNode.data.label = 'Escalation Handling';
+      escalationNode.data.content = formState.escalationRules.substring(0, 200) + (formState.escalationRules.length > 200 ? '...' : '');
+      newNodes.push(escalationNode);
       
-      // Add backend systems if present
-      if (Array.isArray(formState.backendSystems) && formState.backendSystems.length > 0) {
-        const systemsNode = getNewNode('system', { x: startPosition.x + spacing * 2, y: startPosition.y + spacing }, openNodeEditor);
-        systemsNode.id = 'backend-systems-node';
-        systemsNode.data.label = 'Backend Systems';
-        systemsNode.data.content = formState.backendSystems.join(', ');
-        newNodes.push(systemsNode);
-      }
-      
-      // Add context management node if present
-      if (formState.contextManagement) {
-        const contextNode = getNewNode('agent', { x: startPosition.x + spacing * 3, y: startPosition.y }, openNodeEditor);
-        contextNode.id = 'context-node';
-        contextNode.data.label = 'Context Management';
-        contextNode.data.content = formState.contextManagement.substring(0, 150) + (formState.contextManagement.length > 150 ? '...' : '');
-        newNodes.push(contextNode);
-      }
-      
-      // Add escalation node if present
-      if (formState.escalationRules) {
-        const escalationNode = getNewNode('escalation', { x: startPosition.x + spacing * 3, y: startPosition.y + spacing }, openNodeEditor);
-        escalationNode.id = 'escalation-node';
-        escalationNode.data.label = 'Escalation Path';
-        escalationNode.data.content = formState.escalationRules.substring(0, 150) + (formState.escalationRules.length > 150 ? '...' : '');
-        newNodes.push(escalationNode);
-      }
-      
-      // Add error monitoring
-      if (formState.errorMonitoring) {
-        const errorNode = getNewNode('note', { x: startPosition.x + spacing * 4, y: startPosition.y + spacing }, openNodeEditor);
-        errorNode.id = 'error-node';
-        errorNode.data.label = 'Error Monitoring';
-        errorNode.data.content = formState.errorMonitoring.substring(0, 150) + (formState.errorMonitoring.length > 150 ? '...' : '');
-        newNodes.push(errorNode);
-      }
+      // Add error monitoring node
+      const errorNode = getNewNode('agent', { x: startPosition.x + spacing, y: currentY }, openNodeEditor);
+      errorNode.id = 'error-monitoring-node';
+      errorNode.data.label = 'Error Monitoring';
+      errorNode.data.content = formState.errorMonitoring.substring(0, 200) + (formState.errorMonitoring.length > 200 ? '...' : '');
+      newNodes.push(errorNode);
       
       // Add end node
-      const endNode = getNewNode('end', { x: startPosition.x + spacing * 4, y: startPosition.y }, openNodeEditor);
+      currentY += 150;
+      const endNode = getNewNode('end', { x: startPosition.x + spacing/2, y: currentY }, openNodeEditor);
       endNode.id = 'end-node';
+      endNode.data.label = 'Journey Complete';
+      endNode.data.content = 'Agent interaction completed successfully';
       newNodes.push(endNode);
       
       // Create edges to connect the nodes
@@ -999,8 +1028,8 @@ const AgentJourneyPage: React.FC = () => {
       }
       
       // Connect escalation node to end node if both exist
-      const escalationNode = newNodes.find(node => node.id === 'escalation-node');
-      if (escalationNode) {
+      const foundEscalationNode = newNodes.find(node => node.id === 'escalation-node');
+      if (foundEscalationNode) {
         newEdges.push({
           id: `edge-escalation-end`,
           source: 'escalation-node',
@@ -1573,14 +1602,15 @@ const AgentJourneyPage: React.FC = () => {
                         placeholder="Summary of the agent journey (can be AI-generated)"
                         rows={3}
                       />
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           className="mt-1"
                           onClick={generateFlowFromMetadata}
-                          disabled={nodes.length > 0 || !formState.title || isGeneratingFlow}
+                          disabled={nodes.length > 0 || !formState.title || isGeneratingFlow || !(formState.title && formState.agentName && formState.purpose && formState.inputInterpretation && formState.guardrails && formState.contextManagement && formState.escalationRules && formState.errorMonitoring)}
+                          title={!(formState.title && formState.agentName && formState.purpose && formState.inputInterpretation && formState.guardrails && formState.contextManagement && formState.escalationRules && formState.errorMonitoring) ? "Complete all detail fields to enable this feature" : "Generate a flow based on your complete journey details"}
                         >
                           {isGeneratingFlow ? (
                             <>
@@ -1590,7 +1620,7 @@ const AgentJourneyPage: React.FC = () => {
                           ) : (
                             <>
                               <MagicWand className="mr-2 h-4 w-4" />
-                              Generate Flow from Metadata
+                              Generate Flow
                             </>
                           )}
                         </Button>
