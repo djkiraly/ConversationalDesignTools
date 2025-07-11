@@ -58,6 +58,7 @@ import ExportJourneyButton from "../components/ExportJourneyButton";
 import ExportFlowImageButton from "../components/ExportFlowImageButton";
 import JourneyNode from "../components/JourneyNode";
 import MultiPathNode from "../components/MultiPathNode";
+import GeminiJourneyDialog from "../components/GeminiJourneyDialog";
 import { 
   fetchAllCustomerJourneys, 
   fetchCustomerJourney, 
@@ -1080,6 +1081,71 @@ export default function CustomerJourney() {
     }
   };
   
+  // Handle Gemini journey generation
+  const handleGeminiJourneyGenerated = async (journeyData: any) => {
+    try {
+      setIsLoading(true);
+      
+      // Set journey title and metadata from generated data
+      setJourneyTitle(journeyData.title);
+      setJourneyMetadata({
+        customerName: journeyData.customerPersona || "",
+        workflowIntent: journeyData.businessGoals || "",
+        notes: journeyData.description || "",
+        summary: ""
+      });
+      
+      // Transform Gemini nodes and edges to ReactFlow format
+      const geminiNodes = journeyData.flow.nodes.map((node: any) => ({
+        id: node.id,
+        type: 'journeyNode',
+        position: node.position,
+        data: {
+          stepType: node.type,
+          title: node.data.label,
+          description: node.data.description || "",
+          onNodeEdit: handleNodeEdit
+        }
+      }));
+      
+      const geminiEdges = journeyData.flow.edges.map((edge: any) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: 'smoothstep',
+        animated: edge.animated || true,
+        label: edge.label || "",
+        style: { stroke: '#2563eb' },
+        markerEnd: {
+          type: 'arrow',
+          color: '#2563eb',
+        }
+      }));
+      
+      // Set the generated nodes and edges
+      setNodes(geminiNodes);
+      setEdges(geminiEdges);
+      setCurrentJourneyId(null);
+      
+      toast({
+        title: "Gemini Journey Generated",
+        description: `Successfully created journey: ${journeyData.title}`,
+        duration: 3000
+      });
+      
+    } catch (error) {
+      console.error("Failed to process Gemini journey:", error);
+      toast({
+        title: "Processing Failed",
+        description: "Failed to process the generated journey",
+        variant: "destructive",
+        duration: 5000
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Create a new journey based on a use case
   const handleCreateFromUseCase = async (flowName: string, useCase: UseCase) => {
     try {
@@ -1515,6 +1581,11 @@ export default function CustomerJourney() {
             <Brain className="mr-2 h-4 w-4" />
             AI Summary
           </Button>
+
+          {/* Gemini Journey Generation */}
+          <GeminiJourneyDialog
+            onJourneyGenerated={handleGeminiJourneyGenerated}
+          />
           
           {/* AI Summary Dialog */}
           <AISummaryDialog

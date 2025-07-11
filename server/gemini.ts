@@ -204,3 +204,146 @@ Respond with a JSON object containing all these fields.`;
         throw new Error('Failed to parse Gemini response as JSON');
     }
 }
+
+export async function generateCustomerJourneySuggestion(
+    journeyType: string,
+    customerPersona: string,
+    businessGoals: string,
+    touchpoints: string[]
+): Promise<{
+    title: string;
+    description: string;
+    customerPersona: string;
+    businessGoals: string;
+    touchpoints: string[];
+    flow: {
+        nodes: Array<{
+            id: string;
+            type: string;
+            position: { x: number; y: number };
+            data: {
+                label: string;
+                description?: string;
+                icon?: string;
+                color?: string;
+            };
+        }>;
+        edges: Array<{
+            id: string;
+            source: string;
+            target: string;
+            type?: string;
+            animated?: boolean;
+            label?: string;
+        }>;
+    };
+}> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('Gemini API key not configured');
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const prompt = `Generate a comprehensive customer journey for a ${journeyType} experience.
+
+Customer Details:
+- Customer Persona: ${customerPersona}
+- Business Goals: ${businessGoals}
+- Key Touchpoints: ${touchpoints.join(', ')}
+
+Please create a detailed customer journey that includes:
+1. A descriptive title
+2. A detailed description of the journey
+3. Customer persona details
+4. Business goals
+5. Key touchpoints array
+6. A flow diagram with nodes and edges
+
+For the flow diagram, create 5-8 nodes representing key stages of the customer journey. Each node should have:
+- id: unique identifier
+- type: one of ["start", "touchpoint", "decision", "experience", "outcome", "end"]
+- position: x,y coordinates (start from x:100, y:100 and space nodes 300px apart horizontally)
+- data: object with label, description, icon, and color
+
+Connect the nodes with edges that show the flow progression. Make it realistic and actionable.
+
+Respond with a JSON object containing all these fields.`;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-pro",
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "object",
+                properties: {
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    customerPersona: { type: "string" },
+                    businessGoals: { type: "string" },
+                    touchpoints: {
+                        type: "array",
+                        items: { type: "string" }
+                    },
+                    flow: {
+                        type: "object",
+                        properties: {
+                            nodes: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        id: { type: "string" },
+                                        type: { type: "string" },
+                                        position: {
+                                            type: "object",
+                                            properties: {
+                                                x: { type: "number" },
+                                                y: { type: "number" }
+                                            }
+                                        },
+                                        data: {
+                                            type: "object",
+                                            properties: {
+                                                label: { type: "string" },
+                                                description: { type: "string" },
+                                                icon: { type: "string" },
+                                                color: { type: "string" }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            edges: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        id: { type: "string" },
+                                        source: { type: "string" },
+                                        target: { type: "string" },
+                                        type: { type: "string" },
+                                        animated: { type: "boolean" },
+                                        label: { type: "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                required: ["title", "description", "customerPersona", "businessGoals", "touchpoints", "flow"]
+            }
+        },
+        contents: prompt,
+    });
+
+    if (!response.text) {
+        throw new Error('No response from Gemini API');
+    }
+
+    try {
+        return JSON.parse(response.text);
+    } catch (error) {
+        throw new Error('Failed to parse Gemini response as JSON');
+    }
+}

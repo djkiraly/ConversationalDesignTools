@@ -19,7 +19,7 @@ import {
   updateAgentJourneySchema
 } from "@shared/schema";
 import { validateOpenAIKey, getUseCaseSuggestions, getAgentPersonaSuggestion, getConversationFlowSuggestion, generateJourneySummary, generateAIJourney, generateActionPlanSuggestions, generateActionPlanFromUseCase, generateJourneyFromUseCase, generateAgentJourneySuggestion, OPENAI_API_KEY_SETTING } from "./openai";
-import { validateGeminiKey, GEMINI_API_KEY_SETTING } from "./gemini";
+import { validateGeminiKey, generateCustomerJourneySuggestion, GEMINI_API_KEY_SETTING } from "./gemini";
 import { generateUseCaseDetails } from "./generateUseCaseDetails";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -249,6 +249,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validationResult = await validateGeminiKey(apiKey);
       res.json(validationResult);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Gemini Customer Journey Generation API
+  app.post('/api/gemini/customer-journey', async (req, res) => {
+    try {
+      const { journeyType, customerPersona, businessGoals, touchpoints } = req.body;
+      
+      if (!journeyType || !customerPersona || !businessGoals || !touchpoints) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+      
+      // Get the Gemini API key from settings
+      const apiKeySetting = await storage.getSetting(GEMINI_API_KEY_SETTING);
+      if (!apiKeySetting || !apiKeySetting.value) {
+        return res.status(400).json({ error: "Gemini API key not configured. Please add it in Settings." });
+      }
+      
+      const journeyResult = await generateCustomerJourneySuggestion(
+        journeyType,
+        customerPersona,
+        businessGoals,
+        touchpoints
+      );
+      
+      res.json(journeyResult);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
