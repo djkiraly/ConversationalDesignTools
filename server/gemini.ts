@@ -6,7 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 // - Note that the newest Gemini model series is "gemini-2.5-flash" or gemini-2.5-pro"
 //   - do not change this unless explicitly requested by the user
 
-export const GEMINI_API_KEY_SETTING = 'gemini.apiKey';
+export const GEMINI_API_KEY_SETTING = 'gemini_api_key';
 
 export async function validateGeminiKey(apiKey: string): Promise<{ valid: boolean; models?: string[]; error?: string }> {
     try {
@@ -206,6 +206,7 @@ Respond with a JSON object containing all these fields.`;
 }
 
 export async function generateCustomerJourneySuggestion(
+    apiKey: string,
     journeyType: string,
     customerPersona: string,
     businessGoals: string,
@@ -238,7 +239,6 @@ export async function generateCustomerJourneySuggestion(
         }>;
     };
 }> {
-    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('Gemini API key not configured');
     }

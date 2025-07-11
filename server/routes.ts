@@ -270,6 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const journeyResult = await generateCustomerJourneySuggestion(
+        apiKeySetting.value,
         journeyType,
         customerPersona,
         businessGoals,
