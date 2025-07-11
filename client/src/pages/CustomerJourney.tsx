@@ -1086,8 +1086,11 @@ export default function CustomerJourney() {
     try {
       setIsLoading(true);
       
+      // Debug: log the received data structure
+      console.log("Received Gemini journey data:", JSON.stringify(journeyData, null, 2));
+      
       // Set journey title and metadata from generated data
-      setJourneyTitle(journeyData.title);
+      setJourneyTitle(journeyData.title || "Generated Journey");
       setJourneyMetadata({
         customerName: journeyData.customerPersona || "",
         workflowIntent: journeyData.businessGoals || "",
@@ -1095,25 +1098,31 @@ export default function CustomerJourney() {
         summary: ""
       });
       
+      // Check if flow data exists and has the expected structure
+      if (!journeyData.flow || !journeyData.flow.nodes || !Array.isArray(journeyData.flow.nodes)) {
+        console.error("Invalid flow structure:", journeyData.flow);
+        throw new Error("Generated journey has invalid flow structure");
+      }
+
       // Transform Gemini nodes and edges to ReactFlow format
-      const geminiNodes = journeyData.flow.nodes.map((node: any) => ({
-        id: node.id,
+      const geminiNodes = journeyData.flow.nodes.map((node: any, index: number) => ({
+        id: node.id || `node-${index}`,
         type: 'journeyNode',
-        position: node.position,
+        position: node.position || { x: 100 + (index * 300), y: 100 },
         data: {
-          stepType: node.type,
-          title: node.data.label,
-          description: node.data.description || "",
+          stepType: node.type || "touchpoint",
+          title: node.data?.label || node.label || `Step ${index + 1}`,
+          description: node.data?.description || node.description || "",
           onNodeEdit: handleNodeEdit
         }
       }));
       
-      const geminiEdges = journeyData.flow.edges.map((edge: any) => ({
-        id: edge.id,
+      const geminiEdges = (journeyData.flow.edges || []).map((edge: any, index: number) => ({
+        id: edge.id || `edge-${index}`,
         source: edge.source,
         target: edge.target,
         type: 'smoothstep',
-        animated: edge.animated || true,
+        animated: edge.animated !== false,
         label: edge.label || "",
         style: { stroke: '#2563eb' },
         markerEnd: {
