@@ -93,4 +93,27 @@ async function createTablesDirectly() {
       position_y REAL
     )
   `);
+  
+  // Create settings table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id SERIAL PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      value TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+    )
+  `);
+  
+  // Create customer_journeys table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS customer_journeys (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      nodes JSONB NOT NULL,
+      edges JSONB NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+    )
+  `);
 }

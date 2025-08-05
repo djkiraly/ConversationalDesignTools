@@ -11,7 +11,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<any> {
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -20,7 +20,14 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // Check if the response status is 204 (No Content)
+  // or if the content-length header is 0, return null instead of parsing JSON
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return null;
+  }
+  
+  return res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -43,6 +50,13 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
+    
+    // Check if the response status is 204 (No Content)
+    // or if the content-length header is 0, return null instead of parsing JSON
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+      return null;
+    }
+    
     return await res.json();
   };
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, json, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -19,7 +19,20 @@ export const useCases = pgTable("use_cases", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  conversationFlow: text("conversation_flow").notNull(),
+  customer: text("customer"),  // Store the customer name for this use case
+  
+  // New fields for properly defining and scoping the use case
+  problemStatement: text("problem_statement"),  // Concise problem statement
+  proposedSolution: text("proposed_solution"),  // High-level description of AI solution
+  keyObjectives: text("key_objectives"),  // Quantifiable objectives and success metrics
+  requiredDataInputs: text("required_data_inputs"),  // Sources, types, availability status
+  expectedOutputs: text("expected_outputs"),  // Expected outputs and actions
+  keyStakeholders: text("key_stakeholders"),  // Business and technical stakeholders
+  scope: text("scope"),  // High-level scope (inclusions & exclusions)
+  potentialRisks: text("potential_risks"),  // Potential risks and dependencies
+  estimatedImpact: text("estimated_impact"),  // Estimated impact/value
+  
+  conversationFlow: text("conversation_flow"),
   nodePositions: text("node_positions"),  // Store node positions as JSON string
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -28,6 +41,16 @@ export const useCases = pgTable("use_cases", {
 export const insertUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
+  customer: true,
+  problemStatement: true,
+  proposedSolution: true,
+  keyObjectives: true,
+  requiredDataInputs: true,
+  expectedOutputs: true,
+  keyStakeholders: true,
+  scope: true,
+  potentialRisks: true,
+  estimatedImpact: true,
   conversationFlow: true,
   nodePositions: true,
 });
@@ -35,6 +58,16 @@ export const insertUseCaseSchema = createInsertSchema(useCases).pick({
 export const updateUseCaseSchema = createInsertSchema(useCases).pick({
   title: true,
   description: true,
+  customer: true,
+  problemStatement: true,
+  proposedSolution: true,
+  keyObjectives: true,
+  requiredDataInputs: true,
+  expectedOutputs: true,
+  keyStakeholders: true,
+  scope: true,
+  potentialRisks: true,
+  estimatedImpact: true,
   conversationFlow: true,
   nodePositions: true,
 });
@@ -63,6 +96,58 @@ export const insertFlowNodeSchema = createInsertSchema(flowNodes).pick({
   positionY: true,
 });
 
+// Settings model for app configuration
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSettingSchema = createInsertSchema(settings).pick({
+  key: true,
+  value: true,
+});
+
+export const updateSettingSchema = createInsertSchema(settings).pick({
+  value: true,
+});
+
+// Customer Journey model
+export const customerJourneys = pgTable("customer_journeys", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  customerName: text("customer_name"),
+  workflowIntent: text("workflow_intent"),
+  notes: text("notes"),
+  summary: text("summary"), // AI-generated journey summary
+  nodes: json("nodes").notNull(), // Storing ReactFlow nodes
+  edges: json("edges").notNull(), // Storing ReactFlow edges
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCustomerJourneySchema = createInsertSchema(customerJourneys).pick({
+  title: true,
+  customerName: true,
+  workflowIntent: true,
+  notes: true,
+  summary: true,
+  nodes: true,
+  edges: true,
+});
+
+export const updateCustomerJourneySchema = createInsertSchema(customerJourneys).pick({
+  title: true,
+  customerName: true,
+  workflowIntent: true,
+  notes: true,
+  summary: true,
+  nodes: true,
+  edges: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -73,6 +158,14 @@ export type UseCase = typeof useCases.$inferSelect;
 
 export type InsertFlowNode = z.infer<typeof insertFlowNodeSchema>;
 export type FlowNode = typeof flowNodes.$inferSelect;
+
+export type InsertSetting = z.infer<typeof insertSettingSchema>;
+export type UpdateSetting = z.infer<typeof updateSettingSchema>;
+export type Setting = typeof settings.$inferSelect;
+
+export type InsertCustomerJourney = z.infer<typeof insertCustomerJourneySchema>;
+export type UpdateCustomerJourney = z.infer<typeof updateCustomerJourneySchema>;
+export type CustomerJourney = typeof customerJourneys.$inferSelect;
 
 // Flow and conversation types
 export interface Message {
@@ -90,3 +183,172 @@ export interface ConversationStep {
 export interface ParsedFlow {
   steps: ConversationStep[];
 }
+
+// Customers model
+export const customers = pgTable("customers", {
+  id: serial("id").primaryKey(),
+  companyName: text("company_name").notNull(),
+  companyWebsite: text("company_website"),
+  primaryContactName: text("primary_contact_name").notNull(),
+  primaryContactPhone: text("primary_contact_phone"),
+  primaryContactEmail: text("primary_contact_email").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).pick({
+  companyName: true,
+  companyWebsite: true,
+  primaryContactName: true,
+  primaryContactPhone: true,
+  primaryContactEmail: true,
+});
+
+export const updateCustomerSchema = createInsertSchema(customers).pick({
+  companyName: true,
+  companyWebsite: true,
+  primaryContactName: true,
+  primaryContactPhone: true,
+  primaryContactEmail: true,
+});
+
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
+export type Customer = typeof customers.$inferSelect;
+
+// Action Plan model
+export const actionPlans = pgTable("action_plans", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  customerId: integer("customer_id").references(() => customers.id),
+  // Business Discovery
+  industry: text("industry"),
+  primaryChannel: text("primary_channel"),
+  interactionVolume: text("interaction_volume"),
+  currentAutomation: text("current_automation"),
+  
+  // Pain Point Assessment
+  biggestChallenge: text("biggest_challenge"),
+  repetitiveProcesses: text("repetitive_processes"),
+  
+  // AI Agent Goals
+  aiGoals: json("ai_goals").notNull().$type<string[]>().default([]),
+  goalDetails: json("goal_details").notNull().$type<Record<string, string>>().default({}),
+  autonomyLevel: text("autonomy_level"),
+  
+  // System & Integration Readiness
+  currentPlatforms: text("current_platforms"),
+  teamComfort: text("team_comfort"),
+  apisAvailable: text("apis_available"),
+  
+  // Success Metrics
+  successMetrics: json("success_metrics").notNull().$type<string[]>().default([]),
+  
+  // Plan status
+  status: text("status").default("draft").notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertActionPlanSchema = createInsertSchema(actionPlans).pick({
+  title: true,
+  customerId: true,
+  industry: true,
+  primaryChannel: true,
+  interactionVolume: true,
+  currentAutomation: true,
+  biggestChallenge: true,
+  repetitiveProcesses: true,
+  aiGoals: true,
+  goalDetails: true,
+  autonomyLevel: true,
+  currentPlatforms: true,
+  teamComfort: true,
+  apisAvailable: true,
+  successMetrics: true,
+  status: true,
+});
+
+export const updateActionPlanSchema = createInsertSchema(actionPlans).pick({
+  title: true,
+  customerId: true,
+  industry: true,
+  primaryChannel: true,
+  interactionVolume: true,
+  currentAutomation: true,
+  biggestChallenge: true,
+  repetitiveProcesses: true,
+  aiGoals: true,
+  goalDetails: true,
+  autonomyLevel: true,
+  currentPlatforms: true,
+  teamComfort: true,
+  apisAvailable: true,
+  successMetrics: true,
+  status: true,
+});
+
+export type InsertActionPlan = z.infer<typeof insertActionPlanSchema>;
+export type UpdateActionPlan = z.infer<typeof updateActionPlanSchema>;
+export type ActionPlan = typeof actionPlans.$inferSelect;
+
+// Agent Journey model
+export const agentJourneys = pgTable("agent_journeys", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  agentName: text("agent_name"),
+  purpose: text("purpose"),
+  notes: text("notes"),
+  summary: text("summary"), // AI-generated journey summary
+  
+  // Agent-specific fields
+  inputInterpretation: text("input_interpretation"), // How the agent interprets inputs
+  guardrails: text("guardrails"), // Rules and limitations for the agent
+  backendSystems: text("backend_systems").array(), // PostgreSQL text array
+  contextManagement: text("context_management"), // How the agent manages conversation context
+  escalationRules: text("escalation_rules"), // When and how to escalate to humans
+  errorMonitoring: text("error_monitoring"), // How errors are detected and handled
+  
+  // Store nodes and edges as JSON
+  nodes: json("nodes").default('[]'), 
+  edges: json("edges").default('[]'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAgentJourneySchema = createInsertSchema(agentJourneys).pick({
+  title: true,
+  agentName: true,
+  purpose: true,
+  notes: true,
+  summary: true,
+  inputInterpretation: true,
+  guardrails: true,
+  backendSystems: true,
+  contextManagement: true,
+  escalationRules: true,
+  errorMonitoring: true,
+  nodes: true,
+  edges: true,
+});
+
+export const updateAgentJourneySchema = createInsertSchema(agentJourneys).pick({
+  title: true,
+  agentName: true,
+  purpose: true,
+  notes: true,
+  summary: true,
+  inputInterpretation: true,
+  guardrails: true,
+  backendSystems: true,
+  contextManagement: true,
+  escalationRules: true,
+  errorMonitoring: true,
+  nodes: true,
+  edges: true,
+});
+
+export type InsertAgentJourney = z.infer<typeof insertAgentJourneySchema>;
+export type UpdateAgentJourney = z.infer<typeof updateAgentJourneySchema>;
+export type AgentJourney = typeof agentJourneys.$inferSelect;

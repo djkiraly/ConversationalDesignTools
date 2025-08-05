@@ -74,6 +74,68 @@ function getStepTypeStyles(stepType: string): { bg: string, text: string, icon: 
           </svg>
         )
       };
+    // New special step types
+    case 'entry point':
+      return { 
+        bg: 'bg-green-100', 
+        text: 'text-green-800',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+            <polyline points="10 17 15 12 10 7"></polyline>
+            <line x1="15" y1="12" x2="3" y2="12"></line>
+          </svg>
+        )
+      };
+    case 'exit point':
+      return { 
+        bg: 'bg-red-100', 
+        text: 'text-red-800',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        )
+      };
+    case 'integration':
+      return { 
+        bg: 'bg-purple-100', 
+        text: 'text-purple-800',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+        )
+      };
+    case 'decision point':
+      return { 
+        bg: 'bg-amber-100', 
+        text: 'text-amber-800',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <line x1="6" y1="3" x2="6" y2="15"></line>
+            <circle cx="18" cy="6" r="3"></circle>
+            <circle cx="6" cy="18" r="3"></circle>
+            <path d="M18 9a9 9 0 0 1-9 9"></path>
+          </svg>
+        )
+      };
+    case 'escalation point':
+      return { 
+        bg: 'bg-orange-100', 
+        text: 'text-orange-800',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        )
+      };
     default:
       return { 
         bg: 'bg-gray-100', 
@@ -96,6 +158,39 @@ function FlowNode({ data }: FlowNodeProps) {
   const { step, stepNumber, stepType } = data;
   const stepTypeStyles = getStepTypeStyles(stepType || step.stepType || 'Conversation Step');
   
+  // Check if this is a special step type that doesn't need messages
+  const isSpecialStepType = ['entry point', 'exit point', 'integration', 'decision point', 'escalation point'].includes(
+    (stepType || step.stepType || '').toLowerCase()
+  );
+  
+  // Special rendering for Entry Points, Exit Points, etc.
+  if (isSpecialStepType && (!step.messages || step.messages.length === 0)) {
+    return (
+      <div className={`flow-node ${stepTypeStyles.bg} p-4 shadow-md border border-neutral-medium max-w-md`}>
+        <Handle type="target" position={Position.Top} className="w-3 h-3 bg-primary" />
+        
+        <div className="flex items-center justify-center mb-3">
+          <Badge variant="outline" className="mr-2">
+            Step {stepNumber}
+          </Badge>
+          <Badge className={`border-0 bg-white ${stepTypeStyles.text} flex items-center gap-1`}>
+            <span className="flex items-center">{stepTypeStyles.icon}</span>
+            <span>{stepType || step.stepType}</span>
+          </Badge>
+        </div>
+        
+        <div className="flex justify-center items-center p-4">
+          <div className={`${stepTypeStyles.text} text-4xl`}>
+            {stepTypeStyles.icon}
+          </div>
+        </div>
+        
+        <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-primary" />
+      </div>
+    );
+  }
+  
+  // Normal rendering for conversation steps
   return (
     <div className="flow-node bg-white p-4 shadow-md border border-neutral-medium max-w-md">
       <Handle type="target" position={Position.Top} className="w-3 h-3 bg-primary" />
@@ -111,7 +206,7 @@ function FlowNode({ data }: FlowNodeProps) {
       </div>
       
       {/* Display messages in their original order */}
-      {step.messages.map((message, idx) => (
+      {step.messages && step.messages.map((message, idx) => (
         <Card key={idx} className={`${idx < step.messages.length - 1 ? "mb-3" : ""} overflow-hidden`}>
           {message.role === 'customer' ? (
             <>

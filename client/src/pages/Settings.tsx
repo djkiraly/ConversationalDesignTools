@@ -1,0 +1,902 @@
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Setting } from "@shared/schema";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { 
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+// Form validation schema
+const formSchema = z.object({
+  openai_api_key: z.string().optional(),
+  openai_system_prompt: z.string().min(1, "System prompt is required"),
+  openai_user_prompt: z.string().min(1, "User prompt is required"),
+  gemini_api_key: z.string().optional(),
+  // ROI calculation parameters
+  roi_agent_hourly_cost: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount (e.g., 25.50)"
+  }),
+  roi_implementation_cost_min: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount"
+  }),
+  roi_implementation_cost_max: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount"
+  }),
+  roi_maintenance_pct: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage (e.g., 15)"
+  }),
+  roi_automation_rate_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_automation_rate_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_csat_improvement_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_csat_improvement_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  // Revenue improvement parameters
+  roi_revenue_per_customer: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid dollar amount"
+  }),
+  roi_conversion_rate_improvement_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_conversion_rate_improvement_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_cross_sell_rate_base: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+  roi_cross_sell_rate_scale: z.string().refine(value => !value || /^\d+(\.\d{1,2})?$/.test(value), {
+    message: "Must be a valid percentage"
+  }),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+export default function Settings() {
+  const { toast } = useToast();
+  const [validatingApiKey, setValidatingApiKey] = useState(false);
+  const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    message: string;
+  } | null>(null);
+  const [validatingGeminiKey, setValidatingGeminiKey] = useState(false);
+  const [geminiValidationResult, setGeminiValidationResult] = useState<{
+    valid: boolean;
+    message: string;
+  } | null>(null);
+  
+  // Query to fetch settings
+  const { 
+    data: settings = [], 
+    isLoading, 
+    error 
+  } = useQuery<Setting[]>({
+    queryKey: ['/api/settings'],
+  });
+
+  // Find matching settings from the array
+  const getSettingValue = (key: string): string => {
+    const setting = settings.find(s => s.key === key);
+    if (key.startsWith('roi_')) {
+      console.log(`Looking up setting ${key}: ${setting?.value || 'not found'}`);
+    }
+    return setting?.value || '';
+  };
+
+  // Form setup
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      openai_api_key: '',
+      openai_system_prompt: '',
+      openai_user_prompt: '',
+      gemini_api_key: '',
+      // Default ROI parameters
+      roi_agent_hourly_cost: '25',
+      roi_implementation_cost_min: '15000',
+      roi_implementation_cost_max: '100000',
+      roi_maintenance_pct: '15',
+      roi_automation_rate_base: '5',
+      roi_automation_rate_scale: '25',
+      roi_csat_improvement_base: '5',
+      roi_csat_improvement_scale: '20',
+      // Revenue improvement parameters
+      roi_revenue_per_customer: '5000',
+      roi_conversion_rate_improvement_base: '2',
+      roi_conversion_rate_improvement_scale: '10',
+      roi_cross_sell_rate_base: '5',
+      roi_cross_sell_rate_scale: '15',
+    },
+  });
+
+  // Update form values when settings are loaded
+  useEffect(() => {
+    if (settings.length > 0) {
+      form.reset({
+        openai_api_key: getSettingValue('openai_api_key'),
+        openai_system_prompt: getSettingValue('openai_system_prompt'),
+        openai_user_prompt: getSettingValue('openai_user_prompt'),
+        gemini_api_key: getSettingValue('gemini_api_key'),
+        // ROI calculation parameters
+        roi_agent_hourly_cost: getSettingValue('roi_agent_hourly_cost') || '25',
+        roi_implementation_cost_min: getSettingValue('roi_implementation_cost_min') || '15000',
+        roi_implementation_cost_max: getSettingValue('roi_implementation_cost_max') || '100000',
+        roi_maintenance_pct: getSettingValue('roi_maintenance_pct') || '15',
+        roi_automation_rate_base: getSettingValue('roi_automation_rate_base') || '5',
+        roi_automation_rate_scale: getSettingValue('roi_automation_rate_scale') || '25',
+        roi_csat_improvement_base: getSettingValue('roi_csat_improvement_base') || '5',
+        roi_csat_improvement_scale: getSettingValue('roi_csat_improvement_scale') || '20',
+        // Revenue improvement parameters
+        roi_revenue_per_customer: getSettingValue('roi_revenue_per_customer') || '5000',
+        roi_conversion_rate_improvement_base: getSettingValue('roi_conversion_rate_improvement_base') || '2',
+        roi_conversion_rate_improvement_scale: getSettingValue('roi_conversion_rate_improvement_scale') || '10',
+        roi_cross_sell_rate_base: getSettingValue('roi_cross_sell_rate_base') || '5',
+        roi_cross_sell_rate_scale: getSettingValue('roi_cross_sell_rate_scale') || '15',
+      });
+    }
+  }, [settings, form]);
+
+  // Update setting mutation
+  const updateSetting = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+      return apiRequest('PUT', `/api/settings/${key}`, { value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update setting",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Validate Gemini API key
+  async function validateGeminiApiKey() {
+    const apiKey = form.getValues('gemini_api_key');
+    
+    if (!apiKey) {
+      setGeminiValidationResult({
+        valid: false,
+        message: "Please enter an API key to validate"
+      });
+      return;
+    }
+    
+    setValidatingGeminiKey(true);
+    setGeminiValidationResult(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/gemini/validate', { apiKey });
+      if (response.valid) {
+        setGeminiValidationResult({
+          valid: true,
+          message: "API key is valid! Models available: " + (response.models?.join(', ') || 'Unknown')
+        });
+      } else {
+        setGeminiValidationResult({
+          valid: false,
+          message: response.error || "API key validation failed"
+        });
+      }
+    } catch (error) {
+      setGeminiValidationResult({
+        valid: false,
+        message: (error as Error).message || "API key validation failed"
+      });
+    } finally {
+      setValidatingGeminiKey(false);
+    }
+  }
+
+  // Validate OpenAI API key
+  async function validateApiKey() {
+    const apiKey = form.getValues('openai_api_key');
+    
+    if (!apiKey) {
+      setValidationResult({
+        valid: false,
+        message: "Please enter an API key to validate"
+      });
+      return;
+    }
+    
+    setValidatingApiKey(true);
+    setValidationResult(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/openai/validate', { apiKey });
+      if (response.valid) {
+        setValidationResult({
+          valid: true,
+          message: "API key is valid! Models available: " + (response.models?.join(', ') || 'Unknown')
+        });
+      } else {
+        setValidationResult({
+          valid: false,
+          message: response.error || "API key validation failed"
+        });
+      }
+    } catch (error) {
+      setValidationResult({
+        valid: false,
+        message: (error as Error).message || "API key validation failed"
+      });
+    } finally {
+      setValidatingApiKey(false);
+    }
+  }
+
+  // Form submit handler
+  async function onSubmit(values: FormValues) {
+    try {
+      // Update OpenAI settings
+      await updateSetting.mutateAsync({ 
+        key: 'openai_api_key', 
+        value: values.openai_api_key || '' 
+      });
+      await updateSetting.mutateAsync({ 
+        key: 'openai_system_prompt', 
+        value: values.openai_system_prompt 
+      });
+      await updateSetting.mutateAsync({ 
+        key: 'openai_user_prompt', 
+        value: values.openai_user_prompt 
+      });
+      await updateSetting.mutateAsync({ 
+        key: 'gemini_api_key', 
+        value: values.gemini_api_key || '' 
+      });
+      
+      // Update ROI calculation parameters
+      await updateSetting.mutateAsync({
+        key: 'roi_agent_hourly_cost',
+        value: values.roi_agent_hourly_cost
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_implementation_cost_min',
+        value: values.roi_implementation_cost_min
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_implementation_cost_max',
+        value: values.roi_implementation_cost_max
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_maintenance_pct',
+        value: values.roi_maintenance_pct
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_automation_rate_base',
+        value: values.roi_automation_rate_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_automation_rate_scale',
+        value: values.roi_automation_rate_scale
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_csat_improvement_base',
+        value: values.roi_csat_improvement_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_csat_improvement_scale',
+        value: values.roi_csat_improvement_scale
+      });
+      
+      // Revenue improvement parameters
+      await updateSetting.mutateAsync({
+        key: 'roi_revenue_per_customer',
+        value: values.roi_revenue_per_customer
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_conversion_rate_improvement_base',
+        value: values.roi_conversion_rate_improvement_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_conversion_rate_improvement_scale',
+        value: values.roi_conversion_rate_improvement_scale
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_cross_sell_rate_base',
+        value: values.roi_cross_sell_rate_base
+      });
+      await updateSetting.mutateAsync({
+        key: 'roi_cross_sell_rate_scale',
+        value: values.roi_cross_sell_rate_scale
+      });
+      
+      toast({
+        title: "Settings updated",
+        description: "Your settings have been saved successfully.",
+      });
+    } catch (error) {
+      // Error handling is done in the mutation's onError
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Error Loading Settings</h2>
+          <p className="text-gray-700 mb-4">{(error as Error).message}</p>
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="default"
+          >
+            Reload Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // For debugging
+  useEffect(() => {
+    console.log('Loaded settings:', settings);
+    // Check if ROI settings are present
+    const roiSettings = settings.filter(s => s.key.startsWith('roi_'));
+    console.log('ROI settings:', roiSettings);
+  }, [settings]);
+
+  return (
+    <div className="container mx-auto py-10">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle>Settings</CardTitle>
+          <CardDescription>
+            Configure your AI integrations (OpenAI and Google Gemini) and ROI calculation parameters.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* OpenAI Settings Section */}
+                <Accordion type="single" collapsible defaultValue="openai-section" className="w-full">
+                  <AccordionItem value="openai-section">
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <div className="flex flex-col items-start">
+                        <h3 className="text-lg font-medium">OpenAI Integration</h3>
+                        <p className="text-sm text-muted-foreground font-normal text-left">
+                          Configure AI features that use OpenAI
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="openai_api_key"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>OpenAI API Key</FormLabel>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter your OpenAI API key"
+                                  {...field} 
+                                  type="password"
+                                  className="flex-1"
+                                />
+                              </FormControl>
+                              <Button 
+                                type="button"
+                                variant="outline"
+                                onClick={validateApiKey}
+                                disabled={validatingApiKey}
+                                className="shrink-0"
+                              >
+                                {validatingApiKey ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Validating...
+                                  </>
+                                ) : "Validate Key"}
+                              </Button>
+                            </div>
+                            <FormDescription>
+                              Your OpenAI API key used for AI-powered features.
+                            </FormDescription>
+                            <FormMessage />
+                            
+                            {validationResult && (
+                              <Alert className={validationResult.valid ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
+                                {validationResult.valid ? (
+                                  <Check className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                )}
+                                <AlertTitle>
+                                  {validationResult.valid ? "Valid API Key" : "Invalid API Key"}
+                                </AlertTitle>
+                                <AlertDescription>
+                                  {validationResult.message}
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="openai_system_prompt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>System Prompt</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter the system prompt for OpenAI"
+                                {...field} 
+                                rows={5}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              This system prompt defines how the AI assistant should behave.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="openai_user_prompt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>User Prompt</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter the user prompt template"
+                                {...field} 
+                                rows={3}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              This prompt is used to format the user's message before sending to the AI.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                {/* Gemini Integration Section */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="gemini-section">
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <div className="flex flex-col items-start">
+                        <h3 className="text-lg font-medium">Google Gemini Integration</h3>
+                        <p className="text-sm text-muted-foreground font-normal text-left">
+                          Configure alternative AI features using Google Gemini
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="gemini_api_key"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Gemini API Key</FormLabel>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter your Gemini API key"
+                                  {...field} 
+                                  type="password"
+                                  className="flex-1"
+                                />
+                              </FormControl>
+                              <Button 
+                                type="button"
+                                variant="outline"
+                                onClick={validateGeminiApiKey}
+                                disabled={validatingGeminiKey}
+                                className="shrink-0"
+                              >
+                                {validatingGeminiKey ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Validating...
+                                  </>
+                                ) : "Validate Key"}
+                              </Button>
+                            </div>
+                            <FormDescription>
+                              Your Google Gemini API key for alternative AI features. Get one from Google AI Studio.
+                            </FormDescription>
+                            <FormMessage />
+                            
+                            {geminiValidationResult && (
+                              <Alert className={geminiValidationResult.valid ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
+                                {geminiValidationResult.valid ? (
+                                  <Check className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                )}
+                                <AlertTitle>
+                                  {geminiValidationResult.valid ? "Valid API Key" : "Invalid API Key"}
+                                </AlertTitle>
+                                <AlertDescription>
+                                  {geminiValidationResult.message}
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </FormItem>
+                        )}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                {/* ROI Calculation Parameters Section */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="roi-section">
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <div className="flex flex-col items-start">
+                        <h3 className="text-lg font-medium">ROI Calculation Parameters</h3>
+                        <p className="text-sm text-muted-foreground font-normal text-left">
+                          Configure the parameters used for ROI projections in the Action Plan
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="roi_agent_hourly_cost"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Agent Hourly Cost ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="25.00"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Average fully-loaded hourly cost of a human agent
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_maintenance_pct"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Annual Maintenance (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="15"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Percentage of implementation cost for annual maintenance
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_implementation_cost_min"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Min Implementation Cost ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="15000"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum implementation cost for simple use cases
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_implementation_cost_max"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Implementation Cost ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="100000"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum implementation cost for complex use cases
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="border-t pt-4 pb-2">
+                          <h4 className="text-md font-medium">Automation & Efficiency Parameters</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="roi_automation_rate_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Automation Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum percentage of tasks that can be automated
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_automation_rate_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Automation Rate (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="25"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum percentage of tasks that can be automated
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_csat_improvement_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base CSAT Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum customer satisfaction improvement
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_csat_improvement_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max CSAT Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="20"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum customer satisfaction improvement
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="border-t pt-4 pb-2 mt-6">
+                          <h4 className="text-md font-medium">Revenue Improvement Parameters</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="roi_revenue_per_customer"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Average Revenue Per Customer ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5000"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Average annual revenue generated per customer
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_conversion_rate_improvement_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Conversion Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="2"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum expected improvement in conversion rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_conversion_rate_improvement_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Conversion Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="10"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum expected improvement in conversion rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_cross_sell_rate_base"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Cross-Sell Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Minimum improvement in cross-selling rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="roi_cross_sell_rate_scale"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Max Cross-Sell Rate Improvement (%)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="15"
+                                    {...field} 
+                                    type="text"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Maximum improvement in cross-selling rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                <Button 
+                  type="submit"
+                  disabled={updateSetting.isPending || form.formState.isSubmitting}
+                  className="w-full sm:w-auto"
+                >
+                  {updateSetting.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Settings"}
+                </Button>
+              </form>
+            </Form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

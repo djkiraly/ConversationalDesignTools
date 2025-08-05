@@ -55,8 +55,8 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
         nodePositions: JSON.stringify(positions)
       };
       
-      const response = await apiRequest('PUT', `/api/use-cases/${useCase.id}`, updateData);
-      return response.json();
+      // apiRequest already returns the parsed JSON, so no need to call .json()
+      return apiRequest('PUT', `/api/use-cases/${useCase.id}`, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/use-cases', useCase.id.toString()] });
@@ -134,7 +134,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
     
     const timer = setTimeout(() => {
       setShouldSave(true);
-    }, 1500); // 1.5 seconds delay
+    }, 30000); // 30 seconds delay
     
     return () => clearTimeout(timer);
   }, [savedPositions, positionsModified]);
@@ -257,7 +257,7 @@ export default function FlowPreview({ useCase, parsedFlow }: FlowPreviewProps) {
         </div>
       </div>
       
-      <div className="flex-1 overflow-hidden bg-neutral-light/50" ref={flowRef}>
+      <div className="flex-1 overflow-hidden bg-neutral-light/50 flow-preview-container" ref={flowRef}>
         {parsedFlow.steps.length === 0 ? (
           <div className="h-full flex items-center justify-center text-neutral-dark/60">
             <div className="text-center">
@@ -348,6 +348,21 @@ function detectStepType(
   
   // Combine all message text for analysis
   const allText = messages.map(msg => msg.text).join(' ').toLowerCase();
+  
+  // Check for escalation situations
+  if (
+    allText.includes("escalate") || 
+    allText.includes("supervisor") ||
+    allText.includes("manager") ||
+    allText.includes("human agent") ||
+    allText.includes("speak to someone") ||
+    allText.includes("transfer") ||
+    allText.includes("complaint") ||
+    allText.includes("unhappy") ||
+    allText.includes("frustrated")
+  ) {
+    return "Escalation Point";
+  }
   
   // Check for pricing questions
   if (

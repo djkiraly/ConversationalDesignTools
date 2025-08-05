@@ -2,14 +2,34 @@ import { db } from './db';
 import { 
   users, 
   useCases, 
-  flowNodes, 
+  flowNodes,
+  settings,
+  customerJourneys,
+  customers,
+  actionPlans,
+  agentJourneys,
   type User, 
   type InsertUser, 
   type UseCase, 
   type InsertUseCase, 
   type UpdateUseCase,
   type FlowNode,
-  type InsertFlowNode
+  type InsertFlowNode,
+  type Setting,
+  type InsertSetting,
+  type UpdateSetting,
+  type CustomerJourney,
+  type InsertCustomerJourney,
+  type UpdateCustomerJourney,
+  type Customer,
+  type InsertCustomer,
+  type UpdateCustomer,
+  type ActionPlan,
+  type InsertActionPlan,
+  type UpdateActionPlan,
+  type AgentJourney,
+  type InsertAgentJourney,
+  type UpdateAgentJourney
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 import { IStorage } from './storage';
@@ -47,6 +67,17 @@ export class DbStorage implements IStorage {
     const result = await db.insert(useCases).values({
       ...insertUseCase,
       description: insertUseCase.description ?? null,
+      customer: insertUseCase.customer ?? null,
+      problemStatement: insertUseCase.problemStatement ?? null,
+      proposedSolution: insertUseCase.proposedSolution ?? null,
+      keyObjectives: insertUseCase.keyObjectives ?? null,
+      requiredDataInputs: insertUseCase.requiredDataInputs ?? null,
+      expectedOutputs: insertUseCase.expectedOutputs ?? null,
+      keyStakeholders: insertUseCase.keyStakeholders ?? null,
+      scope: insertUseCase.scope ?? null,
+      potentialRisks: insertUseCase.potentialRisks ?? null,
+      estimatedImpact: insertUseCase.estimatedImpact ?? null,
+      conversationFlow: insertUseCase.conversationFlow ?? null,
       nodePositions: insertUseCase.nodePositions ?? null,
       createdAt: now,
       updatedAt: now
@@ -119,6 +150,271 @@ export class DbStorage implements IStorage {
     await db.delete(flowNodes).where(eq(flowNodes.id, id));
   }
 
+  // Settings methods
+  async getAllSettings(): Promise<Setting[]> {
+    const results = await db.select().from(settings);
+    return results;
+  }
+
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const results = await db.select().from(settings).where(eq(settings.key, key));
+    return results.length ? results[0] : undefined;
+  }
+
+  async createSetting(insertSetting: InsertSetting): Promise<Setting> {
+    const now = new Date();
+    const result = await db.insert(settings).values({
+      ...insertSetting,
+      value: insertSetting.value ?? null,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return result[0];
+  }
+
+  async updateSetting(key: string, updateData: UpdateSetting): Promise<Setting> {
+    const existingSetting = await this.getSetting(key);
+    if (!existingSetting) {
+      throw new Error(`Setting with key '${key}' not found`);
+    }
+    
+    const result = await db.update(settings)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(settings.key, key))
+      .returning();
+    
+    return result[0];
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    await db.delete(settings).where(eq(settings.key, key));
+  }
+  
+  // Customer Journey methods
+  async getAllCustomerJourneys(): Promise<CustomerJourney[]> {
+    const results = await db.select()
+      .from(customerJourneys)
+      .orderBy(customerJourneys.updatedAt);
+    return results;
+  }
+  
+  async getCustomerJourney(id: number): Promise<CustomerJourney | undefined> {
+    const results = await db.select().from(customerJourneys).where(eq(customerJourneys.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createCustomerJourney(journeyData: InsertCustomerJourney): Promise<CustomerJourney> {
+    const now = new Date();
+    const result = await db.insert(customerJourneys).values({
+      ...journeyData,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return result[0];
+  }
+  
+  async updateCustomerJourney(id: number, updateData: UpdateCustomerJourney): Promise<CustomerJourney> {
+    const existingJourney = await this.getCustomerJourney(id);
+    if (!existingJourney) {
+      throw new Error(`Customer journey with id ${id} not found`);
+    }
+    
+    const result = await db.update(customerJourneys)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(customerJourneys.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteCustomerJourney(id: number): Promise<void> {
+    await db.delete(customerJourneys).where(eq(customerJourneys.id, id));
+  }
+  
+  // Customer methods
+  async getAllCustomers(): Promise<Customer[]> {
+    const results = await db.select()
+      .from(customers)
+      .orderBy(customers.companyName);
+    return results;
+  }
+  
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    const results = await db.select().from(customers).where(eq(customers.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createCustomer(customerData: InsertCustomer): Promise<Customer> {
+    const now = new Date();
+    const result = await db.insert(customers).values({
+      ...customerData,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return result[0];
+  }
+  
+  async updateCustomer(id: number, updateData: UpdateCustomer): Promise<Customer> {
+    const existingCustomer = await this.getCustomer(id);
+    if (!existingCustomer) {
+      throw new Error(`Customer with id ${id} not found`);
+    }
+    
+    const result = await db.update(customers)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(customers.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteCustomer(id: number): Promise<void> {
+    await db.delete(customers).where(eq(customers.id, id));
+  }
+  
+  // Action Plan methods
+  async getAllActionPlans(): Promise<ActionPlan[]> {
+    const results = await db.select()
+      .from(actionPlans)
+      .orderBy(actionPlans.updatedAt);
+    return results;
+  }
+  
+  async getActionPlan(id: number): Promise<ActionPlan | undefined> {
+    const results = await db.select().from(actionPlans).where(eq(actionPlans.id, id));
+    return results.length ? results[0] : undefined;
+  }
+  
+  async createActionPlan(planData: InsertActionPlan): Promise<ActionPlan> {
+    const now = new Date();
+    
+    console.log("DbStorage createActionPlan - Received aiGoals:", JSON.stringify(planData.aiGoals, null, 2));
+    console.log("DbStorage createActionPlan - aiGoals is Array?", Array.isArray(planData.aiGoals));
+    console.log("DbStorage createActionPlan - aiGoals type:", typeof planData.aiGoals);
+    
+    // Process aiGoals field to ensure type safety
+    let aiGoals: string[] = [];
+    
+    if (planData.aiGoals !== undefined) {
+      if (Array.isArray(planData.aiGoals)) {
+        aiGoals = planData.aiGoals;
+        console.log("DbStorage createActionPlan - Using array aiGoals:", JSON.stringify(aiGoals, null, 2));
+      } else if (typeof planData.aiGoals === 'object') {
+        // Handle case where aiGoals might come in as an object with array-like properties
+        try {
+          aiGoals = Array.from(Object.values(planData.aiGoals as any));
+          console.log("DbStorage createActionPlan - Converted object to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to convert aiGoals to array:", err);
+          aiGoals = [];
+        }
+      } else if (typeof planData.aiGoals === 'string') {
+        // Handle string - could be a JSON string
+        try {
+          const parsed = JSON.parse(planData.aiGoals as string);
+          aiGoals = Array.isArray(parsed) ? parsed : [];
+          console.log("DbStorage createActionPlan - Parsed string to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to parse aiGoals string:", err);
+          aiGoals = [planData.aiGoals as string];
+        }
+      }
+    }
+    
+    // Process array fields to ensure type safety
+    const processedData = {
+      ...planData,
+      aiGoals: aiGoals,
+      successMetrics: Array.isArray(planData.successMetrics) ? planData.successMetrics : [],
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    console.log("DbStorage createActionPlan - Final processedData aiGoals:", JSON.stringify(processedData.aiGoals, null, 2));
+    
+    const result = await db.insert(actionPlans).values(processedData).returning();
+    console.log("DbStorage createActionPlan - Created result aiGoals:", JSON.stringify(result[0].aiGoals, null, 2));
+    
+    return result[0];
+  }
+  
+  async updateActionPlan(id: number, updateData: UpdateActionPlan): Promise<ActionPlan> {
+    const existingPlan = await this.getActionPlan(id);
+    if (!existingPlan) {
+      throw new Error(`Action plan with id ${id} not found`);
+    }
+    
+    console.log("DbStorage updateActionPlan - Existing aiGoals:", JSON.stringify(existingPlan.aiGoals, null, 2));
+    console.log("DbStorage updateActionPlan - New aiGoals:", JSON.stringify(updateData.aiGoals, null, 2));
+    console.log("DbStorage updateActionPlan - aiGoals is Array?", Array.isArray(updateData.aiGoals));
+    console.log("DbStorage updateActionPlan - aiGoals type:", typeof updateData.aiGoals);
+    
+    // Process array fields to ensure type safety
+    let aiGoals = existingPlan.aiGoals;
+    
+    if (updateData.aiGoals !== undefined) {
+      if (Array.isArray(updateData.aiGoals)) {
+        aiGoals = updateData.aiGoals;
+        console.log("DbStorage updateActionPlan - Using array aiGoals:", JSON.stringify(aiGoals, null, 2));
+      } else if (typeof updateData.aiGoals === 'object') {
+        // Handle case where aiGoals might come in as an object with array-like properties
+        try {
+          aiGoals = Array.from(Object.values(updateData.aiGoals as any));
+          console.log("DbStorage updateActionPlan - Converted object to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to convert aiGoals to array:", err);
+          aiGoals = [];
+        }
+      } else if (typeof updateData.aiGoals === 'string') {
+        // Handle string - could be a JSON string
+        try {
+          const parsed = JSON.parse(updateData.aiGoals as string);
+          aiGoals = Array.isArray(parsed) ? parsed : [];
+          console.log("DbStorage updateActionPlan - Parsed string to array:", JSON.stringify(aiGoals, null, 2));
+        } catch (err) {
+          console.error("Failed to parse aiGoals string:", err);
+          aiGoals = [updateData.aiGoals as string];
+        }
+      } else {
+        // Fallback
+        aiGoals = [];
+      }
+    }
+    
+    const processedData = {
+      ...updateData,
+      aiGoals: aiGoals,
+      successMetrics: updateData.successMetrics !== undefined 
+        ? (Array.isArray(updateData.successMetrics) ? updateData.successMetrics : []) 
+        : existingPlan.successMetrics,
+      updatedAt: new Date()
+    };
+    
+    console.log("DbStorage updateActionPlan - Final processedData aiGoals:", JSON.stringify(processedData.aiGoals, null, 2));
+    
+    const result = await db.update(actionPlans)
+      .set(processedData)
+      .where(eq(actionPlans.id, id))
+      .returning();
+    
+    console.log("DbStorage updateActionPlan - Updated result aiGoals:", JSON.stringify(result[0].aiGoals, null, 2));
+    
+    return result[0];
+  }
+  
+  async deleteActionPlan(id: number): Promise<void> {
+    await db.delete(actionPlans).where(eq(actionPlans.id, id));
+  }
+
   // Function to seed initial data after migrations
   async seedInitialData(): Promise<void> {
     const existingUseCases = await this.getAllUseCases();
@@ -126,6 +422,26 @@ export class DbStorage implements IStorage {
     // Only seed if there are no existing use cases
     if (existingUseCases.length === 0) {
       await this.createSampleUseCases();
+    }
+
+    // Seed default settings if they don't exist
+    await this.seedDefaultSettings();
+  }
+
+  // Helper method to seed default settings
+  private async seedDefaultSettings(): Promise<void> {
+    const defaultSettings = [
+      { key: 'openai_api_key', value: '' },
+      { key: 'openai_system_prompt', value: 'You are a helpful assistant that responds to customer requests. Your goal is to understand the customer needs and provide clear, concise and helpful responses.' },
+      { key: 'openai_user_prompt', value: 'Please respond to the following customer message in a professional and helpful manner:' },
+      { key: 'agent_persona', value: 'Friendly, professional, and solution-oriented customer service representative who communicates clearly and efficiently while maintaining a positive tone.' }
+    ];
+
+    for (const setting of defaultSettings) {
+      const existingSetting = await this.getSetting(setting.key);
+      if (!existingSetting) {
+        await this.createSetting(setting);
+      }
     }
   }
 
@@ -215,5 +531,187 @@ Agent: Great! Your account has been created successfully. Would you like to set 
 Customer: Yes, that sounds like a good idea.
 Agent: Excellent choice! I'll guide you through the two-factor authentication setup. Would you prefer to use SMS or an authenticator app for receiving codes?`
     });
+  }
+
+  // Agent Journey methods
+  async getAllAgentJourneys(): Promise<AgentJourney[]> {
+    try {
+      const results = await db.select()
+        .from(agentJourneys)
+        .orderBy(agentJourneys.updatedAt);
+      return results;
+    } catch (error) {
+      console.error("Error in getAllAgentJourneys:", error);
+      return [];
+    }
+  }
+  
+  async getAgentJourney(id: number): Promise<AgentJourney | undefined> {
+    try {
+      const results = await db.select().from(agentJourneys).where(eq(agentJourneys.id, id));
+      return results.length ? results[0] : undefined;
+    } catch (error) {
+      console.error(`Error in getAgentJourney(${id}):`, error);
+      return undefined;
+    }
+  }
+  
+  async createAgentJourney(journeyData: InsertAgentJourney): Promise<AgentJourney> {
+    const now = new Date();
+    
+    console.log('Creating agent journey with title:', journeyData.title);
+
+    try {
+      // Prepare the data to be inserted
+      const processedData: any = {
+        title: journeyData.title,
+        agentName: journeyData.agentName || null,
+        purpose: journeyData.purpose || null,
+        notes: journeyData.notes || null,
+        summary: journeyData.summary || null,
+        inputInterpretation: journeyData.inputInterpretation || null,
+        guardrails: journeyData.guardrails || null,
+        contextManagement: journeyData.contextManagement || null,
+        escalationRules: journeyData.escalationRules || null,
+        errorMonitoring: journeyData.errorMonitoring || null,
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      // Handle special fields - backendSystems (PostgreSQL native array type)
+      if (journeyData.backendSystems !== undefined) {
+        let systems = [];
+        
+        if (Array.isArray(journeyData.backendSystems)) {
+          // For a native PostgreSQL array, we can directly pass an array of strings
+          systems = journeyData.backendSystems.map(item => String(item));
+        } else if (typeof journeyData.backendSystems === 'string') {
+          try {
+            const parsed = JSON.parse(journeyData.backendSystems);
+            if (Array.isArray(parsed)) {
+              systems = parsed.map(item => String(item));
+            }
+          } catch (e) {
+            console.warn('Failed to parse backendSystems string, using empty array');
+            systems = [];
+          }
+        }
+        
+        // Direct assignment for PostgreSQL array type
+        processedData.backendSystems = systems;
+      } else {
+        processedData.backendSystems = [];
+      }
+      
+      // Handle nodes and edges
+      if (journeyData.nodes !== undefined) {
+        processedData.nodes = typeof journeyData.nodes === 'string' 
+          ? journeyData.nodes 
+          : JSON.stringify(journeyData.nodes);
+      } else {
+        processedData.nodes = '[]';
+      }
+      
+      if (journeyData.edges !== undefined) {
+        processedData.edges = typeof journeyData.edges === 'string' 
+          ? journeyData.edges 
+          : JSON.stringify(journeyData.edges);
+      } else {
+        processedData.edges = '[]';
+      }
+      
+      console.log('Inserting agent journey with processed data...');
+      
+      // Insert the journey with properly processed data
+      const result = await db.insert(agentJourneys).values(processedData).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error in createAgentJourney:', error);
+      throw error;
+    }
+  }
+  
+  async updateAgentJourney(id: number, updateData: UpdateAgentJourney): Promise<AgentJourney> {
+    const existingJourney = await this.getAgentJourney(id);
+    if (!existingJourney) {
+      throw new Error(`Agent journey with id ${id} not found`);
+    }
+    
+    console.log('Updating agent journey with id:', id);
+    
+    try {
+      // Prepare data for update with proper handling of optional fields
+      const updateFields: Record<string, any> = {
+        updatedAt: new Date()
+      };
+      
+      // Only include standard fields that are defined
+      if (updateData.title !== undefined) updateFields.title = updateData.title;
+      if (updateData.agentName !== undefined) updateFields.agentName = updateData.agentName || null;
+      if (updateData.purpose !== undefined) updateFields.purpose = updateData.purpose || null;
+      if (updateData.notes !== undefined) updateFields.notes = updateData.notes || null;
+      if (updateData.summary !== undefined) updateFields.summary = updateData.summary || null;
+      if (updateData.inputInterpretation !== undefined) updateFields.inputInterpretation = updateData.inputInterpretation || null;
+      if (updateData.guardrails !== undefined) updateFields.guardrails = updateData.guardrails || null;
+      if (updateData.contextManagement !== undefined) updateFields.contextManagement = updateData.contextManagement || null;
+      if (updateData.escalationRules !== undefined) updateFields.escalationRules = updateData.escalationRules || null;
+      if (updateData.errorMonitoring !== undefined) updateFields.errorMonitoring = updateData.errorMonitoring || null;
+      
+      // Handle special JSON fields
+      
+      // Handle backendSystems (PostgreSQL native array type)
+      if (updateData.backendSystems !== undefined) {
+        let systems = [];
+        
+        if (Array.isArray(updateData.backendSystems)) {
+          // For a native PostgreSQL array, we can directly pass an array of strings
+          systems = updateData.backendSystems.map(item => String(item));
+        } else if (typeof updateData.backendSystems === 'string') {
+          try {
+            const parsed = JSON.parse(updateData.backendSystems);
+            if (Array.isArray(parsed)) {
+              systems = parsed.map(item => String(item));
+            }
+          } catch (e) {
+            console.warn('Failed to parse backendSystems string, using empty array');
+            systems = [];
+          }
+        }
+        
+        // Direct assignment for PostgreSQL array type
+        updateFields.backendSystems = systems;
+      }
+      
+      // Handle nodes
+      if (updateData.nodes !== undefined) {
+        updateFields.nodes = typeof updateData.nodes === 'string' 
+          ? updateData.nodes 
+          : JSON.stringify(updateData.nodes);
+      }
+      
+      // Handle edges
+      if (updateData.edges !== undefined) {
+        updateFields.edges = typeof updateData.edges === 'string' 
+          ? updateData.edges 
+          : JSON.stringify(updateData.edges);
+      }
+      
+      console.log('Updating journey in database...');
+      
+      // Update the journey with properly processed data
+      const result = await db.update(agentJourneys)
+        .set(updateFields)
+        .where(eq(agentJourneys.id, id))
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error('Error in updateAgentJourney:', error);
+      throw error;
+    }
+  }
+  
+  async deleteAgentJourney(id: number): Promise<void> {
+    await db.delete(agentJourneys).where(eq(agentJourneys.id, id));
   }
 }

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Settings, PlusCircle, AlertCircle } from "lucide-react";
+import { MoreVertical, PlusCircle, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -153,12 +153,6 @@ export default function Sidebar({
           </div>
         )}
         
-        <div className="p-4 border-t border-neutral-medium mt-auto">
-          <Button variant="ghost" className="text-sm text-neutral-dark/70 hover:text-primary flex items-center">
-            <Settings className="mr-2 h-4 w-4" /> Settings
-          </Button>
-        </div>
-
         {isMobile && (
           <div className="p-4 border-t border-neutral-medium">
             <Button 
